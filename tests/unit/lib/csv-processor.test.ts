@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CSVProcessor, type ICSVRecord } from './csv-processor.js';
+import { CSVProcessor, type ICSVRecord } from '../../../src/lib/csv-processor.js';
 import fs from 'fs';
 import path from 'path';
 

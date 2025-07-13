@@ -182,3 +182,6 @@ export function createImportCommand(): Command {
 
   return importCmd;
 }
+
+// テスト用にimportCommandをエクスポート
+export const importCommand = createImportCommand();

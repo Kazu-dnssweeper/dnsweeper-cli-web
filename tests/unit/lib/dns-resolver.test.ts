@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { DNSRecordType } from '../types/index.js';
-import { DNSResolver } from './dns-resolver.js';
-import { TEST_DOMAINS } from '../test/setup.js';
+import type { DNSRecordType } from '../../../src/types/index.js';
+import { DNSResolver } from '../../../src/lib/dns-resolver.js';
+import { TEST_DOMAINS } from '../../setup.js';
 
 describe('DNSResolver', () => {
   let resolver: DNSResolver;

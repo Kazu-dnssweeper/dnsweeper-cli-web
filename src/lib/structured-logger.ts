@@ -537,6 +537,9 @@ export function logMethod(
   includeResult: boolean = false
 ) {
   return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+    if (!descriptor || typeof descriptor.value !== 'function') {
+      return descriptor;
+    }
     const method = descriptor.value;
     
     descriptor.value = async function (...args: any[]) {

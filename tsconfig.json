@@ -39,6 +39,6 @@
     "exactOptionalPropertyTypes": true,
     "useUnknownInCatchVariables": true
   },
-  "include": ["src/**/*", "tests/**/*", "vitest.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

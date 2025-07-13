@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import type { IAnalyzeOptions } from '../types/index.js';
+import type { IAnalyzeOptions, IDNSRecord } from '../types/index.js';
 import { Logger } from '../lib/logger.js';
 import { CSVProcessor } from '../lib/csv-processor.js';
 import { RiskCalculator } from '../lib/risk-calculator.js';
@@ -81,18 +81,24 @@ export function createAnalyzeCommand(): Command {
         // Calculate risk scores
         logger.startSpinner('Calculating risk scores...');
         // Convert CSV records to DNS records format
-        const dnsRecords = parseResult.records.map((csvRecord, index) => ({
-          id: `record-${index}`,
-          name: csvRecord.domain,
-          type: csvRecord.type,
-          value: csvRecord.value,
-          ttl: csvRecord.ttl,
-          priority: csvRecord.priority,
-          weight: csvRecord.weight,
-          port: csvRecord.port,
-          created: new Date(),
-          updated: new Date(),
-        }));
+        const dnsRecords: IDNSRecord[] = parseResult.records.map((csvRecord, index) => {
+          const record: IDNSRecord = {
+            id: `record-${index}`,
+            name: csvRecord.domain,
+            type: csvRecord.type,
+            value: csvRecord.value,
+            ttl: csvRecord.ttl,
+            created: new Date(),
+            updated: new Date(),
+          };
+          
+          // オプショナルフィールドは値が存在する場合のみ設定
+          if (csvRecord.priority !== undefined) record.priority = csvRecord.priority;
+          if (csvRecord.weight !== undefined) record.weight = csvRecord.weight;
+          if (csvRecord.port !== undefined) record.port = csvRecord.port;
+          
+          return record;
+        });
 
         const riskScores = calculator.calculateBatchRisk(dnsRecords, lastSeenDates);
         const summary = calculator.getRiskSummary(dnsRecords, lastSeenDates);
@@ -213,3 +219,6 @@ export function createAnalyzeCommand(): Command {
 
   return analyzeCmd;
 }
+
+// テスト用にanalyzeCommandをエクスポート
+export const analyzeCommand = createAnalyzeCommand();

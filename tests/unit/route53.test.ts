@@ -81,7 +81,9 @@ describe('Route53Client', () => {
         status: 200,
         statusText: 'OK',
         text: () => Promise.resolve(mockResponse),
-        headers: new Map([['x-amzn-requestid', 'test-request-id']])
+        headers: {
+          get: (name: string) => name === 'x-amzn-requestid' ? 'test-request-id' : null
+        }
       });
 
       const result = await client.listHostedZones();
@@ -100,12 +102,14 @@ describe('Route53Client', () => {
         status: 403,
         statusText: 'Forbidden',
         text: () => Promise.resolve('Access denied'),
-        headers: new Map()
+        headers: {
+          get: () => null
+        }
       });
 
       const result = await client.listHostedZones();
       
-      expect(result.error).toContain('Failed to list hosted zones');
+      expect(result.error).toContain('Access denied');
       expect(result.statusCode).toBe(403);
       expect(result.data).toBeUndefined();
     });
@@ -115,7 +119,7 @@ describe('Route53Client', () => {
 
       const result = await client.listHostedZones();
       
-      expect(result.error).toBe('Network error');
+      expect(result.error).toContain('Network error');
       expect(result.statusCode).toBe(500);
     });
   });

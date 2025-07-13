@@ -29,10 +29,30 @@ export default defineConfig({
       },
     },
     setupFiles: ['tests/setup.ts'],
+    // タイムアウト設定
+    testTimeout: 15000, // 15秒
+    hookTimeout: 5000, // 5秒
+    // Vitest v3での新しい設定オプション
+    pool: 'forks', // threads から forks に変更（process.chdir対応）
+    poolOptions: {
+      forks: {
+        singleFork: true, // シングルプロセスでより安定した実行
+      },
+    },
+    maxConcurrency: 5, // 同時実行数を制限
+    // より厳密なテスト実行設定
+    isolate: true,
+    typecheck: {
+      enabled: false, // TypeScriptの型チェックは tsc で行う
+    },
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@commands': resolve(__dirname, './src/commands'),
+      '@lib': resolve(__dirname, './src/lib'),
+      '@utils': resolve(__dirname, './src/utils'),
+      '@types': resolve(__dirname, './src/types'),
     },
   },
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { RiskCalculator } from './risk-calculator.js';
-import type { IDNSRecord } from '../types/index.js';
+import { RiskCalculator } from '../../../src/lib/risk-calculator.js';
+import type { IDNSRecord } from '../../../src/types/index.js';
 
 describe('RiskCalculator', () => {
   let calculator: RiskCalculator;
