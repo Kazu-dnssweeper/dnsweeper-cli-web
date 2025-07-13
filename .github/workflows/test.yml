@@ -1,0 +1,53 @@
+name: テスト実行
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18.x, 20.x, 22.x]
+        exclude:
+          # Node.js 22はWindowsで不安定な場合があるため除外
+          - os: windows-latest
+            node-version: 22.x
+
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v4
+
+    - name: Node.js ${{ matrix.node-version }} セットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: 依存関係インストール
+      run: npm ci
+
+    - name: TypeScriptビルド
+      run: npm run build
+
+    - name: リント実行
+      run: npm run lint
+
+    - name: テスト実行
+      run: npm test
+
+    - name: カバレッジレポート生成
+      run: npm run test:coverage
+
+    - name: カバレッジレポートアップロード
+      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false

@@ -1,0 +1,16 @@
+domain,record_type,value,ttl
+test1.example.com,A,10.0.0.1,3600
+test2.example.com,A,10.0.0.2,3600
+test3.example.com,A,10.0.0.3,3600
+test4.example.com,A,10.0.0.4,3600
+test5.example.com,A,10.0.0.5,3600
+test6.example.com,A,10.0.0.6,3600
+test7.example.com,A,10.0.0.7,3600
+test8.example.com,A,10.0.0.8,3600
+test9.example.com,A,10.0.0.9,3600
+test10.example.com,A,10.0.0.10,3600
+www1.example.com,CNAME,test1.example.com,3600
+www2.example.com,CNAME,test2.example.com,3600
+www3.example.com,CNAME,test3.example.com,3600
+www4.example.com,CNAME,test4.example.com,3600
+www5.example.com,CNAME,test5.example.com,3600

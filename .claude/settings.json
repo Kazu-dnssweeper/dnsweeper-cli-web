@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "bash .claude/hooks/auto-continue.sh",
+        "runInBackground": false
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/update-progress.sh",
+            "runInBackground": true
+          }
+        ]
+      }
+    ]
+  },
+  "preferences": {
+    "autoSave": true,
+    "showProgress": true,
+    "verboseLogging": true
+  },
+  "project": {
+    "name": "DNSweeper",
+    "version": "1.0.0",
+    "milestones": {
+      "development": "/docs/MILESTONES.md",
+      "business": "/docs/business/MILESTONES_BUSINESS.md"
+    }
+  }
+}

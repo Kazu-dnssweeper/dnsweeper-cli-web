@@ -1,0 +1,9 @@
+dist
+node_modules
+coverage
+*.js
+*.cjs
+*.mjs
+.eslintrc.json
+jest.config.js
+vitest.config.js

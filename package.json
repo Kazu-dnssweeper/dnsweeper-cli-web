@@ -1,0 +1,59 @@
+{
+  "name": "dnsweeper",
+  "version": "1.0.0",
+  "description": "A powerful DNS management CLI tool for efficient DNS operations",
+  "main": "dist/index.js",
+  "bin": {
+    "dnsweeper": "./dist/index.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "dns",
+    "cli",
+    "dns-management",
+    "devops",
+    "networking"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@types/papaparse": "^5.3.16",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "inquirer": "^10.1.8",
+    "ora": "^8.0.1",
+    "papaparse": "^5.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "@vitest/coverage-v8": "^2.0.3",
+    "@vitest/ui": "^2.0.3",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.3.2",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.3"
+  }
+}

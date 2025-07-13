@@ -1,0 +1,47 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# すべてのファイルに適用
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# TypeScript/JavaScript ファイル
+[*.{ts,tsx,js,jsx,mjs,cjs}]
+indent_size = 2
+quote_type = single
+
+# JSON ファイル
+[*.json]
+indent_size = 2
+
+# YAML ファイル
+[*.{yml,yaml}]
+indent_size = 2
+
+# Markdown ファイル
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = 80
+
+# パッケージ管理ファイル
+[{package.json,package-lock.json,npm-shrinkwrap.json}]
+indent_size = 2
+
+# 設定ファイル
+[.*rc]
+indent_size = 2
+
+# Makefile
+[Makefile]
+indent_style = tab
+
+# Git設定
+[.git*]
+indent_size = 2

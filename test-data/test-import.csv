@@ -1,0 +1,8 @@
+domain,record_type,value,ttl,priority
+example.com,A,192.168.1.1,3600,
+example.com,AAAA,2001:db8::1,3600,
+www.example.com,CNAME,example.com,3600,
+mail.example.com,MX,mail.example.com,3600,10
+example.com,TXT,v=spf1 include:_spf.example.com ~all,3600,
+ns1.example.com,NS,ns1.example.com,86400,
+example.com,SOA,ns1.example.com admin.example.com 2023010101 10800 3600 604800 86400,86400,

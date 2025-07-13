@@ -1,0 +1,44 @@
+{
+  "dns": {
+    "timeout": 5000,
+    "retries": 3,
+    "servers": [],
+    "concurrent": 10
+  },
+  "csv": {
+    "encoding": "utf8",
+    "delimiter": ",",
+    "quote": "\"",
+    "skipEmptyLines": true,
+    "maxRows": 1000000
+  },
+  "risk": {
+    "weights": {
+      "unusedDays": 0.4,
+      "namingPattern": 0.3,
+      "ttl": 0.3
+    },
+    "thresholds": {
+      "high": 70,
+      "medium": 40
+    }
+  },
+  "output": {
+    "format": "table",
+    "colors": true,
+    "verbose": false,
+    "quiet": false
+  },
+  "api": {
+    "cloudflare": {
+      "apiKey": "",
+      "email": "",
+      "accountId": ""
+    },
+    "route53": {
+      "accessKeyId": "",
+      "secretAccessKey": "",
+      "region": "us-east-1"
+    }
+  }
+}

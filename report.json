@@ -1,0 +1,250 @@
+{
+  "summary": {
+    "totalRecords": 10,
+    "analyzedRecords": 10,
+    "riskyRecords": 10,
+    "riskBreakdown": {
+      "low": 0,
+      "medium": 0,
+      "high": 0,
+      "critical": 10
+    },
+    "averageRiskScore": 96,
+    "totalRecommendations": 43
+  },
+  "records": [
+    {
+      "domain": "old-backup.example.com",
+      "type": "A",
+      "value": "192.168.1.2",
+      "ttl": 60,
+      "risk": {
+        "score": 100,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 30,
+          "recordTypeRisk": 5,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (60s) detected. Consider increasing TTL if record is stable.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    },
+    {
+      "domain": "temp-dev.example.com",
+      "type": "CNAME",
+      "value": "example.com",
+      "ttl": 300,
+      "risk": {
+        "score": 100,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 30,
+          "recordTypeRisk": 15,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (300s) detected. Consider increasing TTL if record is stable.",
+          "CRITICAL: This record should be reviewed immediately.",
+          "Unused CNAME record. Verify target still exists."
+        ]
+      }
+    },
+    {
+      "domain": "unused-staging.example.com",
+      "type": "A",
+      "value": "192.168.1.3",
+      "ttl": 120,
+      "risk": {
+        "score": 100,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 30,
+          "recordTypeRisk": 5,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (120s) detected. Consider increasing TTL if record is stable.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    },
+    {
+      "domain": "deep.sub.domain.test.example.com",
+      "type": "A",
+      "value": "192.168.1.4",
+      "ttl": 30,
+      "risk": {
+        "score": 100,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 30,
+          "recordTypeRisk": 5,
+          "domainDepth": 15
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (30s) detected. Consider increasing TTL if record is stable.",
+          "Deep subdomain detected. Review if this level of nesting is necessary.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    },
+    {
+      "domain": "_temp._tcp.example.com",
+      "type": "SRV",
+      "value": "server.example.com",
+      "ttl": 60,
+      "risk": {
+        "score": 100,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 30,
+          "recordTypeRisk": 20,
+          "domainDepth": 10
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (60s) detected. Consider increasing TTL if record is stable.",
+          "Deep subdomain detected. Review if this level of nesting is necessary.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    },
+    {
+      "domain": "backup-2022.example.com",
+      "type": "MX",
+      "value": "mail.example.com",
+      "ttl": 300,
+      "risk": {
+        "score": 100,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 30,
+          "recordTypeRisk": 5,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (300s) detected. Consider increasing TTL if record is stable.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    },
+    {
+      "domain": "demo-old.example.com",
+      "type": "TXT",
+      "value": "verification-12345",
+      "ttl": 3600,
+      "risk": {
+        "score": 95,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 20,
+          "recordTypeRisk": 10,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (3600s) detected. Consider increasing TTL if record is stable.",
+          "CRITICAL: This record should be reviewed immediately.",
+          "TXT record with suspicious name. May be old verification record."
+        ]
+      }
+    },
+    {
+      "domain": "test.example.com",
+      "type": "A",
+      "value": "192.168.1.1",
+      "ttl": 3600,
+      "risk": {
+        "score": 90,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 20,
+          "recordTypeRisk": 5,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (3600s) detected. Consider increasing TTL if record is stable.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    },
+    {
+      "domain": "production.example.com",
+      "type": "A",
+      "value": "192.168.1.100",
+      "ttl": 3600,
+      "risk": {
+        "score": 90,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 20,
+          "recordTypeRisk": 5,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "Very short TTL (3600s) detected. Consider increasing TTL if record is stable.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    },
+    {
+      "domain": "test-api-v1.example.com",
+      "type": "A",
+      "value": "192.168.1.5",
+      "ttl": 86400,
+      "risk": {
+        "score": 80,
+        "level": "critical",
+        "factors": {
+          "lastSeenDays": 999,
+          "hasSuspiciousPattern": true,
+          "ttlScore": 10,
+          "recordTypeRisk": 5,
+          "domainDepth": 5
+        },
+        "recommendations": [
+          "Record unused for 999 days. Consider removal if no longer needed.",
+          "Domain name contains suspicious pattern. Verify if this is a temporary or test record.",
+          "CRITICAL: This record should be reviewed immediately."
+        ]
+      }
+    }
+  ]
+}

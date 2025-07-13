@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>DNSweeper 自動タスク進捗ダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        #auto-task-reminder {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            z-index: 9999;
+            font-size: 16px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+            100% { opacity: 0.8; transform: scale(1); }
+        }
+        
+        .main-container {
+            margin-top: 80px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .task-status {
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+        
+        .progress-section {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #4ecdc4;
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.2);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            border: 2px solid #4ecdc4;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            transition: width 0.5s ease;
+            border-radius: 13px;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .task-completed {
+            border-left-color: #4ecdc4;
+            opacity: 0.7;
+        }
+        
+        .task-in-progress {
+            border-left-color: #ffa726;
+            animation: glow 2s infinite;
+        }
+        
+        .task-pending {
+            border-left-color: #666;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 167, 38, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 167, 38, 0.8); }
+        }
+        
+        .status-emoji {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        
+        .timestamp {
+            font-size: 11px;
+            opacity: 0.6;
+            text-align: right;
+            margin-top: 10px;
+        }
+        
+        h1, h2, h3 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+        
+        .phase-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid #4ecdc4;
+            border-radius: 15px;
+            font-size: 12px;
+            margin: 0 5px;
+        }
+        
+        .next-task-highlight {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: 2px solid #ff6b6b;
+            animation: highlight 3s infinite;
+        }
+        
+        @keyframes highlight {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+    </style>
+</head>
+<body>
+    <div id="auto-task-reminder">
+        🤖 DNSweeper 自動タスク実行中 | 現在のタスク: <span id="current-task">DNS解決ライブラリ選定</span> | 進捗: <span id="overall-progress">30%</span>
+    </div>
+    
+    <div class="main-container">
+        <div class="progress-section">
+            <h1>🚀 DNSweeper プロジェクト進捗</h1>
+            
+            <h3>📊 全体進捗</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="overall-progress-bar" style="width: 30%"></div>
+            </div>
+            <div style="text-align: center; margin: 10px 0;">
+                <span class="phase-indicator">フェーズ1</span>
+                <span class="phase-indicator">CLI基盤構築</span>
+                <span class="phase-indicator">8月第1週</span>
+            </div>
+            
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="completed-tasks">8</div>
+                    <div class="metric-label">完了タスク</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="total-tasks">27</div>
+                    <div class="metric-label">総タスク数</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="code-coverage">0%</div>
+                    <div class="metric-label">テストカバレッジ</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="github-stars">0</div>
+                    <div class="metric-label">GitHub Stars</div>
+                </div>
+            </div>
+            
+            <h3>📈 フェーズ別進捗</h3>
+            <div style="margin: 15px 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>環境構築・初期化</span>
+                    <span>100%</span>
+                </div>
+                <div class="progress-bar" style="height: 20px;">
+                    <div class="progress-fill" style="width: 100%"></div>
+                </div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>DNS解決機能実装</span>
+                    <span>0%</span>
+                </div>
+                <div class="progress-bar" style="height: 20px;">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>CSV処理機能実装</span>
+                    <span>0%</span>
+                </div>
+                <div class="progress-bar" style="height: 20px;">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="task-status">
+            <h3>📋 タスクキュー</h3>
+            <div id="task-queue">
+                <div class="task-item next-task-highlight">
+                    <span class="status-emoji">🔥</span>
+                    <div>
+                        <div>DNS解決基盤ライブラリ選定</div>
+                        <div style="font-size: 11px; opacity: 0.7;">node:dns vs dns2 比較調査</div>
+                    </div>
+                </div>
+                
+                <div class="task-item task-pending">
+                    <span class="status-emoji">⏳</span>
+                    <div>
+                        <div>DNSResolverクラス設計</div>
+                        <div style="font-size: 11px; opacity: 0.7;">TypeScript型定義作成</div>
+                    </div>
+                </div>
+                
+                <div class="task-item task-pending">
+                    <span class="status-emoji">⏳</span>
+                    <div>
+                        <div>Aレコード解決機能実装</div>
+                        <div style="font-size: 11px; opacity: 0.7;">lookupA関数実装</div>
+                    </div>
+                </div>
+                
+                <div class="task-item task-completed">
+                    <span class="status-emoji">✅</span>
+                    <div>
+                        <div>プロジェクト初期化</div>
+                        <div style="font-size: 11px; opacity: 0.7;">npm init, TypeScript設定</div>
+                    </div>
+                </div>
+                
+                <div class="task-item task-completed">
+                    <span class="status-emoji">✅</span>
+                    <div>
+                        <div>CLI基本構造実装</div>
+                        <div style="font-size: 11px; opacity: 0.7;">Commander.js実装完了</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 30px;">🎯 今日の目標</h3>
+            <div style="background: rgba(255, 167, 38, 0.2); padding: 15px; border-radius: 10px; border: 1px solid #ffa726;">
+                <div>💪 DNS解決ライブラリ調査完了</div>
+                <div>🏗️ DNSResolverクラス設計開始</div>
+                <div>📝 技術記事執筆開始</div>
+            </div>
+            
+            <h3 style="margin-top: 30px;">📈 マイルストーン</h3>
+            <div style="font-size: 12px;">
+                <div>🎯 CLI版完成: 9月末</div>
+                <div>🌐 Web版リリース: 3月末</div>
+                <div>💰 収益化開始: 9月末</div>
+                <div>🚀 ARR $1.5M: 24ヶ月後</div>
+            </div>
+            
+            <div class="timestamp">
+                最終更新: <span id="last-update">2025-07-13 21:30:00</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // リアルタイム更新（5秒ごと）
+        setInterval(() => {
+            updateProgress();
+        }, 5000);
+        
+        function updateProgress() {
+            // 実際の実装では.claude/auto-task-system.mdから進捗を読み取る
+            const now = new Date().toLocaleString('ja-JP');
+            document.getElementById('last-update').textContent = now;
+            
+            // 進捗計算の例
+            const completed = parseInt(document.getElementById('completed-tasks').textContent);
+            const total = parseInt(document.getElementById('total-tasks').textContent);
+            const progress = Math.round((completed / total) * 100);
+            
+            document.getElementById('overall-progress').textContent = progress + '%';
+            document.getElementById('overall-progress-bar').style.width = progress + '%';
+        }
+        
+        // ページ読み込み時に初期化
+        updateProgress();
+        
+        // 自動タスク実行の視覚的フィードバック
+        setInterval(() => {
+            const reminder = document.getElementById('auto-task-reminder');
+            reminder.style.background = reminder.style.background === 'linear-gradient(45deg, rgb(255, 107, 107), rgb(78, 205, 196))' 
+                ? 'linear-gradient(45deg, rgb(78, 205, 196), rgb(255, 107, 107))'
+                : 'linear-gradient(45deg, rgb(255, 107, 107), rgb(78, 205, 196))';
+        }, 3000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+Name,Type,Value,TTL,Weight,SetIdentifier
+example.com,A,192.168.1.1,300,,
+www.example.com,CNAME,example.com,300,,
+example.com,MX,"10 mail.example.com",300,,
+ftp.example.com,A,192.168.1.2,600,,
+api.example.com,A,192.168.1.3,300,,
+blog.example.com,CNAME,example.com,1800,,
+example.com,TXT,"v=spf1 include:_spf.google.com ~all",300,,

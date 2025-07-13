@@ -1,0 +1,8 @@
+Name,Type,Content,TTL,Priority
+example.com,A,192.168.1.1,3600,
+www.example.com,CNAME,example.com,3600,
+mail.example.com,MX,mail.example.com,3600,10
+ftp.example.com,A,192.168.1.2,1800,
+api.example.com,A,192.168.1.3,600,
+blog.example.com,CNAME,example.com,7200,
+example.com,TXT,"v=spf1 include:_spf.google.com ~all",3600,

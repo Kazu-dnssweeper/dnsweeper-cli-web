@@ -1,0 +1,11 @@
+domain,record_type,value,ttl,priority
+test.example.com,A,192.168.1.1,3600,
+old-backup.example.com,A,192.168.1.2,60,
+temp-dev.example.com,CNAME,example.com,300,
+unused-staging.example.com,A,192.168.1.3,120,
+deep.sub.domain.test.example.com,A,192.168.1.4,30,
+demo-old.example.com,TXT,verification-12345,3600,
+_temp._tcp.example.com,SRV,server.example.com,60,10
+backup-2022.example.com,MX,mail.example.com,300,20
+test-api-v1.example.com,A,192.168.1.5,86400,
+production.example.com,A,192.168.1.100,3600,
