@@ -91,13 +91,17 @@ export interface IDNSResolveResult {
 }
 
 export interface ICSVRecord {
-  domain: string;
+  id: string;
+  name: string;
   type: DNSRecordType;
   value: string;
-  ttl?: number;
+  ttl: number;
   priority?: number;
   weight?: number;
   port?: number;
+  created: Date;
+  updated: Date;
+  setIdentifier?: string;
 }
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';

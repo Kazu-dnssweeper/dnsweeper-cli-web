@@ -105,73 +105,6 @@ export class CloudflareClient {
     return data;
   }
 
-  async listZones(): Promise<CloudflareZone[]> {
-    const response = await this.request<CloudflareZone[]>('GET', '/zones');
-    return response.result;
-  }
-
-  async getZone(zoneId: string): Promise<CloudflareZone> {
-    const response = await this.request<CloudflareZone>(
-      'GET',
-      `/zones/${zoneId}`
-    );
-    return response.result;
-  }
-
-  async listDNSRecords(zoneId: string): Promise<CloudflareDNSRecord[]> {
-    const response = await this.request<CloudflareDNSRecord[]>(
-      'GET',
-      `/zones/${zoneId}/dns_records`
-    );
-    return response.result;
-  }
-
-  async getDNSRecord(
-    zoneId: string,
-    recordId: string
-  ): Promise<CloudflareDNSRecord> {
-    const response = await this.request<CloudflareDNSRecord>(
-      'GET',
-      `/zones/${zoneId}/dns_records/${recordId}`
-    );
-    return response.result;
-  }
-
-  async createDNSRecord(
-    zoneId: string,
-    record: CloudflareDNSRecord
-  ): Promise<CloudflareDNSRecord> {
-    const response = await this.request<CloudflareDNSRecord>(
-      'POST',
-      `/zones/${zoneId}/dns_records`,
-      record
-    );
-    return response.result;
-  }
-
-  async updateDNSRecord(
-    zoneId: string,
-    recordId: string,
-    record: CloudflareDNSRecord
-  ): Promise<CloudflareDNSRecord> {
-    const response = await this.request<CloudflareDNSRecord>(
-      'PUT',
-      `/zones/${zoneId}/dns_records/${recordId}`,
-      record
-    );
-    return response.result;
-  }
-
-  async deleteDNSRecord(
-    zoneId: string,
-    recordId: string
-  ): Promise<{ id: string }> {
-    const response = await this.request<{ id: string }>(
-      'DELETE',
-      `/zones/${zoneId}/dns_records/${recordId}`
-    );
-    return response.result;
-  }
 
   /**
    * CSVレコードをCloudflare DNS形式に変換
@@ -198,7 +131,7 @@ export class CloudflareClient {
       }
 
       return {
-        name: csvRecord.domain,
+        name: csvRecord.name,
         type: csvRecord.type,
         content,
         ttl: csvRecord.ttl || 1, // CloudflareのTTL 1 = automatic
@@ -233,27 +166,85 @@ export class CloudflareClient {
         if (match) {
           priority = parseInt(match[1], 10);
           return {
-            domain: cfRecord.name,
-            type: cfRecord.type,
+            id: `cf-${cfRecord.id}`,
+            name: cfRecord.name,
+            type: cfRecord.type as DNSRecordType,
             value: match[4], // target
             ttl: cfRecord.proxied ? 1 : cfRecord.ttl || 300,
             priority,
             weight: parseInt(match[2], 10),
             port: parseInt(match[3], 10),
+            created: new Date(cfRecord.created_on || Date.now()),
+            updated: new Date(cfRecord.modified_on || Date.now()),
           };
         }
       }
 
       return {
-        domain: cfRecord.name,
-        type: cfRecord.type,
+        id: `cf-${cfRecord.id}`,
+        name: cfRecord.name,
+        type: cfRecord.type as DNSRecordType,
         value,
         ttl: cfRecord.proxied ? 1 : cfRecord.ttl || 300,
         priority,
         weight: undefined,
         port: undefined,
+        created: new Date(cfRecord.created_on || Date.now()),
+        updated: new Date(cfRecord.modified_on || Date.now()),
       };
     });
+  }
+
+  /**
+   * APIトークンの検証
+   */
+  async verifyToken(): Promise<CloudflareResponse<any>> {
+    return this.request<any>('GET', '/user/tokens/verify');
+  }
+
+  /**
+   * ゾーン一覧を取得
+   */
+  async listZones(): Promise<CloudflareResponse<CloudflareZone[]>> {
+    return this.request<CloudflareZone[]>('GET', '/zones');
+  }
+
+  /**
+   * DNSレコード一覧を取得
+   */
+  async listDNSRecords(zoneId: string): Promise<CloudflareResponse<CloudflareDNSRecord[]>> {
+    return this.request<CloudflareDNSRecord[]>('GET', `/zones/${zoneId}/dns_records`);
+  }
+
+  /**
+   * DNSレコードを作成
+   */
+  async createDNSRecord(
+    zoneId: string,
+    record: CloudflareDNSRecord
+  ): Promise<CloudflareResponse<CloudflareDNSRecord>> {
+    return this.request<CloudflareDNSRecord>('POST', `/zones/${zoneId}/dns_records`, record);
+  }
+
+  /**
+   * DNSレコードを更新
+   */
+  async updateDNSRecord(
+    zoneId: string,
+    recordId: string,
+    record: CloudflareDNSRecord
+  ): Promise<CloudflareResponse<CloudflareDNSRecord>> {
+    return this.request<CloudflareDNSRecord>('PUT', `/zones/${zoneId}/dns_records/${recordId}`, record);
+  }
+
+  /**
+   * DNSレコードを削除
+   */
+  async deleteDNSRecord(
+    zoneId: string,
+    recordId: string
+  ): Promise<CloudflareResponse<{ id: string }>> {
+    return this.request<{ id: string }>('DELETE', `/zones/${zoneId}/dns_records/${recordId}`);
   }
 
   /**
@@ -330,8 +321,8 @@ export class CloudflareClient {
   ): Promise<{ success: boolean; records: ICSVRecord[] }> {
     try {
       // TODO: optionsパラメータを使用してフィルタリングを実装
-      const records = await this.listDNSRecords(zoneId);
-      const csvRecords = this.convertCloudflareToCSVRecords(records);
+      const response = await this.listDNSRecords(zoneId);
+      const csvRecords = this.convertCloudflareToCSVRecords(response.result || []);
 
       return {
         success: true,

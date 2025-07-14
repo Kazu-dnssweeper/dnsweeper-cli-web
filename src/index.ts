@@ -14,6 +14,8 @@ import {
   createLookupCommand,
   createSweepCommand,
   createValidateCommand,
+  createPerformanceCommand,
+  createSyncCommand,
 } from './commands/index.js';
 import { loadConfig } from './lib/config.js';
 import { Logger } from './lib/logger.js';
@@ -45,6 +47,8 @@ export function createProgram(): Command {
   program.addCommand(createLookupCommand());
   program.addCommand(createSweepCommand());
   program.addCommand(createValidateCommand());
+  program.addCommand(createPerformanceCommand());
+  program.addCommand(createSyncCommand());
 
   program.on('command:*', () => {
     const logger = new Logger();

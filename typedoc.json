@@ -1,0 +1,31 @@
+{
+  "entryPoints": ["src/index.ts", "src/lib", "src/commands", "src/types", "src/utils"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "includeVersion": true,
+  "name": "DNSweeper API Documentation",
+  "theme": "default",
+  "readme": "README.md",
+  "tsconfig": "tsconfig.json",
+  "plugin": [],
+  "exclude": [
+    "**/tests/**/*",
+    "**/node_modules/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "excludeExternals": false,
+  "externalPattern": ["**/node_modules/**"],
+  "skipErrorChecking": true,
+  "validation": {
+    "notExported": false,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "navigationLinks": {
+    "GitHub": "https://github.com/YourUsername/dnsweeper",
+    "npm": "https://www.npmjs.com/package/dnsweeper"
+  }
+}

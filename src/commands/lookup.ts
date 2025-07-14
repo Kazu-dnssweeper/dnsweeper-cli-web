@@ -450,6 +450,6 @@ async function outputResults(
     await formatter.writeToFile(result, options.output);
     logger.success(`結果を ${options.output} に保存しました`);
   } else {
-    console.log(output);
+    logger.info(output);
   }
 }

@@ -11,6 +11,7 @@ import { withTimeout, withRetry } from '../utils/retry.js';
 
 import { DnsCache, type DnsCacheOptions } from './dns-cache.js';
 import { MemoryOptimizer } from './performance/memory-optimizer.js';
+import { globalMetrics } from './metrics/metrics-collector.js';
 
 import type { DNSRecordType, IDNSQuery } from '../types/index.js';
 
@@ -18,6 +19,9 @@ interface INodeDNSError extends Error {
   code?: string;
 }
 
+/**
+ * DNSレコードの情報を表すインターフェース
+ */
 export interface IDNSRecord {
   type: DNSRecordType;
   value: string;
@@ -29,6 +33,9 @@ export interface IDNSRecord {
   target?: string; // For SRV records
 }
 
+/**
+ * DNS解決の結果を表すインターフェース
+ */
 export interface IDNSResponse {
   query: IDNSQuery;
   records: IDNSRecord[];
@@ -38,11 +45,37 @@ export interface IDNSResponse {
   cnameChain?: CnameChainResult;
 }
 
+/**
+ * DNS解決を行うクラス
+ * 
+ * @class DNSResolver
+ * @description 各種DNSレコードタイプの解決機能を提供します。
+ * キャッシュ機能と並列処理により高速な解決を実現します。
+ * 
+ * @example
+ * ```typescript
+ * const resolver = new DNSResolver({
+ *   servers: ['8.8.8.8', '1.1.1.1'],
+ *   timeout: 5000,
+ *   enableCache: true
+ * });
+ * const response = await resolver.resolve('example.com', 'A');
+ * console.log(response.records);
+ * ```
+ */
 export class DNSResolver {
   private servers: string[];
   private timeout: number;
   private cache?: DnsCache;
 
+  /**
+   * DNSResolverのインスタンスを作成します
+   * 
+   * @param {Object} options - 設定オプション
+   * @param {number} [options.timeout=5000] - DNS解決のタイムアウト時間（ミリ秒）
+   * @param {string[]} [options.servers=['8.8.8.8', '8.8.4.4']] - 使用するDNSサーバー
+   * @param {boolean} [options.enableCache=false] - キャッシュを有効にするか
+   */
   constructor(
     options: {
       timeout?: number;
@@ -75,10 +108,25 @@ export class DNSResolver {
     if (this.cache) {
       const cached = this.cache.get(query);
       if (cached) {
+        const responseTime = Date.now() - startTime;
+        
+        // キャッシュヒットをメトリクスに記録
+        globalMetrics.recordCacheHit(true, 'dns');
+        globalMetrics.recordDnsResolution({
+          domain,
+          recordType: type,
+          duration: responseTime,
+          success: true,
+          cached: true
+        });
+        
         return {
           ...cached,
-          responseTime: Date.now() - startTime, // 新しいレスポンス時間を設定
+          responseTime, // 新しいレスポンス時間を設定
         };
+      } else {
+        // キャッシュミスを記録
+        globalMetrics.recordCacheHit(false, 'dns');
       }
     }
 
@@ -100,6 +148,15 @@ export class DNSResolver {
       if (this.cache) {
         this.cache.set(query, response);
       }
+
+      // DNS解決成功をメトリクスに記録
+      globalMetrics.recordDnsResolution({
+        domain,
+        recordType: type,
+        duration: responseTime,
+        success: true,
+        cached: false
+      });
 
       return response;
     } catch (error) {
@@ -129,6 +186,21 @@ export class DNSResolver {
         }
       } else {
         errorMessage = 'Unknown DNS resolution error';
+      }
+
+      // DNS解決失敗をメトリクスに記録
+      globalMetrics.recordDnsResolution({
+        domain,
+        recordType: type,
+        duration: responseTime,
+        success: false,
+        cached: false,
+        error: errorMessage
+      });
+
+      // エラーメトリクスも記録
+      if (error instanceof Error) {
+        globalMetrics.recordError(error, { domain, type });
       }
 
       return {

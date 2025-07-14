@@ -259,7 +259,7 @@ function validateOptions(options: IValidateOptions): void {
  * DNS解決結果をIDNSRecord形式に変換
  */
 function convertToIDNSRecords(
-  lookupResult: any,
+  lookupResult: { records?: unknown[] },
   domain: string,
   recordType: DNSRecordType
 ): IDNSRecord[] {
@@ -269,44 +269,51 @@ function convertToIDNSRecords(
 
   const now = new Date();
 
-  return lookupResult.records.map((record: any, index: number): IDNSRecord => {
-    let value: string;
-    let priority: number | undefined;
-    let weight: number | undefined;
-    let port: number | undefined;
+  return lookupResult.records.map(
+    (record: unknown, index: number): IDNSRecord => {
+      let value: string;
+      let priority: number | undefined;
+      let weight: number | undefined;
+      let port: number | undefined;
 
-    // レコードタイプ別の値の処理
-    switch (recordType) {
-      case 'MX':
-        value = record.exchange || record.value || String(record);
-        priority = record.priority;
-        break;
-      case 'SRV':
-        value = record.target || record.value || String(record);
-        priority = record.priority;
-        weight = record.weight;
-        port = record.port;
-        break;
-      case 'TXT':
-        value = Array.isArray(record) ? record.join(' ') : String(record);
-        break;
-      default:
-        value = record.address || record.value || String(record);
+      // レコードタイプ別の値の処理
+      const recordObj = record as Record<string, unknown>;
+      switch (recordType) {
+        case 'MX':
+          value = String(recordObj.exchange || recordObj.value || record);
+          priority = recordObj.priority
+            ? Number(recordObj.priority)
+            : undefined;
+          break;
+        case 'SRV':
+          value = String(recordObj.target || recordObj.value || record);
+          priority = recordObj.priority
+            ? Number(recordObj.priority)
+            : undefined;
+          weight = recordObj.weight ? Number(recordObj.weight) : undefined;
+          port = recordObj.port ? Number(recordObj.port) : undefined;
+          break;
+        case 'TXT':
+          value = Array.isArray(record) ? record.join(' ') : String(record);
+          break;
+        default:
+          value = String(recordObj.address || recordObj.value || record);
+      }
+
+      return {
+        id: `${domain}-${recordType.toLowerCase()}-${index}`,
+        name: domain,
+        type: recordType,
+        value,
+        ttl: recordObj.ttl ? Number(recordObj.ttl) : 300,
+        ...(priority !== undefined && { priority }),
+        ...(weight !== undefined && { weight }),
+        ...(port !== undefined && { port }),
+        created: now,
+        updated: now,
+      };
     }
-
-    return {
-      id: `${domain}-${recordType.toLowerCase()}-${index}`,
-      name: domain,
-      type: recordType,
-      value,
-      ttl: record.ttl || 300,
-      ...(priority !== undefined && { priority }),
-      ...(weight !== undefined && { weight }),
-      ...(port !== undefined && { port }),
-      created: now,
-      updated: now,
-    };
-  });
+  );
 }
 
 /**
@@ -568,12 +575,16 @@ async function outputValidationResults(
   const analysisResult = createValidationAnalysisResult(
     filteredResults,
     domain,
-    stats
+    {
+      totalRecords: stats.total,
+      validRecords: stats.passed,
+      invalidRecords: stats.failed,
+    }
   );
 
   // 結果出力
   const formatter = createFormatter({
-    format: format as any,
+    format: format as 'table' | 'json' | 'csv' | 'text',
     colors: options.colors !== false,
     verbose: options.verbose || false,
     compact: format === 'json' && !options.verbose,
@@ -607,7 +618,7 @@ async function outputValidationResults(
 function createValidationAnalysisResult(
   results: IValidationResult[],
   domain: string,
-  stats: any
+  stats: { totalRecords: number; validRecords: number; invalidRecords: number }
 ): AnalysisResult {
   // 検証結果をレコード形式に変換
   const records = results.map((result, index) => ({
@@ -634,12 +645,12 @@ function createValidationAnalysisResult(
 
   return {
     summary: {
-      total: stats.total,
-      byType: { TXT: stats.total } as Record<DNSRecordType, number>,
+      total: stats.totalRecords,
+      byType: { TXT: stats.totalRecords } as Record<DNSRecordType, number>,
       byRisk: {
-        low: stats.passed,
-        medium: stats.warnings,
-        high: stats.failed,
+        low: stats.validRecords,
+        medium: stats.totalRecords - stats.validRecords - stats.invalidRecords,
+        high: stats.invalidRecords,
         critical: 0,
       },
       duration: 0,

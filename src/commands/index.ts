@@ -6,3 +6,5 @@ export { createAnalyzeCommand } from './analyze.js';
 export { createLookupCommand } from './lookup.js';
 export { createSweepCommand } from './sweep.js';
 export { createValidateCommand } from './validate.js';
+export { createPerformanceCommand } from './performance.js';
+export { createSyncCommand } from './sync.js';

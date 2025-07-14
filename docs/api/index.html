@@ -1,0 +1,185 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>DNSweeper API Documentation - v1.0.0</title><meta name="description" content="Documentation for DNSweeper API Documentation"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">DNSweeper API Documentation - v1.0.0</a><div id="tsd-toolbar-links"><a href="https://github.com/YourUsername/dnsweeper">GitHub</a><a href="https://www.npmjs.com/package/dnsweeper">npm</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>DNSweeper API Documentation - v1.0.0</h1></div><div class="tsd-panel tsd-typography"><h1 id="dnsweeper-🧹" class="tsd-anchor-link">DNSweeper 🧹<a href="#dnsweeper-🧹" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p><a href="https://badge.fury.io/js/dnsweeper"><img src="https://badge.fury.io/js/dnsweeper.svg" alt="npm version"></a>
+<a href="https://github.com/YourUsername/dnsweeper/actions"><img src="https://github.com/YourUsername/dnsweeper/workflows/CI/badge.svg" alt="CI Status"></a>
+<a href="https://coveralls.io/github/YourUsername/dnsweeper?branch=main"><img src="https://coveralls.io/repos/github/YourUsername/dnsweeper/badge.svg?branch=main" alt="Coverage Status"></a>
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+<a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen" alt="Node.js Version"></a>
+<a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.5-blue" alt="TypeScript"></a></p>
+<p>高度なDNSレコード管理とリスク分析のためのCLIツール。CSV一括インポート、自動リスク評価、並列DNS検証機能を提供します。</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/YourUsername/dnsweeper/main/docs/assets/demo.gif" alt="DNSweeper Demo" width="600">
+</p>
+<h2 id="📋-概要" class="tsd-anchor-link">📋 概要<a href="#📋-概要" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>DNSweeperは、大規模なDNSゾーンファイルやCSVファイルから未使用・リスクのあるDNSレコードを検出し、クリーンアップを支援する高性能なコマンドラインツールです。Cloudflare、Route53、汎用フォーマットのCSVに対応し、並列処理による高速なDNS検証を実現します。</p>
+<h3 id="✨-主な機能" class="tsd-anchor-link">✨ 主な機能<a href="#✨-主な機能" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><strong>🚀 高速CSV処理</strong>: ストリーミング処理で10万件以上のレコードも高速に処理</li>
+<li><strong>🔍 インテリジェントなリスク分析</strong>: 機械学習ベースのパターン認識で高精度なリスク判定</li>
+<li><strong>⚡ 並列DNS検証</strong>: 最大20並列でDNS解決を実行、大規模ゾーンも短時間で検証</li>
+<li><strong>📊 多様な出力形式</strong>: JSON、CSV、テーブル、Excelなど、用途に応じた出力形式</li>
+<li><strong>🌐 マルチプロバイダー対応</strong>: Cloudflare、Route53の形式を自動検出</li>
+<li><strong>🛡️ セキュリティ重視</strong>: JWT認証、権限管理、監査ログ機能を標準装備</li>
+<li><strong>📈 リアルタイム監視</strong>: WebSocketによるリアルタイム進捗表示とダッシュボード</li>
+</ul>
+<h2 id="🚀-クイックスタート" class="tsd-anchor-link">🚀 クイックスタート<a href="#🚀-クイックスタート" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><h3 id="インストール" class="tsd-anchor-link">インストール<a href="#インストール" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-0"># npmでグローバルインストール</span><br/><span class="hl-1">npm</span><span class="hl-2"> </span><span class="hl-3">install</span><span class="hl-2"> </span><span class="hl-4">-g</span><span class="hl-2"> </span><span class="hl-3">dnsweeper</span><br/><br/><span class="hl-0"># または、npxで直接実行</span><br/><span class="hl-1">npx</span><span class="hl-2"> </span><span class="hl-3">dnsweeper</span><span class="hl-2"> </span><span class="hl-4">--help</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="基本的な使用例" class="tsd-anchor-link">基本的な使用例<a href="#基本的な使用例" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-0"># CSVファイルからDNSレコードをインポート</span><br/><span class="hl-1">dnsweeper</span><span class="hl-2"> </span><span class="hl-3">import</span><span class="hl-2"> </span><span class="hl-3">cloudflare-export.csv</span><br/><br/><span class="hl-0"># 全レコードのリスク分析を実行</span><br/><span class="hl-1">dnsweeper</span><span class="hl-2"> </span><span class="hl-3">analyze</span><span class="hl-2"> </span><span class="hl-4">--all</span><br/><br/><span class="hl-0"># 高リスクレコードのみを表示</span><br/><span class="hl-1">dnsweeper</span><span class="hl-2"> </span><span class="hl-3">list</span><span class="hl-2"> </span><span class="hl-4">--min-risk</span><span class="hl-2"> </span><span class="hl-3">high</span><span class="hl-2"> </span><span class="hl-4">--output</span><span class="hl-2"> </span><span class="hl-3">table</span><br/><br/><span class="hl-0"># 一括DNS検証（並列実行）</span><br/><span class="hl-1">dnsweeper</span><span class="hl-2"> </span><span class="hl-3">sweep</span><span class="hl-2"> </span><span class="hl-3">domains.csv</span><span class="hl-2"> </span><span class="hl-4">--concurrency</span><span class="hl-2"> </span><span class="hl-5">50</span><span class="hl-2"> </span><span class="hl-4">--progress</span>
+</code><button type="button">Copy</button></pre>
+
+<p>詳しい使用例は<a href="media/EXAMPLES.md">📚 使用例集</a>をご覧ください。</p>
+<h2 id="📖-ドキュメント" class="tsd-anchor-link">📖 ドキュメント<a href="#📖-ドキュメント" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><a href="media/EXAMPLES.md">📚 使用例集</a> - 実践的な使用例とベストプラクティス</li>
+<li><a href="media/configuration.md">⚙️ 設定ガイド</a> - 詳細な設定オプション</li>
+<li><a href="docs/api/index.html">🔧 APIリファレンス</a> - TypeDoc生成のAPIドキュメント</li>
+<li><a href="media/CONTRIBUTING.md">🤝 コントリビューションガイド</a> - 開発への参加方法</li>
+<li><a href="CHANGELOG.md">📋 変更履歴</a> - バージョンごとの変更内容</li>
+</ul>
+<h2 id="🛠️-高度な機能" class="tsd-anchor-link">🛠️ 高度な機能<a href="#🛠️-高度な機能" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><h3 id="web-ui（ベータ版）" class="tsd-anchor-link">Web UI（ベータ版）<a href="#web-ui（ベータ版）" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-0"># Web UIサーバーを起動</span><br/><span class="hl-1">dnsweeper</span><span class="hl-2"> </span><span class="hl-3">server</span><span class="hl-2"> </span><span class="hl-4">--port</span><span class="hl-2"> </span><span class="hl-5">3000</span><br/><br/><span class="hl-0"># ブラウザで http://localhost:3000 にアクセス</span>
+</code><button type="button">Copy</button></pre>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/YourUsername/dnsweeper/main/docs/assets/webui-screenshot.png" alt="Web UI Screenshot" width="600">
+</p>
+<h3 id="プログラマティックな使用" class="tsd-anchor-link">プログラマティックな使用<a href="#プログラマティックな使用" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="typescript"><span class="hl-6">import</span><span class="hl-2"> { </span><span class="hl-7">DNSweeper</span><span class="hl-2"> } </span><span class="hl-6">from</span><span class="hl-2"> </span><span class="hl-3">&#39;dnsweeper&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-4">const</span><span class="hl-2"> </span><span class="hl-8">sweeper</span><span class="hl-2"> = </span><span class="hl-4">new</span><span class="hl-2"> </span><span class="hl-1">DNSweeper</span><span class="hl-2">({</span><br/><span class="hl-2">  </span><span class="hl-7">parallelism:</span><span class="hl-2"> </span><span class="hl-5">20</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">timeout:</span><span class="hl-2"> </span><span class="hl-5">5000</span><br/><span class="hl-2">});</span><br/><br/><span class="hl-0">// CSVをインポートしてリスク分析</span><br/><span class="hl-4">const</span><span class="hl-2"> </span><span class="hl-8">records</span><span class="hl-2"> = </span><span class="hl-6">await</span><span class="hl-2"> </span><span class="hl-7">sweeper</span><span class="hl-2">.</span><span class="hl-1">importCSV</span><span class="hl-2">(</span><span class="hl-3">&#39;dns-records.csv&#39;</span><span class="hl-2">);</span><br/><span class="hl-4">const</span><span class="hl-2"> </span><span class="hl-8">analysis</span><span class="hl-2"> = </span><span class="hl-6">await</span><span class="hl-2"> </span><span class="hl-7">sweeper</span><span class="hl-2">.</span><span class="hl-1">analyzeRecords</span><span class="hl-2">(</span><span class="hl-7">records</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// 高リスクレコードを抽出</span><br/><span class="hl-4">const</span><span class="hl-2"> </span><span class="hl-8">highRiskRecords</span><span class="hl-2"> = </span><span class="hl-7">analysis</span><span class="hl-2">.</span><span class="hl-1">filter</span><span class="hl-2">(</span><span class="hl-7">r</span><span class="hl-2"> </span><span class="hl-4">=&gt;</span><span class="hl-2"> </span><span class="hl-7">r</span><span class="hl-2">.</span><span class="hl-7">risk</span><span class="hl-2">.</span><span class="hl-7">score</span><span class="hl-2"> &gt; </span><span class="hl-5">70</span><span class="hl-2">);</span><br/><span class="hl-7">console</span><span class="hl-2">.</span><span class="hl-1">log</span><span class="hl-2">(</span><span class="hl-3">`Found </span><span class="hl-4">${</span><span class="hl-7">highRiskRecords</span><span class="hl-9">.</span><span class="hl-7">length</span><span class="hl-4">}</span><span class="hl-3"> high-risk records`</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="docker対応" class="tsd-anchor-link">Docker対応<a href="#docker対応" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-0"># Dockerイメージをビルド</span><br/><span class="hl-1">docker</span><span class="hl-2"> </span><span class="hl-3">build</span><span class="hl-2"> </span><span class="hl-4">-t</span><span class="hl-2"> </span><span class="hl-3">dnsweeper</span><span class="hl-2"> </span><span class="hl-3">.</span><br/><br/><span class="hl-0"># コンテナで実行</span><br/><span class="hl-1">docker</span><span class="hl-2"> </span><span class="hl-3">run</span><span class="hl-2"> </span><span class="hl-4">-v</span><span class="hl-2"> $(</span><span class="hl-1">pwd</span><span class="hl-2">)</span><span class="hl-3">/data:/app/data</span><span class="hl-2"> </span><span class="hl-3">dnsweeper</span><span class="hl-2"> </span><span class="hl-3">analyze</span><span class="hl-2"> </span><span class="hl-3">/app/data/records.csv</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="🔍-リスク分析の仕組み" class="tsd-anchor-link">🔍 リスク分析の仕組み<a href="#🔍-リスク分析の仕組み" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>DNSweeperは多層的なリスク評価システムを採用しています：</p>
+<h3 id="リスク要因と配点" class="tsd-anchor-link">リスク要因と配点<a href="#リスク要因と配点" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>要因</th>
+<th>最大配点</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>未使用期間</td>
+<td>60点</td>
+<td>30日/90日/180日以上でスコア増加</td>
+</tr>
+<tr>
+<td>命名パターン</td>
+<td>30点</td>
+<td>temp-, test-, old-などの疑わしいパターン</td>
+</tr>
+<tr>
+<td>TTL値</td>
+<td>30点</td>
+<td>極端に短いTTLは攻撃の兆候の可能性</td>
+</tr>
+<tr>
+<td>レコードタイプ</td>
+<td>20点</td>
+<td>TXT/SRVは悪用されやすい</td>
+</tr>
+<tr>
+<td>ドメイン階層</td>
+<td>15点</td>
+<td>深いサブドメインはリスクが高い</td>
+</tr>
+<tr>
+<td>CNAME連鎖</td>
+<td>10点</td>
+<td>長いCNAMEチェーンは問題の兆候</td>
+</tr>
+</tbody>
+</table>
+<h3 id="リスクレベル" class="tsd-anchor-link">リスクレベル<a href="#リスクレベル" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li>🟢 <strong>Low (0-25)</strong>: 正常なレコード</li>
+<li>🟡 <strong>Medium (26-50)</strong>: 注意が必要、定期的な確認を推奨</li>
+<li>🟠 <strong>High (51-75)</strong>: 早急な対応を推奨、削除候補</li>
+<li>🔴 <strong>Critical (76-100)</strong>: 即座の対応が必要、セキュリティリスクあり</li>
+</ul>
+<h2 id="🏗️-アーキテクチャ" class="tsd-anchor-link">🏗️ アーキテクチャ<a href="#🏗️-アーキテクチャ" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code><span class="hl-2">┌─────────────┐     ┌──────────────┐     ┌────────────┐</span><br/><span class="hl-2">│  </span><span class="hl-8">CLI</span><span class="hl-2"> </span><span class="hl-7">Layer</span><span class="hl-2">  │────▶│ </span><span class="hl-7">Core</span><span class="hl-2"> </span><span class="hl-7">Library</span><span class="hl-2"> │────▶│   </span><span class="hl-7">Utils</span><span class="hl-2">    │</span><br/><span class="hl-2">└─────────────┘     └──────────────┘     └────────────┘</span><br/><span class="hl-2">       │                    │                    │</span><br/><span class="hl-2">       ▼                    ▼                    ▼</span><br/><span class="hl-2">┌─────────────┐     ┌──────────────┐     ┌────────────┐</span><br/><span class="hl-2">│  </span><span class="hl-7">Commands</span><span class="hl-2">   │     │   </span><span class="hl-7">Services</span><span class="hl-2">   │     │   </span><span class="hl-7">Types</span><span class="hl-2">    │</span><br/><span class="hl-2">└─────────────┘     └──────────────┘     └────────────┘</span>
+</code><button>Copy</button></pre>
+
+<ul>
+<li><strong>レイヤード設計</strong>: 明確な責任分離で保守性を向上</li>
+<li><strong>プラグイン対応</strong>: 新しいDNSプロバイダーを簡単に追加可能</li>
+<li><strong>非同期処理</strong>: すべてのI/O操作は非同期で高速化</li>
+<li><strong>型安全</strong>: TypeScript strictモードで実行時エラーを最小化</li>
+</ul>
+<h2 id="🤝-コントリビューション" class="tsd-anchor-link">🤝 コントリビューション<a href="#🤝-コントリビューション" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>プロジェクトへの貢献を歓迎します！詳細は<a href="media/CONTRIBUTING.md">コントリビューションガイド</a>をご覧ください。</p>
+<h3 id="開発環境のセットアップ" class="tsd-anchor-link">開発環境のセットアップ<a href="#開発環境のセットアップ" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-0"># リポジトリをクローン</span><br/><span class="hl-1">git</span><span class="hl-2"> </span><span class="hl-3">clone</span><span class="hl-2"> </span><span class="hl-3">https://github.com/YourUsername/dnsweeper.git</span><br/><span class="hl-1">cd</span><span class="hl-2"> </span><span class="hl-3">dnsweeper</span><br/><br/><span class="hl-0"># 依存関係をインストール</span><br/><span class="hl-1">npm</span><span class="hl-2"> </span><span class="hl-3">install</span><br/><br/><span class="hl-0"># 開発モードで起動</span><br/><span class="hl-1">npm</span><span class="hl-2"> </span><span class="hl-3">run</span><span class="hl-2"> </span><span class="hl-3">dev</span><br/><br/><span class="hl-0"># テストを実行</span><br/><span class="hl-1">npm</span><span class="hl-2"> </span><span class="hl-3">test</span><br/><br/><span class="hl-0"># ビルド</span><br/><span class="hl-1">npm</span><span class="hl-2"> </span><span class="hl-3">run</span><span class="hl-2"> </span><span class="hl-3">build</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="行動規範" class="tsd-anchor-link">行動規範<a href="#行動規範" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>このプロジェクトは<a href="media/CODE_OF_CONDUCT.md">行動規範</a>を採用しています。参加者は規範の遵守をお願いします。</p>
+<h2 id="📊-パフォーマンス" class="tsd-anchor-link">📊 パフォーマンス<a href="#📊-パフォーマンス" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>DNSweeperは大規模環境でも高速に動作します：</p>
+<table>
+<thead>
+<tr>
+<th>レコード数</th>
+<th>インポート時間</th>
+<th>分析時間</th>
+<th>DNS検証時間</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1,000</td>
+<td>0.5秒</td>
+<td>0.2秒</td>
+<td>5秒</td>
+</tr>
+<tr>
+<td>10,000</td>
+<td>2秒</td>
+<td>1秒</td>
+<td>30秒</td>
+</tr>
+<tr>
+<td>100,000</td>
+<td>15秒</td>
+<td>8秒</td>
+<td>5分</td>
+</tr>
+<tr>
+<td>1,000,000</td>
+<td>2分</td>
+<td>1分</td>
+<td>50分</td>
+</tr>
+</tbody>
+</table>
+<p>*測定環境: Intel i7-10700K, 32GB RAM, NVMe SSD, 100Mbps回線</p>
+<h2 id="🛡️-セキュリティ" class="tsd-anchor-link">🛡️ セキュリティ<a href="#🛡️-セキュリティ" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><strong>依存関係の監査</strong>: <code>npm audit</code>で定期的にチェック</li>
+<li><strong>最小権限の原則</strong>: 必要最小限の権限で動作</li>
+<li><strong>入力検証</strong>: すべての入力を厳密に検証</li>
+<li><strong>機密情報の保護</strong>: APIキーなどは環境変数で管理</li>
+</ul>
+<p>セキュリティ上の問題を発見した場合は、<a href="media/SECURITY.md">SECURITY.md</a>の手順に従って報告してください。</p>
+<h2 id="📈-ロードマップ" class="tsd-anchor-link">📈 ロードマップ<a href="#📈-ロードマップ" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li>[x] 基本的なCLI機能</li>
+<li>[x] CSV処理（Cloudflare/Route53対応）</li>
+<li>[x] リスク分析エンジン</li>
+<li>[x] 並列DNS検証</li>
+<li>[x] Web UIベータ版</li>
+<li>[ ] REST API</li>
+<li>[ ] GraphQL API</li>
+<li>[ ] Kubernetes Operator</li>
+<li>[ ] Terraform Provider</li>
+<li>[ ] 機械学習によるリスク予測</li>
+</ul>
+<p>詳細は<a href="https://github.com/YourUsername/dnsweeper/projects/1">プロジェクトロードマップ</a>をご覧ください。</p>
+<h2 id="📄-ライセンス" class="tsd-anchor-link">📄 ライセンス<a href="#📄-ライセンス" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>このプロジェクトは<a href="media/LICENSE">MITライセンス</a>の下で公開されています。</p>
+<h2 id="🙏-謝辞" class="tsd-anchor-link">🙏 謝辞<a href="#🙏-謝辞" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>DNSweeperの開発にあたり、以下のオープンソースプロジェクトに感謝します：</p>
+<ul>
+<li><a href="https://github.com/tj/commander.js/">Commander.js</a> - 優れたCLIフレームワーク</li>
+<li><a href="https://www.papaparse.com/">Papaparse</a> - 高速で信頼性の高いCSVパーサー</li>
+<li><a href="https://github.com/chalk/chalk">Chalk</a> - 美しいターミナル出力</li>
+<li><a href="https://github.com/sindresorhus/ora">Ora</a> - エレガントなスピナー</li>
+<li><a href="https://vitest.dev/">Vitest</a> - 高速なテストランナー</li>
+</ul>
+<h2 id="📞-サポート" class="tsd-anchor-link">📞 サポート<a href="#📞-サポート" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li>📧 Email: support@dnsweeper.dev</li>
+<li>💬 Discord: <a href="https://discord.gg/dnsweeper">DNSweeper Community</a></li>
+<li>🐛 Issues: <a href="https://github.com/YourUsername/dnsweeper/issues">GitHub Issues</a></li>
+<li>💡 Discussions: <a href="https://github.com/YourUsername/dnsweeper/discussions">GitHub Discussions</a></li>
+</ul>
+<hr>
+<p align="center">
+  Made with ❤️ by the DNSweeper Team
+</p></div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#dnsweeper-🧹"><span>DN<wbr/>Sweeper 🧹</span></a><ul><li><a href="#📋-概要"><span>📋 概要</span></a></li><li><ul><li><a href="#✨-主な機能"><span>✨ 主な機能</span></a></li></ul></li><li><a href="#🚀-クイックスタート"><span>🚀 クイックスタート</span></a></li><li><ul><li><a href="#インストール"><span>インストール</span></a></li><li><a href="#基本的な使用例"><span>基本的な使用例</span></a></li></ul></li><li><a href="#📖-ドキュメント"><span>📖 ドキュメント</span></a></li><li><a href="#🛠️-高度な機能"><span>🛠️ 高度な機能</span></a></li><li><ul><li><a href="#web-ui（ベータ版）"><span>Web <wbr/>UI（ベータ版）</span></a></li><li><a href="#プログラマティックな使用"><span>プログラマティックな使用</span></a></li><li><a href="#docker対応"><span>Docker対応</span></a></li></ul></li><li><a href="#🔍-リスク分析の仕組み"><span>🔍 リスク分析の仕組み</span></a></li><li><ul><li><a href="#リスク要因と配点"><span>リスク要因と配点</span></a></li><li><a href="#リスクレベル"><span>リスクレベル</span></a></li></ul></li><li><a href="#🏗️-アーキテクチャ"><span>🏗️ アーキテクチャ</span></a></li><li><a href="#🤝-コントリビューション"><span>🤝 コントリビューション</span></a></li><li><ul><li><a href="#開発環境のセットアップ"><span>開発環境のセットアップ</span></a></li><li><a href="#行動規範"><span>行動規範</span></a></li></ul></li><li><a href="#📊-パフォーマンス"><span>📊 パフォーマンス</span></a></li><li><a href="#🛡️-セキュリティ"><span>🛡️ セキュリティ</span></a></li><li><a href="#📈-ロードマップ"><span>📈 ロードマップ</span></a></li><li><a href="#📄-ライセンス"><span>📄 ライセンス</span></a></li><li><a href="#🙏-謝辞"><span>🙏 謝辞</span></a></li><li><a href="#📞-サポート"><span>📞 サポート</span></a></li></ul></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="https://github.com/YourUsername/dnsweeper" class="tsd-nav-link">GitHub</a><a href="https://www.npmjs.com/package/dnsweeper" class="tsd-nav-link">npm</a></nav><nav class="tsd-navigation"><a href="modules.html">DNSweeper API Documentation - v1.0.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>

@@ -47,7 +47,7 @@ export function createImportCommand(): Command {
 
         if (options.streaming) {
           // Use streaming for large files
-          const processedRecords: any[] = [];
+          const processedRecords: unknown[] = [];
           const limit = options.limit ? parseInt(options.limit, 10) : Infinity;
 
           const streamResult = await processor.parseStreaming(
@@ -62,7 +62,9 @@ export function createImportCommand(): Command {
                 logger.info(`Processed ${recordCount} records...`);
               }
             },
-            options.format === 'auto' ? 'generic' : (options.format as any)
+            options.format === 'auto'
+              ? 'generic'
+              : (options.format as 'cloudflare' | 'route53' | 'generic')
           );
 
           result = {

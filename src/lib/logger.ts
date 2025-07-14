@@ -4,9 +4,9 @@ import chalk from 'chalk';
 import { colors, colorize, configureColors } from './colors.js';
 import { ProgressDisplay, type SpinnerType } from './progress.js';
 import {
-  getLogger,
   createLogger,
-  setGlobalLogger,
+  defaultLogger,
+  LogLevel,
   type StructuredLogger,
 } from './structured-logger.js';
 
@@ -35,18 +35,35 @@ export class Logger {
 
     // 構造化ログを初期化
     if (options.enableStructuredLogging !== false) {
+      const logLevel = options.logLevel || (this.verbose ? 'debug' : 'info');
+      const level = logLevel === 'debug' ? LogLevel.DEBUG : 
+                     logLevel === 'verbose' ? LogLevel.VERBOSE :
+                     logLevel === 'warn' ? LogLevel.WARN :
+                     logLevel === 'error' ? LogLevel.ERROR :
+                     LogLevel.INFO;
+      
       this.structuredLogger = createLogger({
-        level: options.logLevel || (this.verbose ? 'debug' : 'info'),
-        console: false, // 既存のコンソール出力を維持
-        file: options.logFile,
-        meta: {
+        level,
+        transports: [
+          {
+            type: 'console',
+            level,
+            format: 'json',
+          },
+          ...(options.logFile ? [{
+            type: 'file' as const,
+            level,
+            format: 'json' as const,
+            filename: options.logFile,
+          }] : [])
+        ],
+        defaultMeta: {
           service: 'dnsweeper',
           component: 'cli',
         },
       });
-      setGlobalLogger(this.structuredLogger);
     } else {
-      this.structuredLogger = getLogger();
+      this.structuredLogger = defaultLogger;
     }
   }
 
@@ -66,7 +83,7 @@ export class Logger {
 
   error(message: string, error?: Error, meta?: Record<string, unknown>): void {
     console.error(colorize.error('✗'), message);
-    this.structuredLogger.error(message, meta, error);
+    this.structuredLogger.error(message, error, meta);
   }
 
   warn(message: string, meta?: Record<string, unknown>): void {
@@ -111,6 +128,7 @@ export class Logger {
         this.spinner.fail(text);
         this.structuredLogger.error(
           `SPINNER_FAIL: ${text || 'Operation failed'}`,
+          undefined,
           meta
         );
       }
@@ -217,7 +235,7 @@ export class Logger {
       enableStructuredLogging: false, // 既存の構造化ログを使用
     });
 
-    childLogger.structuredLogger = this.structuredLogger.child(meta, context);
+    childLogger.structuredLogger = this.structuredLogger.child(context || 'child', meta);
     return childLogger;
   }
 
@@ -225,14 +243,15 @@ export class Logger {
    * コンテキストをプッシュ
    */
   pushContext(context: string): void {
-    this.structuredLogger.pushContext(context);
+    this.structuredLogger.setContext(context);
   }
 
   /**
    * コンテキストをポップ
    */
   popContext(): string | undefined {
-    return this.structuredLogger.popContext();
+    // コンテキストポップは実装されていないため、現在のコンテキストを返す
+    return undefined;
   }
 
   /**
@@ -262,7 +281,7 @@ export class Logger {
     error?: Error
   ): void {
     console.error(chalk.red.bold('🚨 CRITICAL'), message);
-    this.structuredLogger.error(`CRITICAL: ${message}`, meta, error);
+    this.structuredLogger.error(`CRITICAL: ${message}`, error, meta);
   }
 
   /**

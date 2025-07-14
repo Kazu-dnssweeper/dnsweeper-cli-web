@@ -1,0 +1,29 @@
+{
+  "defaultProvider": "cloudflare",
+  "cacheTTL": 300,
+  "dnsResolverOptions": {
+    "timeout": 5000,
+    "servers": ["8.8.8.8", "1.1.1.1"],
+    "enableCache": true
+  },
+  "cloudflare": {
+    "apiToken": "YOUR_CLOUDFLARE_API_TOKEN",
+    "email": "your-email@example.com",
+    "apiKey": "YOUR_CLOUDFLARE_GLOBAL_API_KEY"
+  },
+  "route53": {
+    "accessKeyId": "YOUR_AWS_ACCESS_KEY_ID",
+    "secretAccessKey": "YOUR_AWS_SECRET_ACCESS_KEY",
+    "region": "us-east-1"
+  },
+  "aws": {
+    "accessKeyId": "YOUR_AWS_ACCESS_KEY_ID",
+    "secretAccessKey": "YOUR_AWS_SECRET_ACCESS_KEY",
+    "region": "us-east-1"
+  },
+  "riskThresholds": {
+    "high": 8,
+    "medium": 5,
+    "low": 3
+  }
+}

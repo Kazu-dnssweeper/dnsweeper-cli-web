@@ -259,12 +259,18 @@ async function getDomainSource(
 
     // CSVの最初の列をドメイン名として扱う
     const csvDomains = records.records
-      .map(
-        (record: any) =>
-          record.domain || record.name || Object.values(record)[0]
+      .map((record: unknown) => {
+        if (record && typeof record === 'object' && record !== null) {
+          const obj = record as Record<string, unknown>;
+          return obj.domain || obj.name || Object.values(obj)[0];
+        }
+        return null;
+      })
+      .filter(
+        (domain: unknown): domain is string =>
+          typeof domain === 'string' && domain.length > 0
       )
-      .filter((domain: any) => typeof domain === 'string' && domain.length > 0)
-      .map((domain: any) => String(domain).trim());
+      .map((domain: string) => domain.trim());
 
     return {
       type: 'csv',
@@ -375,7 +381,7 @@ function parseRecordTypes(typesString: string): DNSRecordType[] {
  * DNS解決結果をIDNSRecord形式に変換
  */
 function convertToIDNSRecords(
-  lookupResult: any,
+  lookupResult: { records?: unknown[] },
   domain: string,
   recordType: DNSRecordType
 ): IDNSRecord[] {
@@ -385,29 +391,30 @@ function convertToIDNSRecords(
 
   const now = new Date();
 
-  return lookupResult.records.map((record: any, index: number): IDNSRecord => {
+  return lookupResult.records.map((record: unknown, index: number): IDNSRecord => {
     let value: string;
     let priority: number | undefined;
     let weight: number | undefined;
     let port: number | undefined;
 
     // レコードタイプ別の値の処理
+    const recordObj = record as Record<string, unknown>;
     switch (recordType) {
       case 'MX':
-        value = record.exchange || record.value || String(record);
-        priority = record.priority;
+        value = String(recordObj.exchange || recordObj.value || record);
+        priority = recordObj.priority ? Number(recordObj.priority) : undefined;
         break;
       case 'SRV':
-        value = record.target || record.value || String(record);
-        priority = record.priority;
-        weight = record.weight;
-        port = record.port;
+        value = String(recordObj.target || recordObj.value || record);
+        priority = recordObj.priority ? Number(recordObj.priority) : undefined;
+        weight = recordObj.weight ? Number(recordObj.weight) : undefined;
+        port = recordObj.port ? Number(recordObj.port) : undefined;
         break;
       case 'TXT':
         value = Array.isArray(record) ? record.join(' ') : String(record);
         break;
       default:
-        value = record.address || record.value || String(record);
+        value = String(recordObj.address || recordObj.value || record);
     }
 
     return {
@@ -415,7 +422,7 @@ function convertToIDNSRecords(
       name: domain,
       type: recordType,
       value,
-      ttl: record.ttl || 300,
+      ttl: recordObj.ttl ? Number(recordObj.ttl) : 300,
       ...(priority !== undefined && { priority }),
       ...(weight !== undefined && { weight }),
       ...(port !== undefined && { port }),
@@ -633,7 +640,7 @@ async function outputResults(
   logger: Logger
 ): Promise<void> {
   const formatter = createFormatter({
-    format: format as any,
+    format: format as 'table' | 'json' | 'csv' | 'text',
     colors: options.colors !== false,
     verbose: options.verbose || false,
     compact: format === 'json' && !options.verbose,
@@ -645,6 +652,6 @@ async function outputResults(
     await formatter.writeToFile(result, options.output);
     logger.success(`結果を ${options.output} に保存しました`);
   } else {
-    console.log(output);
+    logger.info(output);
   }
 }
