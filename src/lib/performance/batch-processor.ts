@@ -28,17 +28,14 @@ export class BatchProcessor<T, R> {
       concurrency: 10,
       retries: 3,
       retryDelay: 1000,
-      ...options
+      ...options,
     };
   }
 
   /**
    * アイテムのバッチを並列処理
    */
-  async process(
-    items: T[],
-    processor: (item: T) => Promise<R>
-  ): Promise<BatchResult<T, R>> {
+  async process(items: T[], processor: (item: T) => Promise<R>): Promise<BatchResult<T, R>> {
     const startTime = Date.now();
     const successful: R[] = [];
     const failed: Array<{ item: T; error: Error }> = [];
@@ -46,10 +43,10 @@ export class BatchProcessor<T, R> {
 
     // アイテムをバッチに分割
     const batches = this.createBatches(items);
-    
+
     for (const batch of batches) {
       const batchResults = await this.processBatch(batch, processor);
-      
+
       successful.push(...batchResults.successful);
       failed.push(...batchResults.failed);
       processedCount += batch.length;
@@ -62,7 +59,7 @@ export class BatchProcessor<T, R> {
       successful,
       failed,
       totalProcessed: processedCount,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     };
   }
 
@@ -71,17 +68,17 @@ export class BatchProcessor<T, R> {
    */
   private async processBatch(
     batch: T[],
-    processor: (item: T) => Promise<R>
+    processor: (item: T) => Promise<R>,
   ): Promise<{ successful: R[]; failed: Array<{ item: T; error: Error }> }> {
     const successful: R[] = [];
     const failed: Array<{ item: T; error: Error }> = [];
 
     // 並行処理制限
     const semaphore = new Semaphore(this.options.concurrency);
-    
+
     const promises = batch.map(async (item) => {
       await semaphore.acquire();
-      
+
       try {
         const result = await this.processWithRetry(item, processor);
         successful.push(result);
@@ -95,17 +92,14 @@ export class BatchProcessor<T, R> {
     });
 
     await Promise.all(promises);
-    
+
     return { successful, failed };
   }
 
   /**
    * リトライ機能付きアイテム処理
    */
-  private async processWithRetry(
-    item: T,
-    processor: (item: T) => Promise<R>
-  ): Promise<R> {
+  private async processWithRetry(item: T, processor: (item: T) => Promise<R>): Promise<R> {
     let lastError: Error;
 
     for (let attempt = 0; attempt <= this.options.retries; attempt++) {
@@ -113,7 +107,7 @@ export class BatchProcessor<T, R> {
         return await processor(item);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         if (attempt < this.options.retries) {
           await this.delay(this.options.retryDelay * Math.pow(2, attempt));
         }
@@ -128,11 +122,11 @@ export class BatchProcessor<T, R> {
    */
   private createBatches(items: T[]): T[][] {
     const batches: T[][] = [];
-    
+
     for (let i = 0; i < items.length; i += this.options.batchSize) {
       batches.push(items.slice(i, i + this.options.batchSize));
     }
-    
+
     return batches;
   }
 
@@ -140,7 +134,7 @@ export class BatchProcessor<T, R> {
    * 指定時間待機
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -161,7 +155,7 @@ class Semaphore {
       return;
     }
 
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve) => {
       this.waiters.push(resolve);
     });
   }
@@ -186,7 +180,7 @@ export class DNSBatchProcessor extends BatchProcessor<string, any> {
       concurrency: 20,
       retries: 2,
       retryDelay: 500,
-      ...options
+      ...options,
     });
   }
 }
@@ -201,7 +195,7 @@ export class CSVBatchProcessor<T> extends BatchProcessor<T, T> {
       concurrency: 4,
       retries: 1,
       retryDelay: 100,
-      ...options
+      ...options,
     });
   }
 }

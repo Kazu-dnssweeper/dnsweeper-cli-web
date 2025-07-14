@@ -1,4 +1,5 @@
 import { promises as dns } from 'node:dns';
+
 import { DnsResolutionError } from '../lib/errors.js';
 
 /**
@@ -26,13 +27,9 @@ export interface CnameChainOptions {
  */
 export async function traceCnameChain(
   domain: string,
-  options: CnameChainOptions = {}
+  options: CnameChainOptions = {},
 ): Promise<CnameChainResult> {
-  const {
-    maxDepth = 10,
-    timeout = 5000,
-    followToEnd = true
-  } = options;
+  const { maxDepth = 10, timeout = 5000, followToEnd = true } = options;
 
   const startTime = Date.now();
   const chain: string[] = [];
@@ -57,9 +54,9 @@ export async function traceCnameChain(
         // タイムアウト付きでCNAME解決
         const cnames = await Promise.race([
           dns.resolveCname(currentDomain),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout')), timeout)
-          )
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), timeout),
+          ),
         ]);
 
         if (cnames.length === 0) {
@@ -69,7 +66,11 @@ export async function traceCnameChain(
         }
 
         // 複数のCNAMEがある場合は最初のものを使用
-        currentDomain = cnames[0].toLowerCase();
+        const firstCname = cnames[0];
+        if (!firstCname) {
+          break;
+        }
+        currentDomain = firstCname.toLowerCase();
 
         if (!followToEnd) {
           // 一段階のみ追跡する場合
@@ -78,23 +79,23 @@ export async function traceCnameChain(
         }
       } catch (error) {
         const nodeError = error as { code?: string };
-        
+
         if (nodeError.code === 'ENODATA' || nodeError.code === 'ENOTFOUND') {
           // CNAMEレコードがない場合、これが最終ターゲット
           finalTarget = currentDomain;
           break;
         }
-        
+
         if (error instanceof Error && error.message === 'Timeout') {
-          throw new DnsResolutionError(
-            `CNAME resolution timeout for ${currentDomain}`,
-            { domain: currentDomain, timeout }
-          );
+          throw new DnsResolutionError(`CNAME resolution timeout for ${currentDomain}`, {
+            domain: currentDomain,
+            timeout,
+          });
         }
-        
+
         throw new DnsResolutionError(
           `Failed to resolve CNAME for ${currentDomain}: ${nodeError.code || 'Unknown error'}`,
-          { domain: currentDomain, code: nodeError.code }
+          { domain: currentDomain, code: nodeError.code },
         );
       }
     }
@@ -103,10 +104,11 @@ export async function traceCnameChain(
       maxDepthReached = true;
       finalTarget = currentDomain;
     }
-
   } catch (error) {
     // エラーが発生した場合でも、これまでの追跡結果を返す
-    console.warn(`CNAME chain tracing error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.warn(
+      `CNAME chain tracing error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 
   const resolutionTime = Date.now() - startTime;
@@ -116,7 +118,7 @@ export async function traceCnameChain(
     finalTarget,
     hasLoop,
     maxDepthReached,
-    resolutionTime
+    resolutionTime,
   };
 }
 
@@ -146,7 +148,9 @@ export function validateCnameChain(result: CnameChainResult): {
   // 長いチェーンの警告
   if (result.chain.length > 5) {
     issues.push(`CNAMEチェーンが長すぎます（${result.chain.length}段階）`);
-    recommendations.push('パフォーマンスのため、CNAMEチェーンを5段階以下に短縮することをお勧めします');
+    recommendations.push(
+      'パフォーマンスのため、CNAMEチェーンを5段階以下に短縮することをお勧めします',
+    );
   }
 
   // 解決時間の警告
@@ -164,7 +168,7 @@ export function validateCnameChain(result: CnameChainResult): {
   return {
     isValid: issues.length === 0,
     issues,
-    recommendations
+    recommendations,
   };
 }
 
@@ -186,27 +190,27 @@ export function getCnameChainStats(results: CnameChainResult[]): {
       maxDepth: 0,
       loopCount: 0,
       averageResolutionTime: 0,
-      healthScore: 100
+      healthScore: 100,
     };
   }
 
   const totalDepth = results.reduce((sum, result) => sum + result.chain.length, 0);
-  const maxDepth = Math.max(...results.map(result => result.chain.length));
-  const loopCount = results.filter(result => result.hasLoop).length;
+  const maxDepth = Math.max(...results.map((result) => result.chain.length));
+  const loopCount = results.filter((result) => result.hasLoop).length;
   const totalResolutionTime = results.reduce((sum, result) => sum + result.resolutionTime, 0);
 
   // ヘルススコア計算（0-100）
   let healthScore = 100;
-  
+
   // ループの影響
   healthScore -= (loopCount / results.length) * 50;
-  
+
   // 長いチェーンの影響
-  const longChains = results.filter(result => result.chain.length > 5).length;
+  const longChains = results.filter((result) => result.chain.length > 5).length;
   healthScore -= (longChains / results.length) * 20;
-  
+
   // 最大深度到達の影響
-  const maxDepthReached = results.filter(result => result.maxDepthReached).length;
+  const maxDepthReached = results.filter((result) => result.maxDepthReached).length;
   healthScore -= (maxDepthReached / results.length) * 30;
 
   return {
@@ -215,7 +219,7 @@ export function getCnameChainStats(results: CnameChainResult[]): {
     maxDepth,
     loopCount,
     averageResolutionTime: totalResolutionTime / results.length,
-    healthScore: Math.max(0, Math.round(healthScore))
+    healthScore: Math.max(0, Math.round(healthScore)),
   };
 }
 
@@ -224,7 +228,7 @@ export function getCnameChainStats(results: CnameChainResult[]): {
  */
 export async function traceMultipleCnameChains(
   domains: string[],
-  options: CnameChainOptions & { concurrency?: number } = {}
+  options: CnameChainOptions & { concurrency?: number } = {},
 ): Promise<Map<string, CnameChainResult>> {
   const { concurrency = 5, ...chainOptions } = options;
   const results = new Map<string, CnameChainResult>();
@@ -241,7 +245,7 @@ export async function traceMultipleCnameChains(
         finalTarget: null,
         hasLoop: false,
         maxDepthReached: false,
-        resolutionTime: 0
+        resolutionTime: 0,
       });
     }
   };
@@ -253,7 +257,9 @@ export async function traceMultipleCnameChains(
   const createWorker = async (): Promise<void> => {
     while (index < domains.length) {
       const domain = domains[index++];
-      await traceDomain(domain);
+      if (domain) {
+        await traceDomain(domain);
+      }
     }
   };
 

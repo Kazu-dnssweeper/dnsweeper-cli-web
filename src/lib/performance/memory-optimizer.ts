@@ -21,7 +21,7 @@ export interface StreamProcessorOptions {
 
 export class MemoryOptimizer {
   private static readonly DEFAULT_WARNING_THRESHOLD = 512; // 512MB
-  
+
   /**
    * 現在のメモリ使用量を取得
    */
@@ -32,7 +32,7 @@ export class MemoryOptimizer {
       external: Math.round(usage.external / 1024 / 1024),
       heapUsed: Math.round(usage.heapUsed / 1024 / 1024),
       heapTotal: Math.round(usage.heapTotal / 1024 / 1024),
-      rss: Math.round(usage.rss / 1024 / 1024)
+      rss: Math.round(usage.rss / 1024 / 1024),
     };
   }
 
@@ -44,8 +44,8 @@ export class MemoryOptimizer {
     console.log(`${label}:`, {
       'Heap Used': `${usage.heapUsed}MB`,
       'Heap Total': `${usage.heapTotal}MB`,
-      'External': `${usage.external}MB`,
-      'RSS': `${usage.rss}MB`
+      External: `${usage.external}MB`,
+      RSS: `${usage.rss}MB`,
     });
   }
 
@@ -54,15 +54,15 @@ export class MemoryOptimizer {
    */
   static checkMemoryWarning(
     threshold = this.DEFAULT_WARNING_THRESHOLD,
-    onWarning?: (usage: MemoryUsage) => void
+    onWarning?: (usage: MemoryUsage) => void,
   ): boolean {
     const usage = this.getMemoryUsage();
-    
+
     if (usage.heapUsed > threshold) {
       onWarning?.(usage);
       return true;
     }
-    
+
     return false;
   }
 
@@ -84,7 +84,7 @@ export class MemoryOptimizer {
     array: T[],
     processor: (chunk: T[]) => Promise<R[]>,
     chunkSize = 1000,
-    onProgress?: (processed: number, total: number) => void
+    onProgress?: (processed: number, total: number) => void,
   ): Promise<R[]> {
     const results: R[] = [];
     let processed = 0;
@@ -92,12 +92,12 @@ export class MemoryOptimizer {
     for (let i = 0; i < array.length; i += chunkSize) {
       const chunk = array.slice(i, i + chunkSize);
       const chunkResults = await processor(chunk);
-      
+
       results.push(...chunkResults);
       processed += chunk.length;
-      
+
       onProgress?.(processed, array.length);
-      
+
       // メモリ警告チェック
       this.checkMemoryWarning(512, (usage) => {
         console.warn(`Memory warning: ${usage.heapUsed}MB used`);
@@ -151,9 +151,11 @@ class LRUCache<K, V> {
     } else if (this.cache.size >= this.maxSize) {
       // 最古のアイテムを削除
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
     }
-    
+
     this.cache.set(key, value);
   }
 
@@ -187,7 +189,7 @@ export class StreamProcessor<T> {
       highWaterMark: 64 * 1024, // 64KB
       objectMode: true,
       memoryWarningThreshold: 512,
-      ...options
+      ...options,
     };
   }
 
@@ -196,19 +198,19 @@ export class StreamProcessor<T> {
    */
   async processStream<R>(
     items: AsyncIterable<T> | Iterable<T>,
-    processor: (item: T) => Promise<R> | R
+    processor: (item: T) => Promise<R> | R,
   ): Promise<R[]> {
     const results: R[] = [];
     let chunk: T[] = [];
 
     for await (const item of items) {
       chunk.push(item);
-      
+
       if (chunk.length >= this.options.chunkSize) {
         const chunkResults = await this.processChunk(chunk, processor);
         results.push(...chunkResults);
         chunk = []; // チャンクをクリア
-        
+
         // メモリチェック
         this.checkMemoryAndCleanup();
       }
@@ -223,12 +225,9 @@ export class StreamProcessor<T> {
     return results;
   }
 
-  private async processChunk<R>(
-    chunk: T[],
-    processor: (item: T) => Promise<R> | R
-  ): Promise<R[]> {
+  private async processChunk<R>(chunk: T[], processor: (item: T) => Promise<R> | R): Promise<R[]> {
     const results: R[] = [];
-    
+
     for (const item of chunk) {
       try {
         const result = await processor(item);
@@ -238,13 +237,13 @@ export class StreamProcessor<T> {
         console.error('Error processing item:', error);
       }
     }
-    
+
     return results;
   }
 
   private checkMemoryAndCleanup(): void {
     const threshold = this.options.memoryWarningThreshold || 512;
-    
+
     MemoryOptimizer.checkMemoryWarning(threshold, (usage) => {
       this.options.onMemoryWarning?.(usage);
       MemoryOptimizer.forceGarbageCollection();

@@ -1,0 +1,4 @@
+﻿ID,Name,Type,Value,TTL,Risk Level,Risk Score,Priority,Weight,Port,Created,Updated,Recommendations
+test-1,example.com,A,192.168.1.1,300,low,15,,,,2024-01-01T00:00:00.000Z,2024-01-01T00:00:00.000Z,
+test-2,www.example.com,CNAME,example.com,3600,medium,45,,,,2024-01-01T00:00:00.000Z,2024-01-01T00:00:00.000Z,TTL値を確認してください
+test-3,old.example.com,A,10.0.0.1,60,high,85,,,,2023-01-01T00:00:00.000Z,2023-01-01T00:00:00.000Z,古いレコードです; TTLが短すぎます

@@ -89,3 +89,15 @@ export interface IDNSResolveResult {
   exchange?: string;
   target?: string;
 }
+
+export interface ICSVRecord {
+  domain: string;
+  type: DNSRecordType;
+  value: string;
+  ttl?: number;
+  priority?: number;
+  weight?: number;
+  port?: number;
+}
+
+export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';

@@ -5,11 +5,11 @@ export class DnsSweeperError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly details?: Record<string, any>
+    public readonly details?: Record<string, any>,
   ) {
     super(message);
     this.name = 'DnsSweeperError';
-    
+
     // スタックトレースを保持
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
@@ -78,7 +78,7 @@ export class ApiError extends DnsSweeperError {
   constructor(
     message: string,
     public readonly statusCode?: number,
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ) {
     super(message, 'API_ERROR', details);
     this.name = 'ApiError';
@@ -115,35 +115,26 @@ export class ErrorHandler {
   static wrap(error: unknown, context: string, details?: Record<string, any>): DnsSweeperError {
     if (error instanceof DnsSweeperError) {
       // 既存のDnsSweeperErrorの場合は詳細を追加
-      return new DnsSweeperError(
-        `${context}: ${error.message}`,
-        error.code,
-        { ...error.details, ...details }
-      );
+      return new DnsSweeperError(`${context}: ${error.message}`, error.code, {
+        ...error.details,
+        ...details,
+      });
     }
-    
+
     if (error instanceof Error) {
       // 通常のErrorの場合はラップ
-      return new DnsSweeperError(
-        `${context}: ${error.message}`,
-        'WRAPPED_ERROR',
-        {
-          originalError: error.name,
-          stack: error.stack,
-          ...details
-        }
-      );
+      return new DnsSweeperError(`${context}: ${error.message}`, 'WRAPPED_ERROR', {
+        originalError: error.name,
+        stack: error.stack,
+        ...details,
+      });
     }
-    
+
     // その他の場合
-    return new DnsSweeperError(
-      `${context}: 不明なエラーが発生しました`,
-      'UNKNOWN_ERROR',
-      {
-        error: String(error),
-        ...details
-      }
-    );
+    return new DnsSweeperError(`${context}: 不明なエラーが発生しました`, 'UNKNOWN_ERROR', {
+      error: String(error),
+      ...details,
+    });
   }
 
   /**
@@ -153,36 +144,36 @@ export class ErrorHandler {
     if (error instanceof DnsResolutionError) {
       return `DNS解決エラー: ${error.message}`;
     }
-    
+
     if (error instanceof CsvProcessingError) {
       return `CSV処理エラー: ${error.message}`;
     }
-    
+
     if (error instanceof ConfigurationError) {
       return `設定エラー: ${error.message}`;
     }
-    
+
     if (error instanceof ValidationError) {
       return `入力検証エラー: ${error.message}`;
     }
-    
+
     if (error instanceof ApiError) {
       const status = error.statusCode ? ` (ステータスコード: ${error.statusCode})` : '';
       return `APIエラー: ${error.message}${status}`;
     }
-    
+
     if (error instanceof FileOperationError) {
       return `ファイル操作エラー: ${error.message}`;
     }
-    
+
     if (error instanceof TimeoutError) {
       return `タイムアウトエラー: ${error.message}`;
     }
-    
+
     if (error instanceof Error) {
       return `エラー: ${error.message}`;
     }
-    
+
     return '予期しないエラーが発生しました';
   }
 
@@ -193,19 +184,19 @@ export class ErrorHandler {
     if (error instanceof TimeoutError) {
       return true;
     }
-    
+
     if (error instanceof DnsResolutionError) {
       // DNS一時的なエラーはリトライ可能
       const code = (error.details?.code as string) || '';
       return ['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND'].includes(code);
     }
-    
+
     if (error instanceof ApiError) {
       // 5xx系のエラーや429（Rate Limit）はリトライ可能
       const status = error.statusCode || 0;
       return status >= 500 || status === 429;
     }
-    
+
     return false;
   }
 
@@ -216,15 +207,15 @@ export class ErrorHandler {
     if (error instanceof ConfigurationError || error instanceof ValidationError) {
       return 'critical'; // 設定ミスは修正が必要
     }
-    
+
     if (error instanceof ApiError && error.statusCode && error.statusCode >= 500) {
       return 'error'; // サーバーエラー
     }
-    
+
     if (error instanceof TimeoutError || error instanceof DnsResolutionError) {
       return 'warning'; // 一時的な問題の可能性
     }
-    
+
     return 'error';
   }
 }

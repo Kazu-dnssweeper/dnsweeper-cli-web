@@ -1,6 +1,6 @@
 /**
  * DNSweeper 監視・メトリクス収集システム
- * 
+ *
  * アプリケーションのパフォーマンス監視とメトリクス収集機能
  */
 
@@ -96,7 +96,7 @@ export class MetricsCollector extends EventEmitter {
   increment(name: string, value: number = 1, tags?: Record<string, string>): void {
     const key = this.getCounterKey(name, tags);
     const counter = this.counters.get(key);
-    
+
     if (counter) {
       counter.value += value;
     } else {
@@ -109,7 +109,7 @@ export class MetricsCollector extends EventEmitter {
       name,
       value,
       tags,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
@@ -130,7 +130,7 @@ export class MetricsCollector extends EventEmitter {
       value,
       timestamp: new Date(),
       tags,
-      unit
+      unit,
     };
 
     this.gauges.set(key, metric);
@@ -139,7 +139,7 @@ export class MetricsCollector extends EventEmitter {
     // メトリクスイベントを発行
     this.emit('metric', {
       type: 'gauge',
-      ...metric
+      ...metric,
     });
   }
 
@@ -151,7 +151,7 @@ export class MetricsCollector extends EventEmitter {
     const timer: Timer = {
       name,
       startTime: performance.now(),
-      tags
+      tags,
     };
 
     this.timers.set(key, timer);
@@ -176,7 +176,7 @@ export class MetricsCollector extends EventEmitter {
       value: duration,
       timestamp: new Date(),
       tags: timer.tags,
-      unit: 'ms'
+      unit: 'ms',
     };
 
     this.addMetric(metric);
@@ -184,7 +184,7 @@ export class MetricsCollector extends EventEmitter {
     // メトリクスイベントを発行
     this.emit('metric', {
       type: 'histogram',
-      ...metric
+      ...metric,
     });
 
     return duration;
@@ -196,7 +196,7 @@ export class MetricsCollector extends EventEmitter {
   async measureAsync<T>(
     name: string,
     fn: () => Promise<T>,
-    tags?: Record<string, string>
+    tags?: Record<string, string>,
   ): Promise<T> {
     const timerKey = this.startTimer(name, tags);
     try {
@@ -214,11 +214,7 @@ export class MetricsCollector extends EventEmitter {
   /**
    * 同期関数の時間計測
    */
-  measure<T>(
-    name: string,
-    fn: () => T,
-    tags?: Record<string, string>
-  ): T {
+  measure<T>(name: string, fn: () => T, tags?: Record<string, string>): T {
     const timerKey = this.startTimer(name, tags);
     try {
       const result = fn();
@@ -239,7 +235,7 @@ export class MetricsCollector extends EventEmitter {
     checks: Array<{
       name: string;
       check: () => Promise<boolean | { pass: boolean; message?: string }>;
-    }>
+    }>,
   ): Promise<HealthCheckResult> {
     const results = await Promise.all(
       checks.map(async ({ name, check }) => {
@@ -251,15 +247,15 @@ export class MetricsCollector extends EventEmitter {
           if (typeof result === 'boolean') {
             return {
               name,
-              status: result ? 'pass' as const : 'fail' as const,
-              duration
+              status: result ? ('pass' as const) : ('fail' as const),
+              duration,
             };
           } else {
             return {
               name,
-              status: result.pass ? 'pass' as const : 'fail' as const,
+              status: result.pass ? ('pass' as const) : ('fail' as const),
               message: result.message,
-              duration
+              duration,
             };
           }
         } catch (error) {
@@ -268,14 +264,14 @@ export class MetricsCollector extends EventEmitter {
             name,
             status: 'fail' as const,
             message: error instanceof Error ? error.message : 'Unknown error',
-            duration
+            duration,
           };
         }
-      })
+      }),
     );
 
-    const failedChecks = results.filter(r => r.status === 'fail').length;
-    const warnChecks = results.filter(r => r.status === 'warn').length;
+    const failedChecks = results.filter((r) => r.status === 'fail').length;
+    const warnChecks = results.filter((r) => 'status' in r && r.status === ('warn' as any)).length;
 
     let status: HealthCheckResult['status'];
     if (failedChecks > 0) {
@@ -289,7 +285,7 @@ export class MetricsCollector extends EventEmitter {
     const result: HealthCheckResult = {
       status,
       checks: results,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.emit('healthcheck', result);
@@ -314,32 +310,37 @@ export class MetricsCollector extends EventEmitter {
       }
       totalIdle += cpu.times.idle;
     });
-    const cpuUsage = 100 - (100 * totalIdle / totalTick);
+    const cpuUsage = 100 - (100 * totalIdle) / totalTick;
 
     const metrics: SystemMetrics = {
       cpu: {
         usage: cpuUsage,
-        loadAverage: os.loadavg()
+        loadAverage: os.loadavg(),
       },
       memory: {
         total: totalMemory,
         used: usedMemory,
         free: freeMemory,
-        percentage: (usedMemory / totalMemory) * 100
+        percentage: (usedMemory / totalMemory) * 100,
       },
       process: {
         pid: process.pid,
         uptime: (Date.now() - this.startTime) / 1000, // 秒
-        memoryUsage: process.memoryUsage()
+        memoryUsage: process.memoryUsage(),
       },
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // ゲージとして記録
     this.gauge('system.cpu.usage', metrics.cpu.usage, { type: 'percentage' }, '%');
     this.gauge('system.memory.used', metrics.memory.used, { type: 'bytes' }, 'bytes');
     this.gauge('system.memory.percentage', metrics.memory.percentage, { type: 'percentage' }, '%');
-    this.gauge('process.memory.heapUsed', metrics.process.memoryUsage.heapUsed, { type: 'bytes' }, 'bytes');
+    this.gauge(
+      'process.memory.heapUsed',
+      metrics.process.memoryUsage.heapUsed,
+      { type: 'bytes' },
+      'bytes',
+    );
     this.gauge('process.uptime', metrics.process.uptime, { type: 'seconds' }, 's');
 
     return metrics;
@@ -381,7 +382,7 @@ export class MetricsCollector extends EventEmitter {
       counters: this.counters.size,
       gauges: this.gauges.size,
       activeTimers: this.timers.size,
-      uptime: (Date.now() - this.startTime) / 1000
+      uptime: (Date.now() - this.startTime) / 1000,
     };
   }
 
@@ -463,7 +464,7 @@ export class MetricsCollector extends EventEmitter {
         metrics,
         counters,
         gauges,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 

@@ -1,6 +1,8 @@
 import { Command } from 'commander';
-import type { IAddOptions, DNSRecordType } from '../types/index.js';
+
 import { Logger } from '../lib/logger.js';
+
+import type { IAddOptions, DNSRecordType } from '../types/index.js';
 
 export function createAddCommand(): Command {
   const add = new Command('add')

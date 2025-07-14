@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
-import path from 'path';
 import os from 'os';
+import path from 'path';
 
 /**
  * DNSweeperの設定インターフェース
@@ -99,10 +99,10 @@ const DEFAULT_CONFIG: DnsSweeperConfig = {
  */
 async function findConfigFile(): Promise<string | null> {
   const configFileNames = ['.dnsweeper.json', '.dnsweeperrc', 'dnsweeper.config.json'];
-  
+
   // 現在のディレクトリから上位ディレクトリまで探索
   let currentDir = process.cwd();
-  
+
   while (true) {
     for (const fileName of configFileNames) {
       const configPath = path.join(currentDir, fileName);
@@ -113,14 +113,14 @@ async function findConfigFile(): Promise<string | null> {
         // ファイルが存在しない場合は次を試す
       }
     }
-    
+
     const parentDir = path.dirname(currentDir);
     if (parentDir === currentDir) {
       break; // ルートディレクトリに到達
     }
     currentDir = parentDir;
   }
-  
+
   // ホームディレクトリもチェック
   const homeDir = os.homedir();
   for (const fileName of configFileNames) {
@@ -132,7 +132,7 @@ async function findConfigFile(): Promise<string | null> {
       // ファイルが存在しない場合は次を試す
     }
   }
-  
+
   return null;
 }
 
@@ -141,28 +141,28 @@ async function findConfigFile(): Promise<string | null> {
  */
 export async function loadConfig(configPath?: string): Promise<DnsSweeperConfig> {
   let config = { ...DEFAULT_CONFIG };
-  
+
   // 設定ファイルパスが指定されていない場合は自動検索
-  const actualConfigPath = configPath || await findConfigFile();
-  
+  const actualConfigPath = configPath || (await findConfigFile());
+
   if (actualConfigPath) {
     try {
       const configContent = await fs.readFile(actualConfigPath, 'utf8');
       const fileConfig = JSON.parse(configContent);
-      
+
       // 深いマージを実行
       config = deepMerge(config, fileConfig);
-      
+
       console.log(`設定ファイルを読み込みました: ${actualConfigPath}`);
     } catch (error) {
       console.error(`設定ファイルの読み込みエラー: ${actualConfigPath}`, error);
       throw error;
     }
   }
-  
+
   // 環境変数から設定を上書き
   config = mergeEnvironmentVariables(config);
-  
+
   return config;
 }
 
@@ -171,7 +171,7 @@ export async function loadConfig(configPath?: string): Promise<DnsSweeperConfig>
  */
 function mergeEnvironmentVariables(config: DnsSweeperConfig): DnsSweeperConfig {
   const env = process.env;
-  
+
   // DNS設定
   if (env.DNSWEEPER_DNS_TIMEOUT) {
     config.dns = config.dns || {};
@@ -181,7 +181,7 @@ function mergeEnvironmentVariables(config: DnsSweeperConfig): DnsSweeperConfig {
     config.dns = config.dns || {};
     config.dns.servers = env.DNSWEEPER_DNS_SERVERS.split(',');
   }
-  
+
   // API設定
   if (env.CLOUDFLARE_API_KEY) {
     config.api = config.api || {};
@@ -203,7 +203,7 @@ function mergeEnvironmentVariables(config: DnsSweeperConfig): DnsSweeperConfig {
     config.api.route53 = config.api.route53 || {};
     config.api.route53.secretAccessKey = env.AWS_SECRET_ACCESS_KEY;
   }
-  
+
   // 出力設定
   if (env.DNSWEEPER_OUTPUT_FORMAT) {
     config.output = config.output || {};
@@ -213,7 +213,7 @@ function mergeEnvironmentVariables(config: DnsSweeperConfig): DnsSweeperConfig {
     config.output = config.output || {};
     config.output.colors = false;
   }
-  
+
   return config;
 }
 
@@ -222,7 +222,7 @@ function mergeEnvironmentVariables(config: DnsSweeperConfig): DnsSweeperConfig {
  */
 function deepMerge(target: any, source: any): any {
   const result = { ...target };
-  
+
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
@@ -232,7 +232,7 @@ function deepMerge(target: any, source: any): any {
       }
     }
   }
-  
+
   return result;
 }
 
@@ -247,7 +247,7 @@ export function validateConfig(config: DnsSweeperConfig): void {
   if (config.dns?.retries && config.dns.retries < 0) {
     throw new Error('DNS retries must be positive');
   }
-  
+
   // リスク重みの検証
   if (config.risk?.weights) {
     const weights = config.risk.weights;
@@ -256,7 +256,7 @@ export function validateConfig(config: DnsSweeperConfig): void {
       throw new Error('Risk weights must sum to 1.0');
     }
   }
-  
+
   // しきい値の検証
   if (config.risk?.thresholds) {
     const { high = 70, medium = 40 } = config.risk.thresholds;
@@ -271,7 +271,7 @@ export function validateConfig(config: DnsSweeperConfig): void {
  */
 export async function saveConfig(config: DnsSweeperConfig, configPath?: string): Promise<void> {
   const actualConfigPath = configPath || path.join(process.cwd(), '.dnsweeper.json');
-  
+
   try {
     const configContent = JSON.stringify(config, null, 2);
     await fs.writeFile(actualConfigPath, configContent, 'utf8');

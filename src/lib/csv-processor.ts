@@ -1,28 +1,19 @@
-import Papa from 'papaparse';
-import fs from 'fs';
-import { createReadStream } from 'fs';
-import { Transform, Readable } from 'stream';
-import { pipeline } from 'stream/promises';
-import type { DNSRecordType } from '../types/index.js';
-import { CsvProcessingError, FileOperationError } from './errors.js';
-import { 
-  detectCsvEncoding, 
-  readFileWithDetectedEncoding, 
-  evaluateDetectionReliability,
-  type SupportedEncoding 
-} from '../utils/encoding-detector.js';
-import { StreamProcessor, MemoryOptimizer } from './performance/memory-optimizer.js';
-import { CSVBatchProcessor } from './performance/batch-processor.js';
+import fs, { createReadStream } from 'fs';
 
-export interface ICSVRecord {
-  domain: string;
-  type: DNSRecordType;
-  value: string;
-  ttl: number;
-  priority?: number | undefined;
-  weight?: number | undefined;
-  port?: number | undefined;
-}
+import Papa from 'papaparse';
+
+import {
+  detectCsvEncoding,
+  readFileWithDetectedEncoding,
+  evaluateDetectionReliability,
+  type SupportedEncoding,
+} from '../utils/encoding-detector.js';
+
+import { CsvProcessingError } from './errors.js';
+import { CSVBatchProcessor } from './performance/batch-processor.js';
+import { MemoryOptimizer } from './performance/memory-optimizer.js';
+
+import type { DNSRecordType, ICSVRecord } from '../types/index.js';
 
 export interface ICSVParseOptions {
   skipEmptyLines?: boolean;
@@ -60,28 +51,21 @@ export class CSVProcessor {
     autoDetectEncoding: true,
     autoDetectDelimiter: true,
   };
-  private streamProcessor: StreamProcessor<any>;
   private batchProcessor: CSVBatchProcessor<ICSVRecord>;
 
   constructor(private options: ICSVParseOptions = {}) {
     this.options = { ...this.defaultOptions, ...options };
-    
-    // ストリーミング処理用の初期化
-    this.streamProcessor = new StreamProcessor({
-      chunkSize: 5000,
-      memoryWarningThreshold: 512,
-      onMemoryWarning: (usage) => {
-        console.warn(`CSV processing memory warning: ${usage.heapUsed}MB used`);
-      }
-    });
+
 
     // バッチ処理用の初期化
     this.batchProcessor = new CSVBatchProcessor({
       batchSize: 10000,
       concurrency: 4,
       onProgress: (processed, total) => {
-        console.log(`CSV processing progress: ${processed}/${total} (${Math.round(processed/total*100)}%)`);
-      }
+        console.log(
+          `CSV processing progress: ${processed}/${total} (${Math.round((processed / total) * 100)}%)`,
+        );
+      },
     });
   }
 
@@ -90,7 +74,8 @@ export class CSVProcessor {
    * Format: Name,Type,Content,TTL,Priority
    */
   async parseCloudflare(filePath: string): Promise<ICSVParseResult> {
-    const { fileContent, encodingInfo, delimiters } = await this.readFileWithAutoDetection(filePath);
+    const { fileContent, encodingInfo, delimiters } =
+      await this.readFileWithAutoDetection(filePath);
 
     return new Promise((resolve, reject) => {
       Papa.parse<ICloudflareCSVRow>(fileContent, {
@@ -119,7 +104,8 @@ export class CSVProcessor {
    * Format: Name,Type,Value,TTL,Weight,SetIdentifier
    */
   async parseRoute53(filePath: string): Promise<ICSVParseResult> {
-    const { fileContent, encodingInfo, delimiters } = await this.readFileWithAutoDetection(filePath);
+    const { fileContent, encodingInfo, delimiters } =
+      await this.readFileWithAutoDetection(filePath);
 
     return new Promise((resolve, reject) => {
       Papa.parse<IRoute53CSVRow>(fileContent, {
@@ -148,7 +134,8 @@ export class CSVProcessor {
    * Format: domain,record_type,value,ttl,priority,weight,port
    */
   async parseGeneric(filePath: string): Promise<ICSVParseResult> {
-    const { fileContent, encodingInfo, delimiters } = await this.readFileWithAutoDetection(filePath);
+    const { fileContent, encodingInfo, delimiters } =
+      await this.readFileWithAutoDetection(filePath);
 
     return new Promise((resolve, reject) => {
       Papa.parse<IGenericCSVRow>(fileContent, {
@@ -179,17 +166,26 @@ export class CSVProcessor {
     const { fileContent } = await this.readFileWithAutoDetection(filePath);
     const firstLine = fileContent.split('\n')[0]?.toLowerCase() || '';
 
-    if (firstLine.includes('name,type,content,ttl') || firstLine.includes('name;type;content;ttl')) {
+    if (
+      firstLine.includes('name,type,content,ttl') ||
+      firstLine.includes('name;type;content;ttl')
+    ) {
       return this.parseCloudflare(filePath);
-    } else if (firstLine.includes('name,type,value,ttl') || firstLine.includes('name;type;value;ttl')) {
+    } else if (
+      firstLine.includes('name,type,value,ttl') ||
+      firstLine.includes('name;type;value;ttl')
+    ) {
       return this.parseRoute53(filePath);
-    } else if (firstLine.includes('domain,record_type,value') || firstLine.includes('domain;record_type;value')) {
+    } else if (
+      firstLine.includes('domain,record_type,value') ||
+      firstLine.includes('domain;record_type;value')
+    ) {
       return this.parseGeneric(filePath);
     } else {
-      throw new CsvProcessingError(
-        'サポートされていないCSV形式です。ヘッダーが認識できません。',
-        { filePath, firstLine }
-      );
+      throw new CsvProcessingError('サポートされていないCSV形式です。ヘッダーが認識できません。', {
+        filePath,
+        firstLine,
+      });
     }
   }
 
@@ -202,7 +198,7 @@ export class CSVProcessor {
     format: 'cloudflare' | 'route53' | 'generic' = 'generic',
   ): Promise<{ totalProcessed: number; errors: Papa.ParseError[] }> {
     const { encodingInfo, delimiters } = await this.readFileWithAutoDetection(filePath);
-    
+
     return new Promise((resolve, reject) => {
       let totalProcessed = 0;
       const errors: Papa.ParseError[] = [];
@@ -403,13 +399,16 @@ export class CSVProcessor {
   /**
    * 大容量CSVファイルのストリーミング処理
    */
-  async parseStreamingCloudflare(filePath: string, onProgress?: (processed: number) => void): Promise<ICSVParseResult> {
+  async parseStreamingCloudflare(
+    filePath: string,
+    onProgress?: (processed: number) => void,
+  ): Promise<ICSVParseResult> {
     console.log(`Starting streaming CSV processing for: ${filePath}`);
     MemoryOptimizer.logMemoryUsage('Before streaming parse');
 
     const fileStats = fs.statSync(filePath);
     const fileSizeMB = fileStats.size / (1024 * 1024);
-    
+
     if (fileSizeMB < 10) {
       // 小さなファイルは通常の処理
       return this.parseCloudflare(filePath);
@@ -424,12 +423,12 @@ export class CSVProcessor {
 
     // ストリーミング読み込み
     const readStream = createReadStream(filePath, { encoding: 'utf-8' });
-    
+
     return new Promise((resolve, reject) => {
       Papa.parse(readStream, {
         header: true,
         skipEmptyLines: true,
-        step: (result, parser) => {
+        step: (result) => {
           try {
             processedRows++;
 
@@ -439,8 +438,8 @@ export class CSVProcessor {
             }
 
             const row = result.data as ICloudflareCSVRow;
-            const record = this.convertCloudflareRecord(row);
-            
+            const record = this.convertCloudflareRow(row);
+
             if (record) {
               records.push(record);
               validRows++;
@@ -449,36 +448,37 @@ export class CSVProcessor {
             // 進捗報告
             if (processedRows % 1000 === 0) {
               onProgress?.(processedRows);
-              
+
               // メモリチェック
               MemoryOptimizer.checkMemoryWarning(512, (usage) => {
                 console.warn(`Streaming parse memory warning: ${usage.heapUsed}MB`);
                 MemoryOptimizer.forceGarbageCollection();
               });
             }
-
           } catch (error) {
             errors.push({
               type: 'FieldMismatch',
-              code: 'UnexpectedError',
+              code: 'TooFewFields',
               message: error instanceof Error ? error.message : 'Unknown error',
-              row: processedRows
+              row: processedRows,
             } as Papa.ParseError);
           }
         },
         complete: (results) => {
           MemoryOptimizer.logMemoryUsage('After streaming parse');
-          console.log(`Streaming parse completed: ${validRows} valid records from ${processedRows} total`);
+          console.log(
+            `Streaming parse completed: ${validRows} valid records from ${processedRows} total`,
+          );
 
           resolve({
             records,
             errors,
             meta: results.meta,
             totalRows: processedRows,
-            validRows
+            validRows,
           });
         },
-        error: (error) => reject(error)
+        error: (error) => reject(error),
       });
     });
   }
@@ -486,7 +486,10 @@ export class CSVProcessor {
   /**
    * バッチ処理による大容量データの効率的変換
    */
-  async processBatchRecords(records: ICSVRecord[], processor: (record: ICSVRecord) => ICSVRecord): Promise<ICSVRecord[]> {
+  async processBatchRecords(
+    records: ICSVRecord[],
+    processor: (record: ICSVRecord) => ICSVRecord,
+  ): Promise<ICSVRecord[]> {
     if (records.length < 1000) {
       // 小さなデータセットは通常処理
       return records.map(processor);
@@ -500,11 +503,13 @@ export class CSVProcessor {
     });
 
     MemoryOptimizer.logMemoryUsage('After batch processing');
-    console.log(`Batch processing completed: ${result.successful.length} successful, ${result.failed.length} failed`);
+    console.log(
+      `Batch processing completed: ${result.successful.length} successful, ${result.failed.length} failed`,
+    );
 
     if (result.failed.length > 0) {
       console.warn(`${result.failed.length} records failed processing`);
-      result.failed.forEach(failure => {
+      result.failed.forEach((failure) => {
         console.warn(`Failed record:`, failure.error.message);
       });
     }
@@ -542,7 +547,7 @@ export class CSVProcessor {
           // 区切り文字自動検出
           const detected = csvDetection.csvSpecificInfo.potentialDelimiters;
           const used = this.selectBestDelimiter(detected, content);
-          
+
           delimiters = { detected, used };
         }
 
@@ -552,16 +557,17 @@ export class CSVProcessor {
             detectedEncoding: csvDetection.encoding,
             confidence: csvDetection.confidence,
             reliability: reliability.level,
-            bomPresent: csvDetection.bomPresent
+            bomPresent: csvDetection.bomPresent,
           },
-          delimiters
+          delimiters,
         };
       } else {
         // 手動エンコーディング指定
-        const fileContent = fs.readFileSync(filePath, this.options.encoding || 'utf-8');
-        
+        const encoding = (this.options.encoding || 'utf-8') as BufferEncoding;
+        const fileContent = fs.readFileSync(filePath, encoding);
+
         let delimiters: { detected: string[]; used: string } | undefined;
-        
+
         if (this.options.autoDetectDelimiter) {
           const potentialDelimiters = this.detectDelimitersInContent(fileContent);
           const used = this.selectBestDelimiter(potentialDelimiters, fileContent);
@@ -570,13 +576,13 @@ export class CSVProcessor {
 
         return {
           fileContent,
-          delimiters
+          delimiters,
         };
       }
     } catch (error) {
       throw new CsvProcessingError(
         `ファイル読み込みまたはエンコーディング検出に失敗: ${filePath}`,
-        { filePath, error: error instanceof Error ? error.message : 'Unknown error' }
+        { filePath, error: error instanceof Error ? error.message : 'Unknown error' },
       );
     }
   }
@@ -587,10 +593,8 @@ export class CSVProcessor {
   private detectDelimitersInContent(content: string): string[] {
     const delimiters = [',', ';', '\t', '|'];
     const lines = content.split(/\r?\n/).slice(0, 5); // 最初の5行を分析
-    
-    return delimiters.filter(delimiter => 
-      lines.some(line => line.includes(delimiter))
-    );
+
+    return delimiters.filter((delimiter) => lines.some((line) => line.includes(delimiter)));
   }
 
   /**
@@ -602,29 +606,30 @@ export class CSVProcessor {
     }
 
     if (candidates.length === 1) {
-      return candidates[0];
+      const candidate = candidates[0];
+      return candidate || ',';
     }
 
     // 最初の数行で各区切り文字の出現頻度を計算
     const lines = content.split(/\r?\n/).slice(0, 5);
-    const scores = candidates.map(delimiter => {
+    const scores = candidates.map((delimiter) => {
       let score = 0;
       let consistency = 0;
       let expectedCount = -1;
 
       for (const line of lines) {
         if (line.trim() === '') continue;
-        
+
         const count = (line.match(new RegExp(`\\${delimiter}`, 'g')) || []).length;
-        
+
         if (expectedCount === -1) {
           expectedCount = count;
         }
-        
+
         if (count === expectedCount && count > 0) {
           consistency++;
         }
-        
+
         score += count;
       }
 
@@ -632,13 +637,13 @@ export class CSVProcessor {
       return {
         delimiter,
         score: score * consistency,
-        consistency
+        consistency,
       };
     });
 
     // 最高スコアの区切り文字を選択
     scores.sort((a, b) => b.score - a.score);
-    return scores[0]?.delimiter || candidates[0];
+    return scores[0]?.delimiter || candidates[0] || ',';
   }
 }
 
@@ -647,7 +652,7 @@ interface ICloudflareCSVRow {
   name: string;
   type: string;
   content: string;
-  ttl: string;
+  ttl?: string;
   priority?: string;
 }
 

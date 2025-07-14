@@ -1,0 +1,72 @@
+{
+  "summary": {
+    "total": 3,
+    "byType": {
+      "A": 2,
+      "AAAA": 0,
+      "CNAME": 1,
+      "MX": 0,
+      "TXT": 0,
+      "NS": 0,
+      "SOA": 0,
+      "SRV": 0,
+      "PTR": 0,
+      "CAA": 0
+    },
+    "byRisk": {
+      "low": 1,
+      "medium": 1,
+      "high": 1,
+      "critical": 0
+    },
+    "duration": 1500
+  },
+  "records": [
+    {
+      "id": "test-1",
+      "name": "example.com",
+      "type": "A",
+      "value": "192.168.1.1",
+      "ttl": 300,
+      "created": "2024-01-01T00:00:00.000Z",
+      "updated": "2024-01-01T00:00:00.000Z",
+      "riskLevel": "low",
+      "riskScore": 15,
+      "recommendations": []
+    },
+    {
+      "id": "test-2",
+      "name": "www.example.com",
+      "type": "CNAME",
+      "value": "example.com",
+      "ttl": 3600,
+      "created": "2024-01-01T00:00:00.000Z",
+      "updated": "2024-01-01T00:00:00.000Z",
+      "riskLevel": "medium",
+      "riskScore": 45,
+      "recommendations": [
+        "TTL値を確認してください"
+      ]
+    },
+    {
+      "id": "test-3",
+      "name": "old.example.com",
+      "type": "A",
+      "value": "10.0.0.1",
+      "ttl": 60,
+      "created": "2023-01-01T00:00:00.000Z",
+      "updated": "2023-01-01T00:00:00.000Z",
+      "riskLevel": "high",
+      "riskScore": 85,
+      "recommendations": [
+        "古いレコードです",
+        "TTLが短すぎます"
+      ]
+    }
+  ],
+  "metadata": {
+    "scannedAt": "2024-01-01T12:00:00.000Z",
+    "source": "test.csv",
+    "version": "1.0.0"
+  }
+}

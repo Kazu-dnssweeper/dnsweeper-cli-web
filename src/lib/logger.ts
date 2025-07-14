@@ -1,14 +1,15 @@
 /* eslint-disable no-console */
 import chalk from 'chalk';
 import ora from 'ora';
-import type { Ora } from 'ora';
-import { 
-  getLogger, 
-  LogLevel, 
-  createLogger, 
+
+import {
+  getLogger,
+  createLogger,
   setGlobalLogger,
-  type StructuredLogger 
+  type StructuredLogger,
 } from './structured-logger.js';
+
+import type { Ora } from 'ora';
 
 export class Logger {
   private verbose: boolean;
@@ -16,16 +17,18 @@ export class Logger {
   private spinner: Ora | null = null;
   private structuredLogger: StructuredLogger;
 
-  constructor(options: { 
-    verbose?: boolean | undefined; 
-    quiet?: boolean | undefined;
-    enableStructuredLogging?: boolean;
-    logFile?: string;
-    logLevel?: string;
-  } = {}) {
+  constructor(
+    options: {
+      verbose?: boolean | undefined;
+      quiet?: boolean | undefined;
+      enableStructuredLogging?: boolean;
+      logFile?: string;
+      logLevel?: string;
+    } = {},
+  ) {
     this.verbose = options.verbose ?? false;
     this.quiet = options.quiet ?? false;
-    
+
     // 構造化ログを初期化
     if (options.enableStructuredLogging !== false) {
       this.structuredLogger = createLogger({
@@ -34,8 +37,8 @@ export class Logger {
         file: options.logFile,
         meta: {
           service: 'dnsweeper',
-          component: 'cli'
-        }
+          component: 'cli',
+        },
       });
       setGlobalLogger(this.structuredLogger);
     } else {
@@ -100,9 +103,9 @@ export class Logger {
     if (!this.quiet) {
       console.table(data);
     }
-    this.structuredLogger.info('TABLE_OUTPUT', { 
-      ...meta, 
-      tableData: Array.isArray(data) ? data.slice(0, 10) : data // 最初の10行のみログ
+    this.structuredLogger.info('TABLE_OUTPUT', {
+      ...meta,
+      tableData: Array.isArray(data) ? data.slice(0, 10) : data, // 最初の10行のみログ
     });
   }
 
@@ -116,9 +119,15 @@ export class Logger {
   /**
    * HTTP リクエスト/レスポンスをログ
    */
-  http(method: string, url: string, statusCode?: number, duration?: number, meta?: Record<string, any>): void {
+  http(
+    method: string,
+    url: string,
+    statusCode?: number,
+    duration?: number,
+    meta?: Record<string, any>,
+  ): void {
     const message = `${method} ${url}${statusCode ? ` ${statusCode}` : ''}${duration ? ` ${duration}ms` : ''}`;
-    
+
     if (!this.quiet) {
       const color = statusCode && statusCode >= 400 ? chalk.red : chalk.cyan;
       console.log(color('HTTP'), message);
@@ -129,7 +138,7 @@ export class Logger {
       method,
       url,
       statusCode,
-      duration
+      duration,
     });
   }
 
@@ -137,13 +146,13 @@ export class Logger {
    * パフォーマンス測定
    */
   async profile<T>(
-    label: string, 
+    label: string,
     fn: () => Promise<T> | T,
-    meta?: Record<string, any>
+    meta?: Record<string, any>,
   ): Promise<T> {
     const start = Date.now();
     this.debug(`Starting: ${label}`, meta);
-    
+
     try {
       const result = await fn();
       const duration = Date.now() - start;
@@ -151,7 +160,11 @@ export class Logger {
       return result;
     } catch (error) {
       const duration = Date.now() - start;
-      this.error(`Failed: ${label} (${duration}ms)`, error instanceof Error ? error : new Error(String(error)), { ...meta, duration });
+      this.error(
+        `Failed: ${label} (${duration}ms)`,
+        error instanceof Error ? error : new Error(String(error)),
+        { ...meta, duration },
+      );
       throw error;
     }
   }
@@ -162,7 +175,7 @@ export class Logger {
   startTimer(label: string, meta?: Record<string, any>): () => void {
     const start = Date.now();
     this.debug(`Timer started: ${label}`, meta);
-    
+
     return () => {
       const duration = Date.now() - start;
       this.info(`Timer: ${label} completed in ${duration}ms`, { ...meta, duration });
@@ -176,9 +189,9 @@ export class Logger {
     const childLogger = new Logger({
       verbose: this.verbose,
       quiet: this.quiet,
-      enableStructuredLogging: false // 既存の構造化ログを使用
+      enableStructuredLogging: false, // 既存の構造化ログを使用
     });
-    
+
     childLogger.structuredLogger = this.structuredLogger.child(meta, context);
     return childLogger;
   }
@@ -234,10 +247,15 @@ export class Logger {
   /**
    * パフォーマンス警告
    */
-  performance(message: string, duration: number, threshold: number = 1000, meta?: Record<string, any>): void {
+  performance(
+    message: string,
+    duration: number,
+    threshold: number = 1000,
+    meta?: Record<string, any>,
+  ): void {
     const isWarning = duration > threshold;
     const color = isWarning ? chalk.yellow : chalk.green;
-    
+
     if (!this.quiet) {
       console.log(color('⏱ PERF'), `${message} (${duration}ms)`);
     }

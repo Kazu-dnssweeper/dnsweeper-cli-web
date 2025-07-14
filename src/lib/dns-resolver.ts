@@ -1,13 +1,19 @@
 import { promises as dns } from 'node:dns';
-import type { DNSRecordType } from '../types/index.js';
-import { DnsResolutionError, TimeoutError } from './errors.js';
+
+import {
+  traceCnameChain,
+  validateCnameChain,
+  type CnameChainResult,
+} from '../utils/cname-chain.js';
 import { mapConcurrent, ProgressTracker } from '../utils/concurrent.js';
-import { withTimeout, withRetry } from '../utils/retry.js';
 import { normalizeIPv6, isValidIPv6 } from '../utils/ipv6.js';
-import { traceCnameChain, validateCnameChain, type CnameChainResult } from '../utils/cname-chain.js';
+import { withTimeout, withRetry } from '../utils/retry.js';
+
 import { DnsCache, type DnsCacheOptions } from './dns-cache.js';
-import { BatchProcessor, DNSBatchProcessor } from './performance/batch-processor.js';
+
 import { MemoryOptimizer } from './performance/memory-optimizer.js';
+
+import type { DNSRecordType, IDNSQuery } from '../types/index.js';
 
 interface INodeDNSError extends Error {
   code?: string;
@@ -24,11 +30,6 @@ export interface IDNSRecord {
   target?: string; // For SRV records
 }
 
-export interface IDNSQuery {
-  domain: string;
-  type: DNSRecordType;
-  server?: string;
-}
 
 export interface IDNSResponse {
   query: IDNSQuery;
@@ -43,16 +44,17 @@ export class DNSResolver {
   private servers: string[];
   private timeout: number;
   private cache?: DnsCache;
-  private batchProcessor: DNSBatchProcessor;
 
-  constructor(options: { 
-    timeout?: number; 
-    servers?: string[];
-    enableCache?: boolean;
-    cacheOptions?: DnsCacheOptions;
-    batchSize?: number;
-    concurrency?: number;
-  } = {}) {
+  constructor(
+    options: {
+      timeout?: number;
+      servers?: string[];
+      enableCache?: boolean;
+      cacheOptions?: DnsCacheOptions;
+      batchSize?: number;
+      concurrency?: number;
+    } = {},
+  ) {
     this.servers = options.servers ?? ['8.8.8.8', '1.1.1.1'];
     this.timeout = options.timeout ?? 5000;
 
@@ -60,24 +62,6 @@ export class DNSResolver {
     if (options.enableCache !== false) {
       this.cache = new DnsCache(options.cacheOptions);
     }
-
-    // バッチプロセッサーを初期化
-    this.batchProcessor = new DNSBatchProcessor({
-      batchSize: options.batchSize || 100,
-      concurrency: options.concurrency || 20,
-      retries: 2,
-      retryDelay: 500,
-      onProgress: (processed, total) => {
-        // メモリ使用量をチェック
-        MemoryOptimizer.checkMemoryWarning(256, (usage) => {
-          console.warn(`DNS batch processing memory warning: ${usage.heapUsed}MB used`);
-          MemoryOptimizer.forceGarbageCollection();
-        });
-      },
-      onError: (error, item) => {
-        console.warn(`DNS resolution failed for ${item}:`, error.message);
-      }
-    });
 
     // Set custom DNS servers if provided
     if (this.servers.length > 0) {
@@ -95,7 +79,7 @@ export class DNSResolver {
       if (cached) {
         return {
           ...cached,
-          responseTime: Date.now() - startTime // 新しいレスポンス時間を設定
+          responseTime: Date.now() - startTime, // 新しいレスポンス時間を設定
         };
       }
     }
@@ -226,20 +210,20 @@ export class DNSResolver {
    */
   async resolveCNAMEWithChain(domain: string): Promise<IDNSResponse> {
     const startTime = Date.now();
-    
+
     try {
       // CNAMEチェーンを追跡
       const cnameChain = await traceCnameChain(domain, {
         maxDepth: 10,
         timeout: this.timeout,
-        followToEnd: true
+        followToEnd: true,
       });
 
       // チェーンを検証
       const validation = validateCnameChain(cnameChain);
-      
+
       // CNAMEレコードを作成
-      const records: IDNSRecord[] = cnameChain.chain.slice(1).map(target => ({
+      const records: IDNSRecord[] = cnameChain.chain.slice(1).map((target) => ({
         type: 'CNAME' as const,
         value: target,
       }));
@@ -252,17 +236,17 @@ export class DNSResolver {
         responseTime,
         status: validation.isValid ? 'success' : 'error',
         error: validation.issues.length > 0 ? validation.issues.join('; ') : undefined,
-        cnameChain
+        cnameChain,
       };
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       return {
         query: { domain, type: 'CNAME' },
         records: [],
         responseTime,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -347,26 +331,41 @@ export class DNSResolver {
 
     try {
       // バッチプロセッサーを使用して効率的に処理
-      const result = await this.batchProcessor.process(
-        queries,
-        async (query: IDNSQuery) => {
-          return await this.resolve(query.domain, query.type);
+      const results: IDNSResponse[] = [];
+      const errors: Array<{ item: IDNSQuery; error: Error }> = [];
+      const startTime = Date.now();
+
+      for (const query of queries) {
+        try {
+          const response = await this.resolve(query.domain, query.type);
+          results.push(response);
+        } catch (error) {
+          errors.push({ item: query, error: error as Error });
         }
-      );
+      }
+
+      const result = {
+        successful: results,
+        failed: errors,
+        totalProcessed: queries.length,
+        duration: Date.now() - startTime,
+      };
 
       MemoryOptimizer.logMemoryUsage('After batch resolve');
-      console.log(`Batch resolution completed: ${result.successful.length} successful, ${result.failed.length} failed, ${result.duration}ms`);
+      console.log(
+        `Batch resolution completed: ${result.successful.length} successful, ${result.failed.length} failed, ${result.duration}ms`,
+      );
 
       // 成功した結果と失敗した結果を統合
       const allResults: IDNSResponse[] = [
         ...result.successful,
-        ...result.failed.map(failure => ({
+        ...result.failed.map((failure) => ({
           query: failure.item,
           records: [],
           responseTime: 0,
           status: 'error' as const,
           error: failure.error.message,
-        }))
+        })),
       ];
 
       return allResults;
@@ -397,24 +396,27 @@ export class DNSResolver {
       concurrency?: number;
       retryOnError?: boolean;
       onProgress?: (completed: number, total: number) => void;
-    } = {}
+    } = {},
   ): Promise<IDNSResponse[]> {
     const { concurrency = 10, retryOnError = true, onProgress } = options;
 
     // 進捗トラッカーの設定
-    const tracker = onProgress ? new ProgressTracker(queries.length, (info) => {
-      onProgress(info.completed, info.total);
-    }) : null;
+    const tracker = onProgress
+      ? new ProgressTracker(queries.length, (info) => {
+          onProgress(info.completed, info.total);
+        })
+      : null;
 
     // 各クエリを実行する関数を作成
-    const executeQuery = async (query: IDNSQuery, index: number): Promise<IDNSResponse> => {
+    const executeQuery = async (query: IDNSQuery): Promise<IDNSResponse> => {
       try {
         const resolver = retryOnError
-          ? () => withTimeout(
-              () => this.resolve(query.domain, query.type),
-              this.timeout,
-              `DNS resolution timeout for ${query.domain}`
-            )
+          ? () =>
+              withTimeout(
+                () => this.resolve(query.domain, query.type),
+                this.timeout,
+                `DNS resolution timeout for ${query.domain}`,
+              )
           : () => this.resolve(query.domain, query.type);
 
         const result = retryOnError
@@ -424,7 +426,7 @@ export class DNSResolver {
               backoff: 'exponential',
               onRetry: (attempt, error) => {
                 console.warn(`Retry attempt ${attempt} for ${query.domain}:`, error);
-              }
+              },
             })
           : await resolver();
 
@@ -459,12 +461,12 @@ export class DNSResolver {
       recordTypes?: DNSRecordType[];
       concurrency?: number;
       onProgress?: (completed: number, total: number) => void;
-    } = {}
+    } = {},
   ): Promise<Map<string, IDNSResponse[]>> {
     const {
       recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS'],
       concurrency = 10,
-      onProgress
+      onProgress,
     } = options;
 
     // クエリを生成
@@ -478,7 +480,7 @@ export class DNSResolver {
     // 並列解決
     const responses = await this.batchResolveOptimized(queries, {
       concurrency,
-      onProgress
+      onProgress,
     });
 
     // ドメインごとにグループ化

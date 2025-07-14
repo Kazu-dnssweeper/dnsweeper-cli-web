@@ -2,10 +2,9 @@
  * 構造化ログシステム（winston相当機能）
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { DnsSweeperError } from './errors.js';
+import { writeFile, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 
 /**
  * ログレベル
@@ -17,7 +16,7 @@ export enum LogLevel {
   HTTP = 3,
   VERBOSE = 4,
   DEBUG = 5,
-  SILLY = 6
+  SILLY = 6,
 }
 
 /**
@@ -30,7 +29,7 @@ export const LOG_LEVEL_NAMES: Record<LogLevel, string> = {
   [LogLevel.HTTP]: 'http',
   [LogLevel.VERBOSE]: 'verbose',
   [LogLevel.DEBUG]: 'debug',
-  [LogLevel.SILLY]: 'silly'
+  [LogLevel.SILLY]: 'silly',
 };
 
 /**
@@ -87,22 +86,23 @@ export abstract class LogTransport {
       return JSON.stringify(entry);
     }
 
-    const timestamp = this.format.timestamp 
-      ? (typeof this.format.timestamp === 'string' 
-          ? new Date().toISOString() 
-          : entry.timestamp)
+    const timestamp = this.format.timestamp
+      ? typeof this.format.timestamp === 'string'
+        ? new Date().toISOString()
+        : entry.timestamp
       : '';
 
-    const level = this.format.colorize 
+    const level = this.format.colorize
       ? this.colorizeLevel(entry.levelName)
       : entry.levelName.toUpperCase();
 
     const message = entry.message;
-    const meta = entry.meta && Object.keys(entry.meta).length > 0
-      ? (this.format.prettyPrint 
+    const meta =
+      entry.meta && Object.keys(entry.meta).length > 0
+        ? this.format.prettyPrint
           ? `\n${JSON.stringify(entry.meta, null, 2)}`
-          : ` ${JSON.stringify(entry.meta)}`)
-      : '';
+          : ` ${JSON.stringify(entry.meta)}`
+        : '';
 
     const context = entry.context ? ` [${entry.context}]` : '';
     const correlationId = entry.correlationId ? ` (${entry.correlationId})` : '';
@@ -115,23 +115,21 @@ export abstract class LogTransport {
       correlationId,
       message,
       duration,
-      meta
+      meta,
     ].filter(Boolean);
 
-    return this.format.align
-      ? parts.join(' ').replace(/\s+/g, ' ')
-      : parts.join(' ');
+    return this.format.align ? parts.join(' ').replace(/\s+/g, ' ') : parts.join(' ');
   }
 
   private colorizeLevel(levelName: string): string {
     const colors: Record<string, string> = {
-      error: '\x1b[31m',   // Red
-      warn: '\x1b[33m',    // Yellow
-      info: '\x1b[36m',    // Cyan
-      http: '\x1b[35m',    // Magenta
+      error: '\x1b[31m', // Red
+      warn: '\x1b[33m', // Yellow
+      info: '\x1b[36m', // Cyan
+      http: '\x1b[35m', // Magenta
       verbose: '\x1b[34m', // Blue
-      debug: '\x1b[32m',   // Green
-      silly: '\x1b[37m'    // White
+      debug: '\x1b[32m', // Green
+      silly: '\x1b[37m', // White
     };
 
     const reset = '\x1b[0m';
@@ -146,14 +144,14 @@ export abstract class LogTransport {
 export class ConsoleTransport extends LogTransport {
   constructor(
     level: LogLevel = LogLevel.INFO,
-    format: LogFormat = { colorize: true, timestamp: true }
+    format: LogFormat = { colorize: true, timestamp: true },
   ) {
     super(level, format);
   }
 
   write(entry: LogEntry): void {
     const formatted = this.formatEntry(entry);
-    
+
     if (entry.level === LogLevel.ERROR) {
       console.error(formatted);
     } else if (entry.level === LogLevel.WARN) {
@@ -177,7 +175,7 @@ export class FileTransport extends LogTransport {
     filename: string,
     level: LogLevel = LogLevel.INFO,
     format: LogFormat = { json: true, timestamp: true },
-    options: { maxSize?: number; maxFiles?: number } = {}
+    options: { maxSize?: number; maxFiles?: number } = {},
   ) {
     super(level, format);
     this.filename = filename;
@@ -188,7 +186,7 @@ export class FileTransport extends LogTransport {
   async write(entry: LogEntry): Promise<void> {
     try {
       const formatted = this.formatEntry(entry) + '\n';
-      
+
       // ディレクトリが存在しない場合は作成
       const dir = dirname(this.filename);
       if (!existsSync(dir)) {
@@ -214,7 +212,7 @@ export class FileTransport extends LogTransport {
       for (let i = this.maxFiles - 1; i > 0; i--) {
         const oldFile = `${this.filename}.${i}`;
         const newFile = `${this.filename}.${i + 1}`;
-        
+
         if (existsSync(oldFile)) {
           if (i === this.maxFiles - 1) {
             // 最古のファイルを削除
@@ -282,9 +280,7 @@ export class StructuredLogger {
    * 現在のコンテキストを取得
    */
   getCurrentContext(): string | undefined {
-    return this.contextStack.length > 0 
-      ? this.contextStack.join(':')
-      : undefined;
+    return this.contextStack.length > 0 ? this.contextStack.join(':') : undefined;
   }
 
   /**
@@ -299,7 +295,7 @@ export class StructuredLogger {
       correlationId?: string;
       duration?: number;
       error?: Error;
-    }
+    },
   ): void {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
@@ -309,7 +305,7 @@ export class StructuredLogger {
       meta: { ...this.defaultMeta, ...meta },
       context: options?.context || this.getCurrentContext(),
       correlationId: options?.correlationId,
-      duration: options?.duration
+      duration: options?.duration,
     };
 
     // エラー情報の追加
@@ -318,7 +314,7 @@ export class StructuredLogger {
         name: options.error.name,
         message: options.error.message,
         stack: options.error.stack,
-        code: (options.error as any).code
+        code: (options.error as any).code,
       };
     }
 
@@ -327,7 +323,7 @@ export class StructuredLogger {
       if (transport.shouldLog(level)) {
         const result = transport.write(entry);
         if (result instanceof Promise) {
-          result.catch(error => {
+          result.catch((error) => {
             console.error('Transport write error:', error);
           });
         }
@@ -389,7 +385,7 @@ export class StructuredLogger {
    */
   startTimer(label: string): () => void {
     const start = Date.now();
-    
+
     return () => {
       const duration = Date.now() - start;
       this.info(`Timer: ${label}`, { duration });
@@ -402,11 +398,11 @@ export class StructuredLogger {
   async profile<T>(
     label: string,
     fn: () => Promise<T> | T,
-    level: LogLevel = LogLevel.INFO
+    level: LogLevel = LogLevel.INFO,
   ): Promise<T> {
     const start = Date.now();
     this.log(level, `Starting: ${label}`);
-    
+
     try {
       const result = await fn();
       const duration = Date.now() - start;
@@ -414,7 +410,11 @@ export class StructuredLogger {
       return result;
     } catch (error) {
       const duration = Date.now() - start;
-      this.error(`Failed: ${label}`, { duration }, error instanceof Error ? error : new Error(String(error)));
+      this.error(
+        `Failed: ${label}`,
+        { duration },
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
@@ -425,13 +425,13 @@ export class StructuredLogger {
   child(meta: Record<string, any>, context?: string): StructuredLogger {
     const childLogger = new StructuredLogger(this.transports);
     childLogger.setDefaultMeta({ ...this.defaultMeta, ...meta });
-    
+
     if (context) {
       childLogger.contextStack = [...this.contextStack, context];
     } else {
       childLogger.contextStack = [...this.contextStack];
     }
-    
+
     return childLogger;
   }
 
@@ -440,16 +440,25 @@ export class StructuredLogger {
    */
   static parseLogLevel(level: string): LogLevel {
     const normalizedLevel = level.toLowerCase();
-    
+
     switch (normalizedLevel) {
-      case 'error': return LogLevel.ERROR;
-      case 'warn': case 'warning': return LogLevel.WARN;
-      case 'info': return LogLevel.INFO;
-      case 'http': return LogLevel.HTTP;
-      case 'verbose': return LogLevel.VERBOSE;
-      case 'debug': return LogLevel.DEBUG;
-      case 'silly': return LogLevel.SILLY;
-      default: return LogLevel.INFO;
+      case 'error':
+        return LogLevel.ERROR;
+      case 'warn':
+      case 'warning':
+        return LogLevel.WARN;
+      case 'info':
+        return LogLevel.INFO;
+      case 'http':
+        return LogLevel.HTTP;
+      case 'verbose':
+        return LogLevel.VERBOSE;
+      case 'debug':
+        return LogLevel.DEBUG;
+      case 'silly':
+        return LogLevel.SILLY;
+      default:
+        return LogLevel.INFO;
     }
   }
 }
@@ -457,15 +466,18 @@ export class StructuredLogger {
 /**
  * デフォルトロガーを作成
  */
-export function createLogger(options: {
-  level?: LogLevel | string;
-  console?: boolean;
-  file?: string;
-  meta?: Record<string, any>;
-} = {}): StructuredLogger {
-  const level = typeof options.level === 'string' 
-    ? StructuredLogger.parseLogLevel(options.level)
-    : options.level || LogLevel.INFO;
+export function createLogger(
+  options: {
+    level?: LogLevel | string;
+    console?: boolean;
+    file?: string;
+    meta?: Record<string, any>;
+  } = {},
+): StructuredLogger {
+  const level =
+    typeof options.level === 'string'
+      ? StructuredLogger.parseLogLevel(options.level)
+      : options.level || LogLevel.INFO;
 
   const transports: LogTransport[] = [];
 
@@ -474,7 +486,7 @@ export function createLogger(options: {
     const consoleFormat: LogFormat = {
       colorize: process.stdout.isTTY,
       timestamp: true,
-      align: true
+      align: true,
     };
     transports.push(new ConsoleTransport(level, consoleFormat));
   }
@@ -483,13 +495,13 @@ export function createLogger(options: {
   if (options.file) {
     const fileFormat: LogFormat = {
       json: true,
-      timestamp: true
+      timestamp: true,
     };
     transports.push(new FileTransport(options.file, level, fileFormat));
   }
 
   const logger = new StructuredLogger(transports);
-  
+
   if (options.meta) {
     logger.setDefaultMeta(options.meta);
   }
@@ -520,11 +532,11 @@ export function getLogger(): StructuredLogger {
       file: process.env.LOG_FILE,
       meta: {
         service: 'dnsweeper',
-        version: process.env.npm_package_version || '1.0.0'
-      }
+        version: process.env.npm_package_version || '1.0.0',
+      },
     });
   }
-  
+
   return globalLogger;
 }
 
@@ -534,49 +546,53 @@ export function getLogger(): StructuredLogger {
 export function logMethod(
   level: LogLevel = LogLevel.DEBUG,
   includeArgs: boolean = false,
-  includeResult: boolean = false
+  includeResult: boolean = false,
 ) {
   return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
     if (!descriptor || typeof descriptor.value !== 'function') {
       return descriptor;
     }
     const method = descriptor.value;
-    
+
     descriptor.value = async function (...args: any[]) {
       const logger = getLogger();
       const className = target.constructor.name;
       const methodName = `${className}.${propertyName}`;
-      
+
       const meta: Record<string, any> = {};
       if (includeArgs) {
         meta.args = args;
       }
-      
+
       logger.pushContext(methodName);
       const timer = logger.startTimer(methodName);
-      
+
       try {
         logger.log(level, `Method called: ${methodName}`, meta);
-        
+
         const result = await method.apply(this, args);
-        
+
         if (includeResult) {
           logger.log(level, `Method completed: ${methodName}`, { result });
         } else {
           logger.log(level, `Method completed: ${methodName}`);
         }
-        
+
         timer();
         return result;
       } catch (error) {
-        logger.error(`Method failed: ${methodName}`, meta, error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          `Method failed: ${methodName}`,
+          meta,
+          error instanceof Error ? error : new Error(String(error)),
+        );
         timer();
         throw error;
       } finally {
         logger.popContext();
       }
     };
-    
+
     return descriptor;
   };
 }

@@ -3,3 +3,6 @@ export { createAddCommand } from './add.js';
 export { createDeleteCommand } from './delete.js';
 export { createImportCommand } from './import.js';
 export { createAnalyzeCommand } from './analyze.js';
+export { createLookupCommand } from './lookup.js';
+export { createSweepCommand } from './sweep.js';
+export { createValidateCommand } from './validate.js';

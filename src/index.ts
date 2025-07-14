@@ -1,17 +1,22 @@
 #!/usr/bin/env node
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
 import { Command } from 'commander';
+
 import {
   createListCommand,
   createAddCommand,
   createDeleteCommand,
   createImportCommand,
   createAnalyzeCommand,
+  createLookupCommand,
+  createSweepCommand,
+  createValidateCommand,
 } from './commands/index.js';
+import { loadConfig } from './lib/config.js';
 import { Logger } from './lib/logger.js';
-import { loadConfig, DnsSweeperConfig } from './lib/config.js';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,6 +40,9 @@ export function createProgram(): Command {
   program.addCommand(createDeleteCommand());
   program.addCommand(createImportCommand());
   program.addCommand(createAnalyzeCommand());
+  program.addCommand(createLookupCommand());
+  program.addCommand(createSweepCommand());
+  program.addCommand(createValidateCommand());
 
   program.on('command:*', () => {
     const logger = new Logger();
@@ -49,14 +57,14 @@ export function createProgram(): Command {
 export async function main(): Promise<void> {
   try {
     const program = createProgram();
-    
+
     // 設定ファイルの読み込み（パース前に実行）
     const opts = program.opts();
     const config = await loadConfig(opts.config);
-    
+
     // グローバル設定をプログラムに追加
     (program as any).dnsSweeperConfig = config;
-    
+
     await program.parseAsync(process.argv);
   } catch (error) {
     const logger = new Logger();

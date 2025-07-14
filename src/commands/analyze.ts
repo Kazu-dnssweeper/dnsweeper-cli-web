@@ -1,11 +1,14 @@
-import { Command } from 'commander';
-import type { IAnalyzeOptions, IDNSRecord } from '../types/index.js';
-import { Logger } from '../lib/logger.js';
-import { CSVProcessor } from '../lib/csv-processor.js';
-import { RiskCalculator } from '../lib/risk-calculator.js';
-import { DNSResolver } from '../lib/dns-resolver.js';
 import fs from 'fs';
 import path from 'path';
+
+import { Command } from 'commander';
+
+import { CSVProcessor } from '../lib/csv-processor.js';
+import { DNSResolver } from '../lib/dns-resolver.js';
+import { Logger } from '../lib/logger.js';
+import { RiskCalculator } from '../lib/risk-calculator.js';
+
+import type { IAnalyzeOptions, IDNSRecord } from '../types/index.js';
 
 export function createAnalyzeCommand(): Command {
   const analyzeCmd = new Command('analyze')
@@ -13,7 +16,11 @@ export function createAnalyzeCommand(): Command {
     .description('Analyze DNS records for risks and generate report')
     .argument('<file>', 'CSV file to analyze')
     .option('-f, --format <format>', 'CSV format (cloudflare, route53, generic, auto)', 'auto')
-    .option('-l, --level <level>', 'Minimum risk level to report (low, medium, high, critical)', 'medium')
+    .option(
+      '-l, --level <level>',
+      'Minimum risk level to report (low, medium, high, critical)',
+      'medium',
+    )
     .option('-c, --check-dns', 'Check current DNS status for each record')
     .option('-o, --output <file>', 'Save report to file')
     .option('-v, --verbose', 'Show detailed output')
@@ -31,7 +38,7 @@ export function createAnalyzeCommand(): Command {
 
         const processor = new CSVProcessor();
         const calculator = new RiskCalculator();
-        
+
         logger.startSpinner(`Analyzing DNS records from ${path.basename(filePath)}...`);
 
         // Parse CSV file
@@ -66,7 +73,7 @@ export function createAnalyzeCommand(): Command {
                 lastSeenDates.set(record.domain, new Date());
               }
               checkedCount++;
-              
+
               if (!options.quiet && checkedCount % 10 === 0) {
                 logger.info(`Checked ${checkedCount}/${parseResult.records.length} records...`);
               }
@@ -87,16 +94,16 @@ export function createAnalyzeCommand(): Command {
             name: csvRecord.domain,
             type: csvRecord.type,
             value: csvRecord.value,
-            ttl: csvRecord.ttl,
+            ttl: csvRecord.ttl || 300,
             created: new Date(),
             updated: new Date(),
           };
-          
+
           // オプショナルフィールドは値が存在する場合のみ設定
           if (csvRecord.priority !== undefined) record.priority = csvRecord.priority;
           if (csvRecord.weight !== undefined) record.weight = csvRecord.weight;
           if (csvRecord.port !== undefined) record.port = csvRecord.port;
-          
+
           return record;
         });
 
@@ -118,21 +125,23 @@ export function createAnalyzeCommand(): Command {
             averageRiskScore: Math.round(summary.averageScore),
             totalRecommendations: summary.recommendations,
           },
-          records: riskyRecords.map(record => {
-            const risk = riskScores.get(record.id)!;
-            return {
-              domain: record.name,
-              type: record.type,
-              value: record.value,
-              ttl: record.ttl,
-              risk: {
-                score: risk.total,
-                level: risk.level,
-                factors: risk.factors,
-                recommendations: risk.recommendations,
-              },
-            };
-          }).sort((a, b) => b.risk.score - a.risk.score), // Sort by risk score descending
+          records: riskyRecords
+            .map((record) => {
+              const risk = riskScores.get(record.id)!;
+              return {
+                domain: record.name,
+                type: record.type,
+                value: record.value,
+                ttl: record.ttl,
+                risk: {
+                  score: risk.total,
+                  level: risk.level,
+                  factors: risk.factors,
+                  recommendations: risk.recommendations,
+                },
+              };
+            })
+            .sort((a, b) => b.risk.score - a.risk.score), // Sort by risk score descending
         };
 
         // Display or save report
@@ -160,17 +169,24 @@ export function createAnalyzeCommand(): Command {
           if (report.records.length > 0) {
             logger.info('\n🚨 Top Risk Records:');
             logger.info('===================');
-            
+
             const topRecords = report.records.slice(0, 10);
             for (const record of topRecords) {
-              const icon = record.risk.level === 'critical' ? '🔴' :
-                          record.risk.level === 'high' ? '🟠' :
-                          record.risk.level === 'medium' ? '🟡' : '🟢';
-              
+              const icon =
+                record.risk.level === 'critical'
+                  ? '🔴'
+                  : record.risk.level === 'high'
+                    ? '🟠'
+                    : record.risk.level === 'medium'
+                      ? '🟡'
+                      : '🟢';
+
               logger.info(`\n${icon} ${record.domain} (${record.type})`);
-              logger.info(`   Risk Score: ${record.risk.score}/100 [${record.risk.level.toUpperCase()}]`);
+              logger.info(
+                `   Risk Score: ${record.risk.score}/100 [${record.risk.level.toUpperCase()}]`,
+              );
               logger.info(`   TTL: ${record.ttl}s | Value: ${record.value}`);
-              
+
               if (record.risk.recommendations.length > 0) {
                 logger.info('   Recommendations:');
                 for (const rec of record.risk.recommendations) {
@@ -201,18 +217,17 @@ export function createAnalyzeCommand(): Command {
             logger.success('No significant risks detected.');
           }
         }
-
       } catch (error) {
         logger.stopSpinner(false, 'Analysis failed');
         logger.error(error instanceof Error ? error.message : 'Unknown error occurred');
-        
+
         if (options.json) {
           logger.json({
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
-        
+
         process.exit(1);
       }
     });

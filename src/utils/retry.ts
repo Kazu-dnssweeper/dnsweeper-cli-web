@@ -11,16 +11,13 @@ export interface RetryOptions {
 /**
  * リトライ機能を提供するユーティリティ
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const {
     maxAttempts = 3,
     delay = 1000,
     backoff = 'exponential',
     maxDelay = 30000,
-    onRetry
+    onRetry,
   } = options;
 
   let lastError: unknown;
@@ -57,7 +54,7 @@ function calculateDelay(
   attempt: number,
   baseDelay: number,
   backoff: 'linear' | 'exponential',
-  maxDelay: number
+  maxDelay: number,
 ): number {
   let delay: number;
 
@@ -81,7 +78,7 @@ function calculateDelay(
  * 指定時間スリープ
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -90,7 +87,7 @@ function sleep(ms: number): Promise<void> {
 export async function withTimeout<T>(
   fn: () => Promise<T>,
   timeoutMs: number,
-  errorMessage = 'Operation timed out'
+  errorMessage = 'Operation timed out',
 ): Promise<T> {
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {

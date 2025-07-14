@@ -2,7 +2,7 @@
  * Amazon Route 53 API クライアント
  */
 
-import { DnsSweeperError } from './errors.js';
+
 import type { DNSRecordType, ICSVRecord } from '../types/index.js';
 
 /**
@@ -100,7 +100,7 @@ export class Route53Client {
   constructor(config: Route53Config) {
     this.config = {
       region: 'us-east-1',
-      ...config
+      ...config,
     };
     this.baseUrl = `https://route53.amazonaws.com/2013-04-01`;
   }
@@ -111,11 +111,11 @@ export class Route53Client {
   async listHostedZones(): Promise<Route53Response<Route53HostedZone[]>> {
     try {
       const response = await this.makeRequest('GET', '/hostedzone');
-      
+
       if (!response.ok) {
         return {
           error: `Failed to list hosted zones: ${response.status} ${response.statusText}`,
-          statusCode: response.status
+          statusCode: response.status,
         };
       }
 
@@ -125,12 +125,12 @@ export class Route53Client {
       return {
         data: zones,
         statusCode: response.status,
-        requestId: response.headers.get('x-amzn-requestid') || undefined
+        requestId: response.headers.get('x-amzn-requestid') || undefined,
       };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -142,11 +142,11 @@ export class Route53Client {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
       const response = await this.makeRequest('GET', `/hostedzone/${cleanZoneId}`);
-      
+
       if (!response.ok) {
         return {
           error: `Failed to get hosted zone: ${response.status} ${response.statusText}`,
-          statusCode: response.status
+          statusCode: response.status,
         };
       }
 
@@ -156,12 +156,12 @@ export class Route53Client {
       return {
         data: zone,
         statusCode: response.status,
-        requestId: response.headers.get('x-amzn-requestid') || undefined
+        requestId: response.headers.get('x-amzn-requestid') || undefined,
       };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -175,25 +175,25 @@ export class Route53Client {
       type?: DNSRecordType;
       name?: string;
       maxItems?: number;
-    } = {}
+    } = {},
   ): Promise<Route53Response<Route53Record[]>> {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
       const params = new URLSearchParams();
-      
+
       if (options.type) params.set('type', options.type);
       if (options.name) params.set('name', options.name);
       if (options.maxItems) params.set('maxitems', options.maxItems.toString());
 
       const queryString = params.toString();
       const url = `/hostedzone/${cleanZoneId}/rrset${queryString ? `?${queryString}` : ''}`;
-      
+
       const response = await this.makeRequest('GET', url);
-      
+
       if (!response.ok) {
         return {
           error: `Failed to list resource record sets: ${response.status} ${response.statusText}`,
-          statusCode: response.status
+          statusCode: response.status,
         };
       }
 
@@ -203,12 +203,12 @@ export class Route53Client {
       return {
         data: records,
         statusCode: response.status,
-        requestId: response.headers.get('x-amzn-requestid') || undefined
+        requestId: response.headers.get('x-amzn-requestid') || undefined,
       };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -218,24 +218,21 @@ export class Route53Client {
    */
   async changeResourceRecordSets(
     zoneId: string,
-    changeBatch: Route53ChangeBatch
+    changeBatch: Route53ChangeBatch,
   ): Promise<Route53Response<Route53ChangeInfo>> {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
       const xml = this.buildChangeBatchXml(changeBatch);
-      
-      const response = await this.makeRequest(
-        'POST',
-        `/hostedzone/${cleanZoneId}/rrset`,
-        xml,
-        { 'Content-Type': 'text/xml' }
-      );
-      
+
+      const response = await this.makeRequest('POST', `/hostedzone/${cleanZoneId}/rrset`, xml, {
+        'Content-Type': 'text/xml',
+      });
+
       if (!response.ok) {
         const errorText = await response.text();
         return {
           error: `Failed to change resource record sets: ${response.status} ${response.statusText}\n${errorText}`,
-          statusCode: response.status
+          statusCode: response.status,
         };
       }
 
@@ -245,12 +242,12 @@ export class Route53Client {
       return {
         data: changeInfo,
         statusCode: response.status,
-        requestId: response.headers.get('x-amzn-requestid') || undefined
+        requestId: response.headers.get('x-amzn-requestid') || undefined,
       };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -260,13 +257,15 @@ export class Route53Client {
    */
   async getChange(changeId: string): Promise<Route53Response<Route53ChangeInfo>> {
     try {
-      const cleanChangeId = changeId.startsWith('/change/') ? changeId.replace('/change/', '') : changeId;
+      const cleanChangeId = changeId.startsWith('/change/')
+        ? changeId.replace('/change/', '')
+        : changeId;
       const response = await this.makeRequest('GET', `/change/${cleanChangeId}`);
-      
+
       if (!response.ok) {
         return {
           error: `Failed to get change: ${response.status} ${response.statusText}`,
-          statusCode: response.status
+          statusCode: response.status,
         };
       }
 
@@ -276,12 +275,12 @@ export class Route53Client {
       return {
         data: changeInfo,
         statusCode: response.status,
-        requestId: response.headers.get('x-amzn-requestid') || undefined
+        requestId: response.headers.get('x-amzn-requestid') || undefined,
       };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -290,12 +289,12 @@ export class Route53Client {
    * CSVレコードをRoute53レコードに変換
    */
   convertCSVToRoute53Records(csvRecords: ICSVRecord[]): Route53Record[] {
-    return csvRecords.map(record => {
+    return csvRecords.map((record) => {
       const route53Record: Route53Record = {
         Name: record.domain.endsWith('.') ? record.domain : `${record.domain}.`,
         Type: record.type,
         TTL: record.ttl || 300,
-        ResourceRecords: [{ Value: record.value }]
+        ResourceRecords: [{ Value: record.value }],
       };
 
       // MXレコードの場合、優先度を値に含める
@@ -304,8 +303,15 @@ export class Route53Client {
       }
 
       // SRVレコードの場合、重み・優先度・ポートを値に含める
-      if (record.type === 'SRV' && record.priority !== undefined && record.weight !== undefined && record.port !== undefined) {
-        route53Record.ResourceRecords = [{ Value: `${record.priority} ${record.weight} ${record.port} ${record.value}` }];
+      if (
+        record.type === 'SRV' &&
+        record.priority !== undefined &&
+        record.weight !== undefined &&
+        record.port !== undefined
+      ) {
+        route53Record.ResourceRecords = [
+          { Value: `${record.priority} ${record.weight} ${record.port} ${record.value}` },
+        ];
       }
 
       // 重みベースルーティングの設定
@@ -322,7 +328,7 @@ export class Route53Client {
    * Route53レコードをCSVレコードに変換
    */
   convertRoute53ToCSVRecords(route53Records: Route53Record[]): ICSVRecord[] {
-    return route53Records.map(record => {
+    return route53Records.map((record) => {
       let value = '';
       let priority: number | undefined;
       let weight: number | undefined;
@@ -330,7 +336,7 @@ export class Route53Client {
 
       // ResourceRecords または AliasTarget から値を取得
       if (record.ResourceRecords && record.ResourceRecords.length > 0) {
-        value = record.ResourceRecords[0].Value;
+        value = record.ResourceRecords[0]?.Value || '';
       } else if (record.AliasTarget) {
         value = record.AliasTarget.DNSName;
       }
@@ -338,7 +344,10 @@ export class Route53Client {
       // MXレコードの場合、優先度を分離
       if (record.Type === 'MX' && value.includes(' ')) {
         const parts = value.split(' ');
-        priority = parseInt(parts[0], 10);
+        const priorityStr = parts[0];
+        if (priorityStr) {
+          priority = parseInt(priorityStr, 10);
+        }
         value = parts.slice(1).join(' ');
       }
 
@@ -346,9 +355,12 @@ export class Route53Client {
       if (record.Type === 'SRV' && value.includes(' ')) {
         const parts = value.split(' ');
         if (parts.length >= 4) {
-          priority = parseInt(parts[0], 10);
-          weight = parseInt(parts[1], 10);
-          port = parseInt(parts[2], 10);
+          const priorityStr = parts[0];
+          const weightStr = parts[1];
+          const portStr = parts[2];
+          if (priorityStr) priority = parseInt(priorityStr, 10);
+          if (weightStr) weight = parseInt(weightStr, 10);
+          if (portStr) port = parseInt(portStr, 10);
           value = parts.slice(3).join(' ');
         }
       }
@@ -365,7 +377,7 @@ export class Route53Client {
         ttl: record.TTL || 300,
         priority,
         weight,
-        port
+        port,
       };
     });
   }
@@ -380,7 +392,7 @@ export class Route53Client {
       replace?: boolean;
       comment?: string;
       batchSize?: number;
-    } = {}
+    } = {},
   ): Promise<Route53Response<Route53ChangeInfo[]>> {
     try {
       const { replace = false, comment = 'Imported by DNSweeper', batchSize = 100 } = options;
@@ -390,21 +402,24 @@ export class Route53Client {
       // レコードをバッチサイズに分割
       for (let i = 0; i < route53Records.length; i += batchSize) {
         const batch = route53Records.slice(i, i + batchSize);
-        
-        const changes: Route53Change[] = batch.map(record => ({
+
+        const changes: Route53Change[] = batch.map((record) => ({
           Action: replace ? 'UPSERT' : 'CREATE',
-          ResourceRecordSet: record
+          ResourceRecordSet: record,
         }));
 
         const changeBatch: Route53ChangeBatch = {
           Comment: `${comment} (batch ${Math.floor(i / batchSize) + 1})`,
-          Changes: changes
+          Changes: changes,
         };
 
         const response = await this.changeResourceRecordSets(zoneId, changeBatch);
-        
+
         if (response.error) {
-          return response;
+          return {
+            ...response,
+            data: [] as Route53ChangeInfo[]
+          };
         }
 
         if (response.data) {
@@ -414,12 +429,12 @@ export class Route53Client {
 
       return {
         data: changeInfos,
-        statusCode: 200
+        statusCode: 200,
       };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -432,15 +447,18 @@ export class Route53Client {
     options: {
       type?: DNSRecordType;
       format?: 'csv' | 'json';
-    } = {}
+    } = {},
   ): Promise<Route53Response<ICSVRecord[]>> {
     try {
       const response = await this.listResourceRecordSets(zoneId, {
-        type: options.type
+        type: options.type,
       });
 
       if (response.error || !response.data) {
-        return response;
+        return {
+          ...response,
+          data: [] as ICSVRecord[]
+        };
       }
 
       const csvRecords = this.convertRoute53ToCSVRecords(response.data);
@@ -448,12 +466,12 @@ export class Route53Client {
       return {
         data: csvRecords,
         statusCode: response.statusCode,
-        requestId: response.requestId
+        requestId: response.requestId,
       };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -465,24 +483,24 @@ export class Route53Client {
     method: 'GET' | 'POST' | 'DELETE',
     path: string,
     body?: string,
-    headers: Record<string, string> = {}
+    headers: Record<string, string> = {},
   ): Promise<Response> {
     const url = `${this.baseUrl}${path}`;
     const timestamp = new Date().toISOString();
-    
+
     // AWS Signature Version 4 の簡易実装（実際には aws-sdk を使用すべき）
-    const authHeaders = this.generateAuthHeaders(method, path, body, timestamp);
+    const authHeaders = this.generateAuthHeaders();
 
     const requestHeaders = {
-      'Host': 'route53.amazonaws.com',
+      Host: 'route53.amazonaws.com',
       'X-Amz-Date': timestamp.replace(/[:-]|\.\d{3}/g, ''),
       ...authHeaders,
-      ...headers
+      ...headers,
     };
 
     const requestOptions: RequestInit = {
       method,
-      headers: requestHeaders
+      headers: requestHeaders,
     };
 
     if (body) {
@@ -495,18 +513,13 @@ export class Route53Client {
   /**
    * AWS認証ヘッダーを生成（簡易実装）
    */
-  private generateAuthHeaders(
-    method: string,
-    path: string,
-    body?: string,
-    timestamp?: string
-  ): Record<string, string> {
+  private generateAuthHeaders(): Record<string, string> {
     // 注意: これは簡易実装です。実際のプロダクションでは aws-sdk を使用してください
     // AWS Signature Version 4 の完全な実装は複雑で、ここでは基本的な構造のみ示しています
-    
+
     return {
-      'Authorization': `AWS4-HMAC-SHA256 Credential=${this.config.accessKeyId}/20240101/${this.config.region}/route53/aws4_request, SignedHeaders=host;x-amz-date, Signature=placeholder`,
-      'X-Amz-Security-Token': this.config.sessionToken || ''
+      Authorization: `AWS4-HMAC-SHA256 Credential=${this.config.accessKeyId}/20240101/${this.config.region}/route53/aws4_request, SignedHeaders=host;x-amz-date, Signature=placeholder`,
+      'X-Amz-Security-Token': this.config.sessionToken || '',
     };
   }
 
@@ -523,28 +536,32 @@ export class Route53Client {
   private parseHostedZonesXml(xml: string): Route53HostedZone[] {
     // 実際の実装では、xml2js などのライブラリを使用することを推奨
     const zones: Route53HostedZone[] = [];
-    
+
     // 簡易的なXML解析（実際のプロダクションでは適切なXMLパーサーを使用）
     const zonePattern = /<HostedZone>(.*?)<\/HostedZone>/gs;
     let match;
-    
+
     while ((match = zonePattern.exec(xml)) !== null) {
       const zoneXml = match[1];
-      
+      if (!zoneXml) continue;
+
       const zone: Route53HostedZone = {
         Id: this.extractXmlValue(zoneXml, 'Id') || '',
         Name: this.extractXmlValue(zoneXml, 'Name') || '',
         Config: {
           Comment: this.extractXmlValue(zoneXml, 'Comment'),
-          PrivateZone: this.extractXmlValue(zoneXml, 'PrivateZone') === 'true'
+          PrivateZone: this.extractXmlValue(zoneXml, 'PrivateZone') === 'true',
         },
-        ResourceRecordSetCount: parseInt(this.extractXmlValue(zoneXml, 'ResourceRecordSetCount') || '0', 10),
-        CallerReference: this.extractXmlValue(zoneXml, 'CallerReference') || ''
+        ResourceRecordSetCount: parseInt(
+          this.extractXmlValue(zoneXml, 'ResourceRecordSetCount') || '0',
+          10,
+        ),
+        CallerReference: this.extractXmlValue(zoneXml, 'CallerReference') || '',
       };
-      
+
       zones.push(zone);
     }
-    
+
     return zones;
   }
 
@@ -555,26 +572,30 @@ export class Route53Client {
       Name: this.extractXmlValue(xml, 'Name') || '',
       Config: {
         Comment: this.extractXmlValue(xml, 'Comment'),
-        PrivateZone: this.extractXmlValue(xml, 'PrivateZone') === 'true'
+        PrivateZone: this.extractXmlValue(xml, 'PrivateZone') === 'true',
       },
-      ResourceRecordSetCount: parseInt(this.extractXmlValue(xml, 'ResourceRecordSetCount') || '0', 10),
-      CallerReference: this.extractXmlValue(xml, 'CallerReference') || ''
+      ResourceRecordSetCount: parseInt(
+        this.extractXmlValue(xml, 'ResourceRecordSetCount') || '0',
+        10,
+      ),
+      CallerReference: this.extractXmlValue(xml, 'CallerReference') || '',
     };
   }
 
   private parseResourceRecordSetsXml(xml: string): Route53Record[] {
     const records: Route53Record[] = [];
-    
+
     const recordPattern = /<ResourceRecordSet>(.*?)<\/ResourceRecordSet>/gs;
     let match;
-    
+
     while ((match = recordPattern.exec(xml)) !== null) {
       const recordXml = match[1];
-      
+      if (!recordXml) continue;
+
       const record: Route53Record = {
         Name: this.extractXmlValue(recordXml, 'Name') || '',
-        Type: this.extractXmlValue(recordXml, 'Type') as DNSRecordType || 'A',
-        TTL: parseInt(this.extractXmlValue(recordXml, 'TTL') || '300', 10)
+        Type: (this.extractXmlValue(recordXml, 'Type') as DNSRecordType) || 'A',
+        TTL: parseInt(this.extractXmlValue(recordXml, 'TTL') || '300', 10),
       };
 
       // ResourceRecords を解析
@@ -585,43 +606,47 @@ export class Route53Client {
 
       records.push(record);
     }
-    
+
     return records;
   }
 
   private parseChangeInfoXml(xml: string): Route53ChangeInfo {
     return {
       Id: this.extractXmlValue(xml, 'Id') || '',
-      Status: this.extractXmlValue(xml, 'Status') as 'PENDING' | 'INSYNC' || 'PENDING',
+      Status: (this.extractXmlValue(xml, 'Status') as 'PENDING' | 'INSYNC') || 'PENDING',
       SubmittedAt: this.extractXmlValue(xml, 'SubmittedAt') || '',
-      Comment: this.extractXmlValue(xml, 'Comment')
+      Comment: this.extractXmlValue(xml, 'Comment'),
     };
   }
 
   private extractXmlValue(xml: string, tagName: string): string | undefined {
     const pattern = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
     const match = xml.match(pattern);
-    return match ? match[1].trim() : undefined;
+    return match?.[1]?.trim();
   }
 
   private extractResourceRecords(xml: string): Array<{ Value: string }> {
     const records: Array<{ Value: string }> = [];
     const valuePattern = /<Value>(.*?)<\/Value>/gs;
     let match;
-    
+
     while ((match = valuePattern.exec(xml)) !== null) {
-      records.push({ Value: match[1].trim() });
+      const value = match[1];
+      if (value) {
+        records.push({ Value: value.trim() });
+      }
     }
-    
+
     return records;
   }
 
   private buildChangeBatchXml(changeBatch: Route53ChangeBatch): string {
-    const changes = changeBatch.Changes.map(change => {
+    const changes = changeBatch.Changes.map((change) => {
       const record = change.ResourceRecordSet;
-      const resourceRecords = record.ResourceRecords?.map(rr => 
-        `<ResourceRecord><Value>${rr.Value}</Value></ResourceRecord>`
-      ).join('') || '';
+      const resourceRecords =
+        record.ResourceRecords?.map(
+          (rr) => `<ResourceRecord><Value>${rr.Value}</Value></ResourceRecord>`,
+        ).join('') || '';
 
       return `
         <Change>

@@ -1,7 +1,9 @@
 import { Command } from 'commander';
 import inquirer from 'inquirer';
-import type { IDeleteOptions } from '../types/index.js';
+
 import { Logger } from '../lib/logger.js';
+
+import type { IDeleteOptions } from '../types/index.js';
 
 export function createDeleteCommand(): Command {
   const deleteCmd = new Command('delete')

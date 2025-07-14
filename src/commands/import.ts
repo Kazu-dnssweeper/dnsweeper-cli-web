@@ -1,10 +1,13 @@
-import { Command } from 'commander';
-import type { IImportOptions } from '../types/index.js';
-import { Logger } from '../lib/logger.js';
-import { CSVProcessor } from '../lib/csv-processor.js';
-import { DNSResolver } from '../lib/dns-resolver.js';
 import fs from 'fs';
 import path from 'path';
+
+import { Command } from 'commander';
+
+import { CSVProcessor } from '../lib/csv-processor.js';
+import { DNSResolver } from '../lib/dns-resolver.js';
+import { Logger } from '../lib/logger.js';
+
+import type { IImportOptions } from '../types/index.js';
 
 export function createImportCommand(): Command {
   const importCmd = new Command('import')

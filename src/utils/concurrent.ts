@@ -12,10 +12,10 @@ export interface ConcurrentOptions {
  */
 export async function runConcurrent<T>(
   tasks: (() => Promise<T>)[],
-  options: ConcurrentOptions = {}
+  options: ConcurrentOptions = {},
 ): Promise<T[]> {
   const { concurrency = 10, onProgress } = options;
-  
+
   if (tasks.length === 0) {
     return [];
   }
@@ -32,7 +32,9 @@ export async function runConcurrent<T>(
       const task = tasks[currentIndex];
 
       try {
-        results[currentIndex] = await task();
+        if (task) {
+          results[currentIndex] = await task();
+        }
       } catch (error) {
         errors.push({ index: currentIndex, error });
       }
@@ -54,8 +56,8 @@ export async function runConcurrent<T>(
   // エラーがある場合は集約エラーをスロー
   if (errors.length > 0) {
     throw new AggregateError(
-      errors.map(e => e.error as Error),
-      `${errors.length} out of ${tasks.length} tasks failed`
+      errors.map((e) => e.error as Error),
+      `${errors.length} out of ${tasks.length} tasks failed`,
     );
   }
 
@@ -68,7 +70,7 @@ export async function runConcurrent<T>(
 export async function mapConcurrent<T, R>(
   items: T[],
   mapper: (item: T, index: number) => Promise<R>,
-  options: ConcurrentOptions = {}
+  options: ConcurrentOptions = {},
 ): Promise<R[]> {
   const tasks = items.map((item, index) => () => mapper(item, index));
   return runConcurrent(tasks, options);
@@ -83,7 +85,7 @@ export class ProgressTracker {
 
   constructor(
     private total: number,
-    private onUpdate?: (progress: ProgressInfo) => void
+    private onUpdate?: (progress: ProgressInfo) => void,
   ) {
     this.startTime = Date.now();
   }
@@ -99,7 +101,7 @@ export class ProgressTracker {
     const elapsed = Date.now() - this.startTime;
     const rate = this.completed / (elapsed / 1000); // items per second
     const remaining = this.total - this.completed;
-    const eta = remaining / rate * 1000; // milliseconds
+    const eta = (remaining / rate) * 1000; // milliseconds
 
     return {
       completed: this.completed,
@@ -108,7 +110,7 @@ export class ProgressTracker {
       elapsed,
       rate,
       eta: Math.round(eta),
-      remaining
+      remaining,
     };
   }
 }
@@ -129,16 +131,16 @@ export interface ProgressInfo {
 export async function processBatch<T, R>(
   items: T[],
   batchSize: number,
-  processor: (batch: T[]) => Promise<R[]>
+  processor: (batch: T[]) => Promise<R[]>,
 ): Promise<R[]> {
   const results: R[] = [];
-  
+
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     const batchResults = await processor(batch);
     results.push(...batchResults);
   }
-  
+
   return results;
 }
 
@@ -147,26 +149,26 @@ export async function processBatch<T, R>(
  */
 export async function runConcurrentWithRetry<T>(
   tasks: (() => Promise<T>)[],
-  options: ConcurrentOptions & { maxRetries?: number; retryDelay?: number } = {}
+  options: ConcurrentOptions & { maxRetries?: number; retryDelay?: number } = {},
 ): Promise<T[]> {
   const { maxRetries = 3, retryDelay = 1000, ...concurrentOptions } = options;
-  
-  const tasksWithRetry = tasks.map(task => async () => {
+
+  const tasksWithRetry = tasks.map((task) => async () => {
     let lastError: unknown;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await task();
       } catch (error) {
         lastError = error;
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+          await new Promise((resolve) => setTimeout(resolve, retryDelay * (attempt + 1)));
         }
       }
     }
-    
+
     throw lastError;
   });
-  
+
   return runConcurrent(tasksWithRetry, concurrentOptions);
 }

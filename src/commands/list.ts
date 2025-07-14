@@ -1,7 +1,9 @@
 import { Command } from 'commander';
-import type { IListOptions } from '../types/index.js';
-import { Logger } from '../lib/logger.js';
+
 import { DNSResolver } from '../lib/dns-resolver.js';
+import { Logger } from '../lib/logger.js';
+
+import type { IListOptions } from '../types/index.js';
 
 export function createListCommand(): Command {
   const list = new Command('list')

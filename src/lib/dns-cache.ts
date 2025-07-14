@@ -2,7 +2,8 @@
  * DNS解決結果のキャッシュ機能
  */
 
-import type { IDNSResponse, IDNSQuery } from './dns-resolver.js';
+import type { IDNSQuery } from '../types/index.js';
+import type { IDNSResponse } from './dns-resolver.js';
 
 /**
  * キャッシュエントリ
@@ -49,7 +50,7 @@ export class DnsCache {
   private stats = {
     hits: 0,
     misses: 0,
-    evictions: 0
+    evictions: 0,
   };
   private cleanupTimer?: NodeJS.Timeout;
 
@@ -60,7 +61,7 @@ export class DnsCache {
       maxTtl: 86400, // 24時間
       minTtl: 60, // 1分
       cleanupInterval: 60000, // 1分
-      ...options
+      ...options,
     };
 
     // 定期的なクリーンアップを開始
@@ -80,8 +81,8 @@ export class DnsCache {
   private calculateTtl(response: IDNSResponse): number {
     // レコードからTTLを取得
     const recordTtls = response.records
-      .map(record => record.ttl)
-      .filter(ttl => ttl !== undefined) as number[];
+      .map((record) => record.ttl)
+      .filter((ttl) => ttl !== undefined);
 
     let ttl = this.options.defaultTtl!;
 
@@ -149,7 +150,7 @@ export class DnsCache {
       timestamp: now,
       ttl,
       accessCount: 1,
-      lastAccess: now
+      lastAccess: now,
     };
 
     this.cache.set(key, entry);
@@ -222,9 +223,9 @@ export class DnsCache {
 
     for (const [key, _] of this.cache.entries()) {
       const [cachedDomain, cachedType] = key.split(':');
-      
+
       let shouldDelete = false;
-      
+
       if (domain && type) {
         shouldDelete = cachedDomain === domain.toLowerCase() && cachedType === type.toUpperCase();
       } else if (domain) {
@@ -232,7 +233,7 @@ export class DnsCache {
       } else if (type) {
         shouldDelete = cachedType === type.toUpperCase();
       }
-      
+
       if (shouldDelete) {
         this.cache.delete(key);
         deleted++;
@@ -272,7 +273,7 @@ export class DnsCache {
       averageTtl: Math.round(averageTtl),
       oldestEntry: this.cache.size > 0 ? now - oldestEntry : 0,
       newestEntry: this.cache.size > 0 ? now - newestEntry : 0,
-      memoryUsage
+      memoryUsage,
     };
   }
 
@@ -281,16 +282,16 @@ export class DnsCache {
    */
   private estimateMemoryUsage(): number {
     let size = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       // キーのサイズ
       size += key.length * 2; // UTF-16
-      
+
       // エントリのサイズ（簡易計算）
       size += JSON.stringify(entry.response).length * 2;
       size += 64; // エントリのメタデータ
     }
-    
+
     return size;
   }
 
@@ -311,7 +312,7 @@ export class DnsCache {
   export(): Array<{ key: string; entry: CacheEntry }> {
     return Array.from(this.cache.entries()).map(([key, entry]) => ({
       key,
-      entry: { ...entry }
+      entry: { ...entry },
     }));
   }
 
@@ -320,9 +321,9 @@ export class DnsCache {
    */
   import(data: Array<{ key: string; entry: CacheEntry }>): void {
     this.clear();
-    
+
     const now = Date.now();
-    
+
     for (const { key, entry } of data) {
       // 期限切れでないエントリのみインポート
       const age = (now - entry.timestamp) / 1000;
