@@ -26,7 +26,7 @@ describe('list command', () => {
 
       expect(command).toBeInstanceOf(Command);
       expect(command.name()).toBe('list');
-      expect(command.description()).toContain('List all DNS records');
+      expect(command.description()).toContain('List DNS records');
     });
 
     it('オプションが定義されている', () => {

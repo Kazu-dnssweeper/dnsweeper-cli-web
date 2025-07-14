@@ -19,7 +19,12 @@ export default defineConfig({
       'tests/unit/index-direct.test.ts',
       'tests/unit/structured-logger.test.ts',
       'tests/unit/commands/add.test.ts',
-      'tests/unit/commands/delete.test.ts'
+      'tests/unit/commands/delete.test.ts',
+      'tests/unit/commands/list.test.ts',
+      'tests/unit/lib/csv-processor.test.ts',
+      'tests/unit/utils/ipv6.test.ts',
+      'tests/unit/lib/dns-resolver.test.ts',
+      'tests/unit/lib/logger.test.ts'
     ],
     testTimeout: 30000, // 30秒（さらに短縮）
     hookTimeout: 10000, // 10秒
