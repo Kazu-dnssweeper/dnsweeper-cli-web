@@ -183,6 +183,11 @@ cat /home/hikit/dnsweeper/CLAUDE.md | grep -A 50 "6段階強制実行プロト�
 | `expected 'List DNS records' to contain 'List all DNS records'` | テストの期待値と実装の説明文不一致 | 実装の実際の説明文に合わせてテスト修正 |
 | `logger.stopSpinner is not a function` | モックでstopSpinnerメソッド未定義 | 複雑なモック問題のため一時的にCI除外 |
 
+### Process Exit予期外呼び出しエラー
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `process.exit unexpectedly called` | index.tsでmain()の直接実行がテストに影響 | テスト環境では自動実行を無効化（NODE_ENV・VITEST環境変数チェック） |
+
 ## 強制ルール
 1. **推測禁止** - エラーメッセージを読まずに修正したら違反
 2. **省略禁止** - 6段階のどれか1つでも省略したら違反  

@@ -85,4 +85,7 @@ export async function main(): Promise<void> {
   }
 }
 
-void main();
+// テスト環境では自動実行しない
+if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+  void main();
+}
