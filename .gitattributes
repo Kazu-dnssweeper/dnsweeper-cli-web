@@ -1,6 +1,6 @@
 # Git 改行コード設定
 # すべてのテキストファイルをLF改行に統一
-* text=auto eol=lf
+* text eol=lf
 
 # 特定のファイルタイプを明示的に指定
 *.ts text eol=lf
