@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { OutputFormatter, createFormatter, formatAnalysisResult, type AnalysisResult } from '../../../src/lib/output-formatter.js';
 import type { IDNSRecord } from '../../../src/types/index.js';
 
@@ -185,7 +187,8 @@ describe('OutputFormatter', () => {
       formatter = new OutputFormatter({ format: 'json' });
       
       // エラーが発生しないことを確認（実際のファイル書き込みは行わない）
-      const promise = formatter.writeToFile(mockResult, '/tmp/test.json');
+      const testFile = join(tmpdir(), 'test.json');
+      const promise = formatter.writeToFile(mockResult, testFile);
       await expect(promise).resolves.not.toThrow();
     });
 
@@ -193,7 +196,8 @@ describe('OutputFormatter', () => {
       formatter = new OutputFormatter({ format: 'csv' });
       
       // エラーが発生しないことを確認（実際のファイル書き込みは行わない）
-      const promise = formatter.writeToFile(mockResult, '/tmp/test.csv');
+      const testFile = join(tmpdir(), 'test.csv');
+      const promise = formatter.writeToFile(mockResult, testFile);
       await expect(promise).resolves.not.toThrow();
     });
 

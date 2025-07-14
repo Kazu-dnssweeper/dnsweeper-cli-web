@@ -188,6 +188,11 @@ cat /home/hikit/dnsweeper/CLAUDE.md | grep -A 50 "6段階強制実行プロト�
 |------------|------|---------|
 | `process.exit unexpectedly called` | index.tsでmain()の直接実行がテストに影響 | テスト環境では自動実行を無効化（NODE_ENV・VITEST環境変数チェック） |
 
+### Windows環境ファイルパスエラー
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `ENOENT: no such file or directory, open 'D:\tmp\test.json'` | Unix形式パス(/tmp)がWindowsで無効 | os.tmpdir()とpath.join()でクロスプラットフォーム対応 |
+
 ## 強制ルール
 1. **推測禁止** - エラーメッセージを読まずに修正したら違反
 2. **省略禁止** - 6段階のどれか1つでも省略したら違反  

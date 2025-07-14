@@ -24,7 +24,8 @@ export default defineConfig({
       'tests/unit/lib/csv-processor.test.ts',
       'tests/unit/utils/ipv6.test.ts',
       'tests/unit/lib/dns-resolver.test.ts',
-      'tests/unit/lib/logger.test.ts'
+      'tests/unit/lib/logger.test.ts',
+      'tests/unit/utils/concurrent.test.ts'
     ],
     testTimeout: 30000, // 30秒（さらに短縮）
     hookTimeout: 10000, // 10秒
