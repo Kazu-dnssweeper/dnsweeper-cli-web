@@ -55,7 +55,7 @@ export class ProgressDisplay {
   /**
    * スピナーを開始
    */
-  start(text: string, type: SpinnerType = 'processing'): this {
+  start(text: string, _type: SpinnerType = 'processing'): this {
     if (!this.isEnabled) {
       console.log(text);
       return this;
@@ -220,7 +220,13 @@ export class BatchProgress {
   /**
    * 進捗情報を取得
    */
-  getStats(): { total: number; completed: number; failed: number; remaining: number; elapsed: number } {
+  getStats(): {
+    total: number;
+    completed: number;
+    failed: number;
+    remaining: number;
+    elapsed: number;
+  } {
     return {
       total: this.total,
       completed: this.completed,

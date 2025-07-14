@@ -1,11 +1,9 @@
 /* eslint-disable no-console */
 import chalk from 'chalk';
-import ora from 'ora';
 
 import {
   colors,
   colorize,
-  shouldUseColors,
   configureColors,
 } from './colors.js';
 import { ProgressDisplay, type SpinnerType } from './progress.js';
