@@ -1,7 +1,11 @@
 /* eslint-disable no-console */
 import chalk from 'chalk';
 
-import { colors, colorize, configureColors } from './colors.js';
+import {
+  colors,
+  colorize,
+  configureColors,
+} from './colors.js';
 import { ProgressDisplay, type SpinnerType } from './progress.js';
 import {
   getLogger,
