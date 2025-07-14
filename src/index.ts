@@ -58,6 +58,14 @@ export function createProgram(): Command {
 
 export async function main(): Promise<void> {
   try {
+    // 現在のディレクトリが取得できるか確認
+    try {
+      process.cwd();
+    } catch (cwdError) {
+      // GitHub Actions等で作業ディレクトリが削除された場合の対処
+      process.chdir('/tmp');
+    }
+
     const program = createProgram();
 
     // 設定ファイルの読み込み（パース前に実行）
