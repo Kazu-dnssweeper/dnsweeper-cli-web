@@ -1,0 +1,55 @@
+# Development files
+src/
+tests/
+docs/
+.vscode/
+.idea/
+*.log
+
+# Configuration files
+.env*
+.editorconfig
+.eslintrc*
+.prettierrc*
+.prettierignore
+tsconfig*.json
+vitest.config.ts
+
+# Git files
+.git/
+.github/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Test data
+test-data/
+coverage/
+.nyc_output/
+
+# Build artifacts
+*.tsbuildinfo
+*.d.ts.map
+*.js.map
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development dependencies
+node_modules/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Web UI (not part of CLI package)
+web/
+
+# Other
+report.json
+test.csv
+test.json

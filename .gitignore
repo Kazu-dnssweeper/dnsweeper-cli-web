@@ -8,6 +8,17 @@ dist/
 build/
 *.tsbuildinfo
 
+# TypeScript compiled files
+*.js
+*.d.ts
+*.js.map
+*.d.ts.map
+!vitest.config.js
+!vitest.config.d.ts
+!web/frontend/postcss.config.js
+!web/frontend/tailwind.config.js
+!web/frontend/eslint.config.js
+
 # Testing
 coverage/
 .nyc_output/
