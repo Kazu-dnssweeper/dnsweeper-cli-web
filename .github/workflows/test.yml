@@ -37,12 +37,12 @@ jobs:
     - name: リント実行
       run: npm run lint
 
-    # テストは後で有効化（まずはリントを確認）
-    # - name: テスト実行
-    #   run: npm test
+    - name: テスト実行
+      run: npm test
 
-    # - name: カバレッジレポート生成
-    #   run: npm run test:coverage
+    - name: カバレッジレポート生成
+      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+      run: npm run test:coverage
 
     - name: カバレッジレポートアップロード
       if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'

@@ -3,6 +3,13 @@ import chalk from 'chalk';
 import ora from 'ora';
 
 import {
+  colors,
+  colorize,
+  shouldUseColors,
+  configureColors,
+} from './colors.js';
+import { ProgressDisplay, type SpinnerType } from './progress.js';
+import {
   getLogger,
   createLogger,
   setGlobalLogger,
@@ -29,6 +36,9 @@ export class Logger {
     this.verbose = options.verbose ?? false;
     this.quiet = options.quiet ?? false;
 
+    // カラーモードを初期化
+    configureColors();
+
     // 構造化ログを初期化
     if (options.enableStructuredLogging !== false) {
       this.structuredLogger = createLogger({
@@ -48,40 +58,45 @@ export class Logger {
 
   info(message: string, meta?: Record<string, any>): void {
     if (!this.quiet) {
-      console.log(chalk.blue('ℹ'), message);
+      console.log(colorize.info('ℹ'), message);
     }
     this.structuredLogger.info(message, meta);
   }
 
   success(message: string, meta?: Record<string, any>): void {
     if (!this.quiet) {
-      console.log(chalk.green('✓'), message);
+      console.log(colorize.success('✓'), message);
     }
     this.structuredLogger.info(`SUCCESS: ${message}`, meta);
   }
 
   error(message: string, error?: Error, meta?: Record<string, any>): void {
-    console.error(chalk.red('✗'), message);
+    console.error(colorize.error('✗'), message);
     this.structuredLogger.error(message, meta, error);
   }
 
   warn(message: string, meta?: Record<string, any>): void {
     if (!this.quiet) {
-      console.warn(chalk.yellow('⚠'), message);
+      console.warn(colorize.warning('⚠'), message);
     }
     this.structuredLogger.warn(message, meta);
   }
 
   debug(message: string, meta?: Record<string, any>): void {
     if (this.verbose && !this.quiet) {
-      console.log(chalk.gray('[DEBUG]'), message);
+      console.log(colors.muted('[DEBUG]'), message);
     }
     this.structuredLogger.debug(message, meta);
   }
 
-  startSpinner(text: string, meta?: Record<string, any>): void {
+  startSpinner(
+    text: string,
+    type: SpinnerType = 'processing',
+    meta?: Record<string, any>
+  ): void {
     if (!this.quiet) {
-      this.spinner = ora(text).start();
+      const progress = new ProgressDisplay().start(text, type);
+      this.spinner = progress.spinner;
     }
     this.structuredLogger.info(`SPINNER_START: ${text}`, meta);
   }

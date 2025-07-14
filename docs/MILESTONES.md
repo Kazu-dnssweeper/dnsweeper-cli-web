@@ -34,9 +34,9 @@
 - [x] フォルダ構造作成（src/commands/, src/lib/, src/utils/, src/types/）
 - [x] テストフォルダ作成（tests/unit/, tests/integration/, tests/e2e/） ✅ **2025年7月14日完了**
 - [x] ドキュメントフォルダ作成（docs/api/, docs/examples/）
-- [ ] GitHub Actions ワークフロー作成（.github/workflows/）
-- [ ] CI用 Node.js matrix設定（v18, v20, v22）
-- [ ] CI用 OS matrix設定（ubuntu, windows, macos）
+- [x] GitHub Actions ワークフロー作成（.github/workflows/） ✅ **2025年7月14日完了**
+- [x] CI用 Node.js matrix設定（v18, v20, v22） ✅ **2025年7月14日完了**
+- [x] CI用 OS matrix設定（ubuntu, windows, macos） ✅ **2025年7月14日完了**
 - [ ] GitHub Actions secrets設定
 - [x] .gitignore 設定（Node.js + TypeScript template）
 - [x] .npmignore 設定（不要ファイル除外） ✅ **2025年7月14日完了**
@@ -53,26 +53,26 @@
 - [x] `dnsweeper --help` コマンド実装
 - [x] `dnsweeper --verbose` フラグ実装
 - [x] `dnsweeper --quiet` フラグ実装
-- [ ] `dnsweeper --config` オプション実装
-- [ ] グローバルオプション解析実装
+- [x] `dnsweeper --config` オプション実装 ✅ **2025年7月14日完了**
+- [x] グローバルオプション解析実装 ✅ **2025年7月14日完了**
 - [x] サブコマンド構造設計
 - [ ] コマンド引数バリデーション実装
 - [x] 基本的なエラーハンドリング実装
 - [ ] エラーメッセージ多言語対応準備
 - [x] 終了コード定義・実装
 - [x] chalk v5.x 導入・色付き出力設定
-- [ ] 色分けパレット定義（success, warning, error, info）
-- [ ] カラーモード自動検出実装
-- [ ] NO_COLOR環境変数対応
+- [x] 色分けパレット定義（success, warning, error, info） ✅ **2025年7月14日完了**
+- [x] カラーモード自動検出実装 ✅ **2025年7月14日完了**
+- [x] NO_COLOR環境変数対応 ✅ **2025年7月14日完了**
 - [x] ora v7.x 導入・進捗表示機能
-- [ ] カスタムスピナー設定
-- [ ] 進捗表示コンポーネント実装
+- [x] カスタムスピナー設定 ✅ **2025年7月14日完了**
+- [x] 進捗表示コンポーネント実装 ✅ **2025年7月14日完了**
 - [x] 基本的なロギング機能実装
-- [ ] ログレベル設定（debug, info, warn, error）
-- [ ] ログファイル出力機能実装
-- [ ] 設定ファイル（.dnsweeper.json）読み込み機能
-- [ ] 環境変数サポート実装
-- [ ] 設定優先順位実装（CLI args > env vars > config file）
+- [x] ログレベル設定（debug, info, warn, error） ✅ **2025年7月14日完了**
+- [x] ログファイル出力機能実装 ✅ **2025年7月14日完了**
+- [x] 設定ファイル（.dnsweeper.json）読み込み機能 ✅ **2025年7月14日完了**
+- [x] 環境変数サポート実装 ✅ **2025年7月14日完了**
+- [x] 設定優先順位実装（CLI args > env vars > config file） ✅ **2025年7月14日完了**
 
 ### **DNS解決機能実装（8月第1週）**
 - [x] DNS解決基盤ライブラリ選定（node:dns vs dns2）
