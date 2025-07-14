@@ -30,8 +30,8 @@ export default defineConfig({
     },
     setupFiles: ['tests/setup.ts'],
     // タイムアウト設定
-    testTimeout: 15000, // 15秒
-    hookTimeout: 5000, // 5秒
+    testTimeout: 30000, // 30秒（GitHub Actions環境向けに増加）
+    hookTimeout: 10000, // 10秒
     // Vitest v3での新しい設定オプション
     pool: 'forks', // threads から forks に変更（process.chdir対応）
     poolOptions: {

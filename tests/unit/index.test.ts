@@ -15,7 +15,7 @@ vi.mock('../../src/commands/index.js', () => ({
   createValidateCommand: vi.fn(() => new Command('validate')),
 }));
 
-vi.mock('../lib/logger.js', () => ({
+vi.mock('../../src/lib/logger.js', () => ({
   Logger: vi.fn().mockImplementation(() => ({
     error: vi.fn(),
     info: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock('../lib/logger.js', () => ({
   })),
 }));
 
-vi.mock('../lib/config.js', () => ({
+vi.mock('../../src/lib/config.js', () => ({
   loadConfig: vi.fn().mockResolvedValue({
     dns: { timeout: 5000 },
     output: { format: 'table' }
@@ -43,7 +43,7 @@ describe('index.ts', () => {
 
       expect(program).toBeInstanceOf(Command);
       expect(program.name()).toBe('dnsweeper');
-      expect(program.description()).toContain('DNS management');
+      expect(program.description()).toContain('DNS record risk analysis');
     });
 
     it('バージョンとオプションが設定されている', () => {
@@ -133,7 +133,7 @@ describe('index.ts', () => {
     });
 
     it('設定ファイルを読み込む', async () => {
-      const { loadConfig } = await import('../lib/config.js');
+      const { loadConfig } = await import('../../src/lib/config.js');
       
       process.argv.push('--config', 'custom.json', 'list');
       
