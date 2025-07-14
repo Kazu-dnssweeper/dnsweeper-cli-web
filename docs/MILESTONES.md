@@ -14,34 +14,34 @@
 ### **環境構築・プロジェクト初期化（7月第3週）**
 - [x] Node.js v22.4.1 インストール・動作確認
 - [x] npm v10.8.1 バージョン確認・更新
-- [ ] GitHubアカウント確認・SSH鍵設定
-- [ ] GitHubリポジトリ作成（dnsweeper-cli-web）
-- [ ] リポジトリ説明文・タグ設定
-- [ ] リポジトリ Topics設定（dns, cli, web, typescript）
+- [x] GitHubアカウント確認・SSH鍵設定 ✅ **2025年7月14日完了**
+- [x] GitHubリポジトリ作成（dnsweeper-cli-web） ✅ **2025年7月14日完了**
+- [x] リポジトリ説明文・タグ設定 ✅ **2025年7月14日完了**
+- [x] リポジトリ Topics設定（dns, cli, web, typescript） ✅ **2025年7月14日完了**
 - [x] プロジェクト初期化（`npm init -y`）
 - [x] package.json メタデータ完成
 - [x] TypeScript環境構築（tsconfig.json設定）
 - [x] TypeScript strict mode 有効化
-- [ ] TypeScript paths 設定（@/src aliasing）
+- [x] TypeScript paths 設定（@/src aliasing） ✅ **2025年7月14日完了**
 - [x] ESLint 設定ファイル作成
-- [ ] ESLint TypeScript plugin設定
-- [ ] ESLint import plugin設定
-- [ ] Prettier設定ファイル作成
-- [ ] Prettier + ESLint 競合解決設定
-- [ ] VSCode設定ファイル作成（.vscode/）
-- [ ] VSCode推奨拡張機能設定
-- [ ] EditorConfig設定ファイル作成
+- [x] ESLint TypeScript plugin設定 ✅ **2025年7月14日完了 - 問題数439→116に削減**
+- [x] ESLint import plugin設定 ✅ **2025年7月14日完了**
+- [x] Prettier設定ファイル作成 ✅ **2025年7月14日完了**
+- [x] Prettier + ESLint 競合解決設定 ✅ **2025年7月14日完了**
+- [x] VSCode設定ファイル作成（.vscode/） ✅ **2025年7月14日完了**
+- [x] VSCode推奨拡張機能設定 ✅ **2025年7月14日完了**
+- [x] EditorConfig設定ファイル作成 ✅ **2025年7月14日完了**
 - [x] フォルダ構造作成（src/commands/, src/lib/, src/utils/, src/types/）
-- [ ] テストフォルダ作成（tests/unit/, tests/integration/, tests/e2e/）
+- [x] テストフォルダ作成（tests/unit/, tests/integration/, tests/e2e/） ✅ **2025年7月14日完了**
 - [x] ドキュメントフォルダ作成（docs/api/, docs/examples/）
 - [ ] GitHub Actions ワークフロー作成（.github/workflows/）
 - [ ] CI用 Node.js matrix設定（v18, v20, v22）
 - [ ] CI用 OS matrix設定（ubuntu, windows, macos）
 - [ ] GitHub Actions secrets設定
 - [x] .gitignore 設定（Node.js + TypeScript template）
-- [ ] .npmignore 設定（不要ファイル除外）
+- [x] .npmignore 設定（不要ファイル除外） ✅ **2025年7月14日完了**
 - [x] LICENSE ファイル作成（MIT）
-- [ ] SECURITY.md セキュリティポリシー作成
+- [x] SECURITY.md セキュリティポリシー作成 ✅ **2025年7月14日完了**
 - [ ] CODE_OF_CONDUCT.md 作成
 
 ### **基本CLI構造実装（7月第4週）**
