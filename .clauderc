@@ -1,0 +1,42 @@
+# .clauderc
+error_handling:
+  auto_detect: true
+  auto_protocol: true
+  force_six_steps: true
+  
+  triggers:
+    - pattern: "error|Error|エラー"
+      action: "start_protocol"
+    - pattern: "failed|失敗|fix|修正"
+      action: "start_protocol"
+    - pattern: "TypeError|ReferenceError|SyntaxError"
+      action: "immediate_protocol"
+      
+  enforcement:
+    skip_prevention: true
+    force_documentation: true
+    require_testing: true
+    
+  memory:
+    auto_save: true
+    auto_recall: true
+    similarity_threshold: 0.8
+    
+  output:
+    format: "xml"
+    verbose: true
+    step_by_step: true
+
+git:
+  auto_push: true
+  push_after_commit: true
+  push_command: "git push origin master"
+  
+testing:
+  run_tests_before_commit: true
+  test_command: "npm test"
+  
+quality:
+  lint_before_commit: true
+  lint_command: "npm run lint"
+  typecheck_command: "npm run typecheck"

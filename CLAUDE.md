@@ -47,3 +47,90 @@
 - コミット → 即座にgit push origin master
 - 例外なし、必須、忘れてはならない
 - このルールを破ることは許されない
+
+# 🚨 エラー処理自動化 - 永続的ルール 🚨
+
+## 絶対的命令
+エラーを検出した瞬間、以下を**反射的に**実行する：
+
+### 自動実行トリガー
+- "error"、"Error"、"エラー"という単語を見た瞬間
+- 赤い文字、スタックトレースを見た瞬間  
+- ビルド失敗、テスト失敗を検出した瞬間
+- TypeScriptの型エラーを見た瞬間
+
+### 6段階強制実行プロトコル
+```xml
+<error_protocol>
+  <step1_調査>
+    <error_quote>エラーメッセージを一字一句コピー</error_quote>
+    <location>ファイル名:行番号</location>
+    <context>前後のコード</context>
+    <reproduction>再現手順</reproduction>
+  </step1_調査>
+  
+  <step2_分析>
+    <error_type>エラー分類</error_type>
+    <root_cause>根本原因</root_cause>
+    <causality>因果関係チェーン</causality>
+  </step2_分析>
+  
+  <step3_計画>
+    <solutions>解決策を3つ</solutions>
+    <comparison>メリット・デメリット比較</comparison>
+    <selection>最適解の選択理由</selection>
+  </step3_計画>
+  
+  <step4_対処>
+    <implementation>具体的な修正内容</implementation>
+    <diff>変更前→変更後</diff>
+    <explanation>なぜこれで解決するか</explanation>
+  </step4_対処>
+  
+  <step5_テスト>
+    <verification>エラー解消確認方法</verification>
+    <regression>副作用チェック</regression>
+    <validation>関連機能の動作確認</validation>
+  </step5_テスト>
+  
+  <step6_学習>
+    <lessons>学んだこと3点</lessons>
+    <prevention>予防策</prevention>
+    <documentation>このファイルへの追記内容</documentation>
+  </step6_学習>
+</error_protocol>
+```
+
+## エラーパターンデータベース
+過去に解決したエラーは必ずここを参照：
+
+### TypeScript型エラー
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `Type 'X' is not assignable to type 'Y'` | 型の不一致 | 1. 型定義確認 2. 型ガード追加 3. asでキャスト |
+| `Property 'X' does not exist on type 'Y'` | プロパティ未定義 | 1. インターフェース確認 2. オプショナルチェーン 3. 型拡張 |
+| `Cannot read properties of undefined` | chalkモックの不完全実装 | メソッドチェーン対応のモック実装 |
+
+### テスト実行時エラー  
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `Logger is not a constructor` | vi.importActual重複 | モックをグローバル定義に変更 |
+| `Cannot read property '_actions'` | Commander内部API使用 | parseAsyncを使用 |
+| `uv_cwd: ENOENT` | 作業ディレクトリ削除 | execSyncにcwd指定、process.chdir('/tmp') |
+
+### 改行コードエラー
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `Delete ␍ prettier/prettier` | Windows CRLF | .gitattributes追加、lint --fix実行 |
+
+## 強制ルール
+1. **推測禁止** - エラーメッセージを読まずに修正したら違反
+2. **省略禁止** - 6段階のどれか1つでも省略したら違反  
+3. **記録必須** - 解決後、このファイルに追記しなかったら違反
+4. **参照必須** - 同じエラーで過去の記録を見なかったら違反
+
+## 監視対象ファイルパターン
+- `*.ts`, `*.tsx` - TypeScriptファイル
+- `*.js`, `*.jsx` - JavaScriptファイル  
+- `package.json` - 依存関係エラー
+- `tsconfig.json` - 設定エラー

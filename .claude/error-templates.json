@@ -1,0 +1,74 @@
+{
+  "auto_triggers": {
+    "typescript_errors": [
+      "Type.*is not assignable",
+      "Property.*does not exist", 
+      "Cannot find module",
+      "Argument of type"
+    ],
+    "react_errors": [
+      "Cannot read prop",
+      "Invalid hook call",
+      "Objects are not valid as a React child",
+      "Too many re-renders"
+    ],
+    "node_errors": [
+      "Cannot find module",
+      "ENOENT",
+      "EACCES", 
+      "EMFILE"
+    ],
+    "test_errors": [
+      "Logger is not a constructor",
+      "Cannot read property '_actions'",
+      "uv_cwd",
+      "process.exit unexpectedly called"
+    ],
+    "prettier_errors": [
+      "Delete `␍`",
+      "Insert `⏎`",
+      "Replace.*with"
+    ]
+  },
+  
+  "auto_response_template": {
+    "immediate_action": "エラーを検出しました。6段階プロトコルを自動実行します。",
+    "step_markers": {
+      "1": "🔍 調査フェーズ開始...",
+      "2": "🧠 分析フェーズ開始...", 
+      "3": "📋 計画フェーズ開始...",
+      "4": "🔧 対処フェーズ開始...",
+      "5": "🧪 テストフェーズ開始...",
+      "6": "📚 学習フェーズ開始..."
+    }
+  },
+  
+  "memory_enforcement": {
+    "check_before_fix": "必ず.claude/CLAUDE.mdの過去のエラーパターンを確認",
+    "update_after_fix": "必ず解決策を.claude/CLAUDE.mdに追記",
+    "cross_reference": "類似エラーがないか自動検索"
+  },
+
+  "known_solutions": {
+    "chalk_mock_error": {
+      "pattern": "Cannot read properties of undefined.*bold",
+      "solution": "chalkのメソッドチェーン対応モックを実装"
+    },
+    "logger_constructor_error": {
+      "pattern": "Logger is not a constructor",
+      "solution": "vi.importActualを削除し、モックをグローバル定義"
+    },
+    "commander_actions_error": {
+      "pattern": "Cannot read property '_actions'",
+      "solution": "parseAsyncを使用してコマンドを実行"
+    },
+    "cwd_error": {
+      "pattern": "ENOENT.*uv_cwd|getcwd",
+      "solution": "execSyncにcwdオプション追加、process.chdir('/tmp')フォールバック"
+    },
+    "crlf_error": {
+      "pattern": "Delete `␍`",
+      "solution": ".gitattributes追加、npm run lint -- --fix実行"
+    }
+  }
+}
