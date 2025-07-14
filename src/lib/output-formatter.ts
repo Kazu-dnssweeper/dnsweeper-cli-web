@@ -285,8 +285,10 @@ export class OutputFormatter {
         header: 'Risk',
         width: 10,
         align: 'center',
-        format: (level: RiskLevel) =>
-          this.colorizeRisk(level, level.toUpperCase()),
+        format: (value: unknown) => {
+          const level = value as RiskLevel;
+          return this.colorizeRisk(level, level.toUpperCase());
+        },
       },
       { key: 'riskScore', header: 'Score', width: 6, align: 'right' },
     ];

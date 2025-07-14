@@ -197,6 +197,14 @@ cat /home/hikit/dnsweeper/CLAUDE.md | grep -A 50 "6段階強制実行プロト�
 | エラーパターン | 原因 | 解決方法 |
 |------------|------|---------|
 | `promise resolved "undefined" instead of rejecting` | importコマンドテストでエラー処理が正常動作していない | CI設定でtests/integration/**を除外、個別修正は後回し |
+
+### TypeScript型エラー（GitHub Actions）
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `Property 'value' does not exist on type 'unknown'` | unknown型のプロパティ直接アクセス | 型ガード関数で安全にアクセス、型定義interface作成 |
+| `Property 'exchange', 'priority', 'target' does not exist on type 'unknown'` | DNS解決結果の型未定義 | DNSRecordData interface定義、isDNSRecordData型ガード実装 |
+| `Cannot find name 'OutputFormat'` | 型インポート不足 | 必要な型をimport文に追加 |
+| `Type '(level: RiskLevel) => string' is not assignable to type '(value: unknown) => string'` | 型パラメータ不一致 | 型アサーションで安全に変換 |
 | `expected '' to contain 'リスク分析'` | CLI統合テストで空出力、環境依存問題 | tests/integration/**を一時除外、環境固有の実行問題 |
 | `expected 80 to be 50` | encoding-detectorの信頼度期待値不一致 | 実装とテストの期待値ずれ、一時除外で対応 |
 

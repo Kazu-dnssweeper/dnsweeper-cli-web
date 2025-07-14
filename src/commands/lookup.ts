@@ -9,6 +9,7 @@ import { Logger } from '../lib/logger.js';
 import {
   createFormatter,
   type AnalysisResult,
+  type OutputFormat,
 } from '../lib/output-formatter.js';
 import { RiskCalculator } from '../lib/risk-calculator.js';
 
@@ -215,6 +216,23 @@ function validateOptions(options: ILookupOptions): void {
   }
 }
 
+// DNS レコード型定義
+interface DNSRecordData {
+  exchange?: string;
+  value?: string;
+  priority?: number;
+  target?: string;
+  weight?: number;
+  port?: number;
+  address?: string;
+  ttl?: number;
+}
+
+// 型ガード関数
+function isDNSRecordData(record: unknown): record is DNSRecordData {
+  return typeof record === 'object' && record !== null;
+}
+
 /**
  * DNS解決結果をIDNSRecord形式に変換
  */
@@ -229,44 +247,49 @@ function convertToIDNSRecords(
 
   const now = new Date();
 
-  return lookupResult.records.map((record: unknown, index: number): IDNSRecord => {
-    let value: string;
-    let priority: number | undefined;
-    let weight: number | undefined;
-    let port: number | undefined;
+  return lookupResult.records.map(
+    (record: unknown, index: number): IDNSRecord => {
+      let value: string;
+      let priority: number | undefined;
+      let weight: number | undefined;
+      let port: number | undefined;
 
-    // レコードタイプ別の値の処理
-    switch (recordType) {
-      case 'MX':
-        value = record.exchange || record.value || String(record);
-        priority = record.priority;
-        break;
-      case 'SRV':
-        value = record.target || record.value || String(record);
-        priority = record.priority;
-        weight = record.weight;
-        port = record.port;
-        break;
-      case 'TXT':
-        value = Array.isArray(record) ? record.join(' ') : String(record);
-        break;
-      default:
-        value = record.address || record.value || String(record);
+      // 安全な型変換
+      const recordData = isDNSRecordData(record) ? record : {};
+
+      // レコードタイプ別の値の処理
+      switch (recordType) {
+        case 'MX':
+          value = recordData.exchange || recordData.value || String(record);
+          priority = recordData.priority;
+          break;
+        case 'SRV':
+          value = recordData.target || recordData.value || String(record);
+          priority = recordData.priority;
+          weight = recordData.weight;
+          port = recordData.port;
+          break;
+        case 'TXT':
+          value = Array.isArray(record) ? record.join(' ') : String(record);
+          break;
+        default:
+          value = recordData.address || recordData.value || String(record);
+      }
+
+      return {
+        id: `${domain}-${recordType.toLowerCase()}-${index}`,
+        name: domain,
+        type: recordType,
+        value,
+        ttl: recordData.ttl || 300,
+        ...(priority !== undefined && { priority }),
+        ...(weight !== undefined && { weight }),
+        ...(port !== undefined && { port }),
+        created: now,
+        updated: now,
+      };
     }
-
-    return {
-      id: `${domain}-${recordType.toLowerCase()}-${index}`,
-      name: domain,
-      type: recordType,
-      value,
-      ttl: record.ttl || 300,
-      ...(priority !== undefined && { priority }),
-      ...(weight !== undefined && { weight }),
-      ...(port !== undefined && { port }),
-      created: now,
-      updated: now,
-    };
-  });
+  );
 }
 
 /**

@@ -256,7 +256,11 @@ export class Logger {
   /**
    * 重要なイベントをログ（常に出力）
    */
-  critical(message: string, meta?: Record<string, unknown>, error?: Error): void {
+  critical(
+    message: string,
+    meta?: Record<string, unknown>,
+    error?: Error
+  ): void {
     console.error(chalk.red.bold('🚨 CRITICAL'), message);
     this.structuredLogger.error(`CRITICAL: ${message}`, meta, error);
   }
