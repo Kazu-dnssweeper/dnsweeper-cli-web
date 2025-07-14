@@ -181,17 +181,22 @@ export class CloudflareClient {
   ): CloudflareDNSRecord[] {
     return csvRecords.map(csvRecord => {
       let content = csvRecord.value;
-      
+
       // MXレコードの場合、priorityをcontentに含める
       if (csvRecord.type === 'MX' && csvRecord.priority !== undefined) {
         content = `${csvRecord.priority} ${csvRecord.value}`;
       }
-      
+
       // SRVレコードの場合、priority/weight/portをcontentに含める
-      if (csvRecord.type === 'SRV' && csvRecord.priority !== undefined && csvRecord.weight !== undefined && csvRecord.port !== undefined) {
+      if (
+        csvRecord.type === 'SRV' &&
+        csvRecord.priority !== undefined &&
+        csvRecord.weight !== undefined &&
+        csvRecord.port !== undefined
+      ) {
         content = `${csvRecord.priority} ${csvRecord.weight} ${csvRecord.port} ${csvRecord.value}`;
       }
-      
+
       return {
         name: csvRecord.domain,
         type: csvRecord.type,
@@ -212,7 +217,7 @@ export class CloudflareClient {
     return cfRecords.map(cfRecord => {
       let value = cfRecord.content;
       let priority = cfRecord.priority;
-      
+
       // MXレコードの場合、contentから優先度を抽出
       if (cfRecord.type === 'MX') {
         const match = cfRecord.content.match(/^(\d+)\s+(.+)$/);
@@ -221,7 +226,7 @@ export class CloudflareClient {
           value = match[2];
         }
       }
-      
+
       // SRVレコードの場合、contentからweight/port/target情報を抽出
       if (cfRecord.type === 'SRV') {
         const match = cfRecord.content.match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/);
@@ -231,19 +236,19 @@ export class CloudflareClient {
             domain: cfRecord.name,
             type: cfRecord.type,
             value: match[4], // target
-            ttl: cfRecord.proxied ? 1 : (cfRecord.ttl || 300),
+            ttl: cfRecord.proxied ? 1 : cfRecord.ttl || 300,
             priority,
             weight: parseInt(match[2], 10),
             port: parseInt(match[3], 10),
           };
         }
       }
-      
+
       return {
         domain: cfRecord.name,
         type: cfRecord.type,
         value,
-        ttl: cfRecord.proxied ? 1 : (cfRecord.ttl || 300),
+        ttl: cfRecord.proxied ? 1 : cfRecord.ttl || 300,
         priority,
         weight: undefined,
         port: undefined,
@@ -287,12 +292,17 @@ export class CloudflareClient {
   async importRecords(
     zoneId: string,
     records: ICSVRecord[]
-  ): Promise<{ success: boolean; created: number; failed: number; errors: any[] }> {
+  ): Promise<{
+    success: boolean;
+    created: number;
+    failed: number;
+    errors: any[];
+  }> {
     const results = {
       success: true,
       created: 0,
       failed: 0,
-      errors: [] as any[]
+      errors: [] as any[],
     };
 
     const cloudflareRecords = this.convertCSVToCloudflareRecords(records);
@@ -316,20 +326,21 @@ export class CloudflareClient {
    */
   async exportRecords(
     zoneId: string,
-    options?: { type?: string; name?: string }
+    _options?: { type?: string; name?: string }
   ): Promise<{ success: boolean; records: ICSVRecord[] }> {
     try {
+      // TODO: optionsパラメータを使用してフィルタリングを実装
       const records = await this.listDNSRecords(zoneId);
       const csvRecords = this.convertCloudflareToCSVRecords(records);
-      
+
       return {
         success: true,
-        records: csvRecords
+        records: csvRecords,
       };
     } catch (error) {
       return {
         success: false,
-        records: []
+        records: [],
       };
     }
   }
