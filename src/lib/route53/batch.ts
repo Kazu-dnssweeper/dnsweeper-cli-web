@@ -2,8 +2,13 @@
  * Route53 バッチ処理機能
  */
 
+import type {
+  Route53BatchOptions,
+  Route53BatchResult,
+  Route53Change,
+  Route53ChangeInfo,
+} from './types.js';
 import type { ICSVRecord } from '../../types/index.js';
-import type { Route53BatchOptions, Route53BatchResult, Route53Change, Route53ChangeInfo } from './types.js';
 
 export class Route53BatchProcessor {
   private options: Route53BatchOptions;
@@ -31,8 +36,12 @@ export class Route53BatchProcessor {
         ResourceRecords: [{ Value: record.value }],
         ...(record.priority && { Weight: record.priority }),
         ...(record.weight && { Weight: record.weight }),
-        ...(record.port && { 
-          ResourceRecords: [{ Value: `${record.priority || 0} ${record.weight || 0} ${record.port} ${record.value}` }]
+        ...(record.port && {
+          ResourceRecords: [
+            {
+              Value: `${record.priority || 0} ${record.weight || 0} ${record.port} ${record.value}`,
+            },
+          ],
         }),
       },
     }));
@@ -43,7 +52,9 @@ export class Route53BatchProcessor {
    */
   async processBatch(
     records: ICSVRecord[],
-    processFunction: (changes: Route53Change[]) => Promise<Route53ChangeInfo | null>
+    processFunction: (
+      changes: Route53Change[]
+    ) => Promise<Route53ChangeInfo | null>
   ): Promise<Route53BatchResult> {
     const result: Route53BatchResult = {
       totalProcessed: 0,
@@ -58,7 +69,7 @@ export class Route53BatchProcessor {
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      
+
       try {
         const changeInfo = await this.processWithRetry(batch, processFunction);
         if (changeInfo) {
@@ -101,7 +112,9 @@ export class Route53BatchProcessor {
    */
   private async processWithRetry(
     batch: Route53Change[],
-    processFunction: (changes: Route53Change[]) => Promise<Route53ChangeInfo | null>
+    processFunction: (
+      changes: Route53Change[]
+    ) => Promise<Route53ChangeInfo | null>
   ): Promise<Route53ChangeInfo | null> {
     let lastError: Error | null = null;
     const maxRetries = this.options.retryCount || 3;
@@ -112,7 +125,7 @@ export class Route53BatchProcessor {
         return await processFunction(batch);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         if (attempt < maxRetries - 1) {
           await this.delay(retryDelay * Math.pow(2, attempt)); // 指数バックオフ
         }
@@ -127,11 +140,11 @@ export class Route53BatchProcessor {
    */
   private createBatches<T>(items: T[], batchSize: number): T[][] {
     const batches: T[][] = [];
-    
+
     for (let i = 0; i < items.length; i += batchSize) {
       batches.push(items.slice(i, i + batchSize));
     }
-    
+
     return batches;
   }
 

@@ -51,7 +51,9 @@ export class CSVAutoDetector {
         bomPresent: detectionResult.bomPresent,
       };
     } else {
-      fileContent = fs.readFileSync(filePath, { encoding: encoding as BufferEncoding });
+      fileContent = fs.readFileSync(filePath, {
+        encoding: encoding as BufferEncoding,
+      });
     }
 
     // 区切り文字自動検出

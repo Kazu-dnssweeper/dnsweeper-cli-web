@@ -72,7 +72,9 @@ export async function mapConcurrent<T, R>(
   mapper: (item: T, index: number) => Promise<R>,
   options: ConcurrentOptions = {}
 ): Promise<R[]> {
-  const tasks = items.map((item, index) => () => mapper(item, index));
+  const tasks = items.map(
+    (item, index) => (): Promise<R> => mapper(item, index)
+  );
   return runConcurrent(tasks, options);
 }
 
@@ -153,7 +155,7 @@ export async function runConcurrentWithRetry<T>(
 ): Promise<T[]> {
   const { maxRetries = 3, retryDelay = 1000, ...concurrentOptions } = options;
 
-  const tasksWithRetry = tasks.map(task => async () => {
+  const tasksWithRetry = tasks.map(task => async (): Promise<T> => {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {

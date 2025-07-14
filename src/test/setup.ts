@@ -2,10 +2,12 @@ import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 
 // Global test setup
 beforeAll(() => {
+  // eslint-disable-next-line no-console
   console.log('🧪 Starting DNSweeper test suite...');
 });
 
 afterAll(() => {
+  // eslint-disable-next-line no-console
   console.log('✅ DNSweeper test suite completed');
 });
 

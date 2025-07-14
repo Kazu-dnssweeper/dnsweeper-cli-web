@@ -41,6 +41,7 @@ export class MemoryOptimizer {
    */
   static logMemoryUsage(label = 'Memory usage'): void {
     const usage = this.getMemoryUsage();
+    // eslint-disable-next-line no-console
     console.log(`${label}:`, {
       'Heap Used': `${usage.heapUsed}MB`,
       'Heap Total': `${usage.heapTotal}MB`,

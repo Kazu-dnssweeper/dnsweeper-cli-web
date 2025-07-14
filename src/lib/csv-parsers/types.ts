@@ -2,10 +2,9 @@
  * CSV パーサー共通型定義
  */
 
-import Papa from 'papaparse';
-
-import type { DNSRecordType, ICSVRecord } from '../../types/index.js';
+import type { /* DNSRecordType, */ ICSVRecord } from '../../types/index.js';
 import type { SupportedEncoding } from '../../utils/encoding-detector.js';
+import type Papa from 'papaparse';
 
 export interface ICSVParseOptions {
   skipEmptyLines?: boolean;

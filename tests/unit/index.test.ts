@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createProgram, main } from '../../src/index.js';
 import { Command } from 'commander';
-import * as commands from '../../src/commands/index.js';
 
 // モックの設定
-vi.mock('../../src/commands/index.js', () => ({
+const mockCommands = {
   createListCommand: vi.fn(() => new Command('list')),
   createAddCommand: vi.fn(() => new Command('add')),
   createDeleteCommand: vi.fn(() => new Command('delete')),
@@ -13,7 +11,11 @@ vi.mock('../../src/commands/index.js', () => ({
   createLookupCommand: vi.fn(() => new Command('lookup')),
   createSweepCommand: vi.fn(() => new Command('sweep')),
   createValidateCommand: vi.fn(() => new Command('validate')),
-}));
+  performanceCommand: new Command('performance'),
+  createSyncCommand: vi.fn(() => new Command('sync')),
+};
+
+vi.mock('../../src/commands/index.js', () => mockCommands);
 
 vi.mock('../../src/lib/logger.js', () => ({
   Logger: vi.fn().mockImplementation(() => ({
@@ -32,9 +34,17 @@ vi.mock('../../src/lib/config.js', () => ({
   DnsSweeperConfig: {}
 }));
 
+// 動的インポートでモックを回避
+let createProgram: any;
+let main: any;
+
 describe('index.ts', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // 動的インポートでテスト対象を取得
+    const module = await import('../../src/index.js');
+    createProgram = module.createProgram;
+    main = module.main;
   });
 
   describe('createProgram', () => {
@@ -71,11 +81,11 @@ describe('index.ts', () => {
       expect(commandNames).toContain('analyze');
 
       // コマンド作成関数が呼ばれていることを確認
-      expect(commands.createListCommand).toHaveBeenCalled();
-      expect(commands.createAddCommand).toHaveBeenCalled();
-      expect(commands.createDeleteCommand).toHaveBeenCalled();
-      expect(commands.createImportCommand).toHaveBeenCalled();
-      expect(commands.createAnalyzeCommand).toHaveBeenCalled();
+      expect(mockCommands.createListCommand).toHaveBeenCalled();
+      expect(mockCommands.createAddCommand).toHaveBeenCalled();
+      expect(mockCommands.createDeleteCommand).toHaveBeenCalled();
+      expect(mockCommands.createImportCommand).toHaveBeenCalled();
+      expect(mockCommands.createAnalyzeCommand).toHaveBeenCalled();
     });
 
     it('無効なコマンドのハンドラーが設定されている', () => {

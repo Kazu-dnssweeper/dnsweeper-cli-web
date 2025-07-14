@@ -8,13 +8,26 @@ import ora, { type Ora } from 'ora';
 import { table } from 'table';
 
 import { CloudflareClient } from '../lib/api/cloudflare.js';
-import { Route53Client } from '../lib/route53.js';
-import { Logger } from '../lib/logger.js';
 import { loadConfig } from '../lib/config.js';
 import { CSVProcessor } from '../lib/csv-processor.js';
+import { Logger } from '../lib/logger.js';
 import { globalMetrics } from '../lib/metrics/metrics-collector.js';
+import { Route53Client } from '../lib/route53.js';
 
 const logger = new Logger();
+
+/**
+ * 同期コマンドのオプション
+ */
+interface SyncOptions {
+  provider: 'cloudflare' | 'route53';
+  zone?: string;
+  direction: 'upload' | 'download' | 'both';
+  dryRun?: boolean;
+  force?: boolean;
+  format?: 'csv' | 'json';
+  output?: string;
+}
 
 /**
  * 同期コマンドを作成
@@ -22,13 +35,17 @@ const logger = new Logger();
 export function createSyncCommand(): Command {
   const cmd = new Command('sync')
     .description('CloudflareやRoute53とDNSレコードを同期')
-    .option('-p, --provider <provider>', 'プロバイダー (cloudflare|route53)', 'cloudflare')
+    .option(
+      '-p, --provider <provider>',
+      'プロバイダー (cloudflare|route53)',
+      'cloudflare'
+    )
     .option('-z, --zone <zone>', 'ゾーンID/ドメイン名')
     .option('-d, --direction <direction>', '同期方向 (pull|push|both)', 'pull')
     .option('-o, --output <file>', '出力ファイル（CSV形式）')
     .option('--dry-run', 'ドライラン（実際の変更を行わない）')
     .option('--force', '確認なしで実行')
-    .action(async (options) => {
+    .action(async options => {
       try {
         await handleSync(options);
       } catch (error) {
@@ -38,17 +55,19 @@ export function createSyncCommand(): Command {
     });
 
   // サブコマンド
-  cmd.command('status')
+  cmd
+    .command('status')
     .description('同期ステータスを確認')
     .option('-p, --provider <provider>', 'プロバイダー', 'cloudflare')
-    .action(async (options) => {
+    .action(async options => {
       await checkSyncStatus(options);
     });
 
-  cmd.command('zones')
+  cmd
+    .command('zones')
     .description('利用可能なゾーン一覧を表示')
     .option('-p, --provider <provider>', 'プロバイダー', 'cloudflare')
-    .action(async (options) => {
+    .action(async options => {
       await listZones(options);
     });
 
@@ -58,17 +77,17 @@ export function createSyncCommand(): Command {
 /**
  * 同期処理のメイン関数
  */
-async function handleSync(options: any): Promise<void> {
+async function handleSync(options: SyncOptions): Promise<void> {
   const startTime = Date.now();
   const spinner = ora('同期処理を開始しています...').start();
 
   try {
     // 設定を読み込み
     const config = await loadConfig();
-    
+
     // APIクライアントを初期化
     const client = await createApiClient(options.provider, config);
-    
+
     if (!options.zone) {
       spinner.fail('ゾーンIDまたはドメイン名を指定してください');
       return;
@@ -97,9 +116,8 @@ async function handleSync(options: any): Promise<void> {
       command: 'sync',
       args: [options.provider, options.direction],
       duration,
-      success: true
+      success: true,
     });
-
   } catch (error) {
     spinner.fail('同期に失敗しました');
     throw error;
@@ -109,7 +127,21 @@ async function handleSync(options: any): Promise<void> {
 /**
  * APIクライアントを作成
  */
-async function createApiClient(provider: string, config: any): Promise<CloudflareClient | Route53Client> {
+interface ConfigData {
+  cloudflare?: {
+    apiToken: string;
+  };
+  route53?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region?: string;
+  };
+}
+
+async function createApiClient(
+  provider: string,
+  config: ConfigData
+): Promise<CloudflareClient | Route53Client> {
   switch (provider) {
     case 'cloudflare':
       if (!config.cloudflare?.apiToken) {
@@ -118,9 +150,9 @@ async function createApiClient(provider: string, config: any): Promise<Cloudflar
       return new CloudflareClient({
         apiToken: config.cloudflare.apiToken,
         email: config.cloudflare.email,
-        apiKey: config.cloudflare.apiKey
+        apiKey: config.cloudflare.apiKey,
       });
-    
+
     case 'route53':
       if (!config.aws?.accessKeyId || !config.aws?.secretAccessKey) {
         throw new Error('AWS認証情報が設定されていません');
@@ -128,9 +160,9 @@ async function createApiClient(provider: string, config: any): Promise<Cloudflar
       return new Route53Client({
         accessKeyId: config.aws.accessKeyId,
         secretAccessKey: config.aws.secretAccessKey,
-        region: config.aws.region || 'us-east-1'
+        region: config.aws.region || 'us-east-1',
       });
-    
+
     default:
       throw new Error(`サポートされていないプロバイダー: ${provider}`);
   }
@@ -141,7 +173,7 @@ async function createApiClient(provider: string, config: any): Promise<Cloudflar
  */
 async function pullRecords(
   client: CloudflareClient | Route53Client,
-  options: any,
+  options: SyncOptions,
   spinner: Ora
 ): Promise<void> {
   spinner.text = 'DNSレコードを取得しています...';
@@ -150,7 +182,9 @@ async function pullRecords(
   if (client instanceof CloudflareClient) {
     const response = await client.listDNSRecords(options.zone);
     if (!response.success) {
-      throw new Error(`DNSレコードの取得に失敗しました: ${response.errors?.join(', ')}`);
+      throw new Error(
+        `DNSレコードの取得に失敗しました: ${response.errors?.join(', ')}`
+      );
     }
     records = client.convertCloudflareToCSVRecords(response.result || []);
   } else {
@@ -165,9 +199,9 @@ async function pullRecords(
 
   // ファイルに保存
   if (options.output) {
-    const csvProcessor = new CSVProcessor();
+    const _csvProcessor = new CSVProcessor();
     const outputPath = options.output;
-    
+
     // TODO: CSV書き込み機能を実装
     logger.info(`レコードを${outputPath}に保存しました`);
   }
@@ -183,7 +217,7 @@ async function pullRecords(
  */
 async function pushRecords(
   client: CloudflareClient | Route53Client,
-  options: any,
+  options: SyncOptions & { input?: string },
   spinner: Ora
 ): Promise<void> {
   if (!options.input) {
@@ -191,10 +225,10 @@ async function pushRecords(
   }
 
   spinner.text = 'CSVファイルを読み込んでいます...';
-  
+
   const csvProcessor = new CSVProcessor();
   const result = await csvProcessor.parseAuto(options.input);
-  
+
   spinner.text = `${result.records.length}件のレコードをアップロードしています...`;
 
   if (options.dryRun) {
@@ -206,7 +240,9 @@ async function pushRecords(
   // 確認を求める
   if (!options.force) {
     spinner.stop();
-    console.log(`\n${result.records.length}件のレコードをアップロードします。続行しますか？ (y/N)`);
+    logger.info(
+      `\n${result.records.length}件のレコードをアップロードします。続行しますか？ (y/N)`
+    );
     // TODO: ユーザー確認の実装
   }
 
@@ -223,18 +259,25 @@ async function pushRecords(
         // Route53の場合
         const change = {
           Action: 'CREATE' as const,
-          ResourceRecordSet: client.convertCSVToRoute53([record])[0]
+          ResourceRecordSet: client.convertCSVToRoute53([record])[0],
         };
-        await client.changeResourceRecordSets(options.zone, { Changes: [change] });
+        await client.changeResourceRecordSets(options.zone, {
+          Changes: [change],
+        });
       }
       successCount++;
     } catch (error) {
       errorCount++;
-      logger.error(`レコードのアップロードに失敗しました: ${record.name}`, error as Error);
+      logger.error(
+        `レコードのアップロードに失敗しました: ${record.name}`,
+        error as Error
+      );
     }
   }
 
-  spinner.succeed(`アップロード完了: 成功 ${successCount}件, 失敗 ${errorCount}件`);
+  spinner.succeed(
+    `アップロード完了: 成功 ${successCount}件, 失敗 ${errorCount}件`
+  );
 }
 
 /**
@@ -242,7 +285,7 @@ async function pushRecords(
  */
 async function syncBidirectional(
   client: CloudflareClient | Route53Client,
-  options: any,
+  options: SyncOptions,
   spinner: Ora
 ): Promise<void> {
   spinner.info('双方向同期は開発中です');
@@ -252,10 +295,10 @@ async function syncBidirectional(
 /**
  * 同期ステータスを確認
  */
-async function checkSyncStatus(options: any): Promise<void> {
+async function checkSyncStatus(options: SyncOptions): Promise<void> {
   const config = await loadConfig();
   const client = await createApiClient(options.provider, config);
-  
+
   if (client instanceof CloudflareClient) {
     const response = await client.verifyToken();
     if (response.success) {
@@ -280,18 +323,20 @@ async function checkSyncStatus(options: any): Promise<void> {
 /**
  * ゾーン一覧を表示
  */
-async function listZones(options: any): Promise<void> {
+async function listZones(options: SyncOptions): Promise<void> {
   const spinner = ora('ゾーン一覧を取得しています...').start();
-  
+
   try {
     const config = await loadConfig();
     const client = await createApiClient(options.provider, config);
-    
+
     let zones;
     if (client instanceof CloudflareClient) {
       const response = await client.listZones();
       if (!response.success) {
-        throw new Error(`ゾーン一覧の取得に失敗しました: ${response.errors?.join(', ')}`);
+        throw new Error(
+          `ゾーン一覧の取得に失敗しました: ${response.errors?.join(', ')}`
+        );
       }
       zones = response.result || [];
     } else {
@@ -307,14 +352,14 @@ async function listZones(options: any): Promise<void> {
     // テーブル表示
     const tableData = [
       ['ID', 'ドメイン名', 'ステータス'],
-      ...zones.map((zone: any) => [
+      ...zones.map((zone: { id: string; name: string; status?: string }) => [
         zone.id,
         zone.name,
-        zone.status || 'active'
-      ])
+        zone.status || 'active',
+      ]),
     ];
 
-    console.log(table(tableData));
+    logger.info(table(tableData));
   } catch (error) {
     spinner.fail('ゾーン一覧の取得に失敗しました');
     throw error;
@@ -324,7 +369,15 @@ async function listZones(options: any): Promise<void> {
 /**
  * レコードをテーブル形式で表示
  */
-function displayRecordsTable(records: any[]): void {
+interface DNSRecordDisplay {
+  name: string;
+  type: string;
+  value: string;
+  ttl: number;
+  priority?: number;
+}
+
+function displayRecordsTable(records: DNSRecordDisplay[]): void {
   if (records.length === 0) {
     logger.info('レコードが見つかりませんでした');
     return;
@@ -332,18 +385,22 @@ function displayRecordsTable(records: any[]): void {
 
   const tableData = [
     ['名前', 'タイプ', '値', 'TTL', '優先度'],
-    ...records.slice(0, 20).map(record => [
-      record.name,
-      record.type,
-      record.value.length > 50 ? record.value.substring(0, 47) + '...' : record.value,
-      record.ttl?.toString() || '-',
-      record.priority?.toString() || '-'
-    ])
+    ...records
+      .slice(0, 20)
+      .map(record => [
+        record.name,
+        record.type,
+        record.value.length > 50
+          ? record.value.substring(0, 47) + '...'
+          : record.value,
+        record.ttl?.toString() || '-',
+        record.priority?.toString() || '-',
+      ]),
   ];
 
-  console.log(table(tableData));
-  
+  logger.info(table(tableData));
+
   if (records.length > 20) {
-    console.log(`... 他 ${records.length - 20} 件のレコード`);
+    logger.info(`... 他 ${records.length - 20} 件のレコード`);
   }
 }

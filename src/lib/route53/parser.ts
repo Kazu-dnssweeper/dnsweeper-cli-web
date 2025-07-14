@@ -2,7 +2,12 @@
  * Route53 XMLパーサー
  */
 
-import type { Route53HostedZone, Route53Record, Route53ChangeInfo } from './types.js';
+import type {
+  Route53HostedZone,
+  Route53Record,
+  Route53ChangeInfo,
+} from './types.js';
+import type { DNSRecordType } from '../../types/index.js';
 
 export class Route53Parser {
   /**
@@ -42,7 +47,9 @@ export class Route53Parser {
    */
   parseRecordsXml(xml: string): Route53Record[] {
     const records: Route53Record[] = [];
-    const recordMatches = xml.match(/<ResourceRecordSet>[\s\S]*?<\/ResourceRecordSet>/g);
+    const recordMatches = xml.match(
+      /<ResourceRecordSet>[\s\S]*?<\/ResourceRecordSet>/g
+    );
 
     if (!recordMatches) {
       return records;
@@ -51,7 +58,7 @@ export class Route53Parser {
     for (const recordXml of recordMatches) {
       const record: Route53Record = {
         Name: this.extractValue(recordXml, 'Name') || '',
-        Type: this.extractValue(recordXml, 'Type') as any,
+        Type: this.extractValue(recordXml, 'Type') as DNSRecordType,
       };
 
       // TTLの抽出
@@ -119,7 +126,9 @@ export class Route53Parser {
     const changeInfoXml = changeInfoMatch[0];
     return {
       Id: this.extractValue(changeInfoXml, 'Id') || '',
-      Status: this.extractValue(changeInfoXml, 'Status') as 'PENDING' | 'INSYNC',
+      Status: this.extractValue(changeInfoXml, 'Status') as
+        | 'PENDING'
+        | 'INSYNC',
       SubmittedAt: this.extractValue(changeInfoXml, 'SubmittedAt') || '',
       Comment: this.extractValue(changeInfoXml, 'Comment'),
     };
@@ -130,7 +139,9 @@ export class Route53Parser {
    */
   private extractResourceRecords(xml: string): Array<{ Value: string }> {
     const resourceRecords: Array<{ Value: string }> = [];
-    const resourceRecordMatches = xml.match(/<ResourceRecord>[\s\S]*?<\/ResourceRecord>/g);
+    const resourceRecordMatches = xml.match(
+      /<ResourceRecord>[\s\S]*?<\/ResourceRecord>/g
+    );
 
     if (!resourceRecordMatches) {
       return resourceRecords;
@@ -158,7 +169,8 @@ export class Route53Parser {
     const aliasTargetXml = aliasTargetMatch[0];
     return {
       DNSName: this.extractValue(aliasTargetXml, 'DNSName') || '',
-      EvaluateTargetHealth: this.extractValue(aliasTargetXml, 'EvaluateTargetHealth') === 'true',
+      EvaluateTargetHealth:
+        this.extractValue(aliasTargetXml, 'EvaluateTargetHealth') === 'true',
       HostedZoneId: this.extractValue(aliasTargetXml, 'HostedZoneId') || '',
     };
   }

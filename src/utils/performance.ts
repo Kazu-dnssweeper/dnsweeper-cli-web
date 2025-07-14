@@ -2,8 +2,8 @@
  * パフォーマンス測定ユーティリティ
  */
 
-import { performance } from 'node:perf_hooks';
 import { cpus, totalmem, freemem } from 'node:os';
+import { performance } from 'node:perf_hooks';
 import { memoryUsage } from 'node:process';
 
 /**
@@ -68,7 +68,7 @@ export class PerformanceTracker {
   start(name: string, metadata?: Record<string, unknown>): void {
     const startTime = performance.now();
     this.activeTimers.set(name, startTime);
-    
+
     // 開始時のメモリ使用状況を記録
     const result: PerformanceResult = {
       name,
@@ -76,9 +76,9 @@ export class PerformanceTracker {
       endTime: 0,
       duration: 0,
       memoryUsage: this.captureMemorySnapshot(),
-      metadata
+      metadata,
     };
-    
+
     const existing = this.measurements.get(name) || [];
     existing.push(result);
     this.measurements.set(name, existing);
@@ -95,9 +95,9 @@ export class PerformanceTracker {
 
     const endTime = performance.now();
     const duration = endTime - startTime;
-    
+
     this.activeTimers.delete(name);
-    
+
     const measurements = this.measurements.get(name);
     const latest = measurements?.[measurements.length - 1];
     if (latest) {
@@ -105,7 +105,7 @@ export class PerformanceTracker {
       latest.duration = duration;
       return latest;
     }
-    
+
     return null;
   }
 
@@ -118,7 +118,7 @@ export class PerformanceTracker {
     metadata?: Record<string, unknown>
   ): Promise<{ result: T; performance: PerformanceResult }> {
     this.start(name, metadata);
-    
+
     try {
       const result = await fn();
       const performance = this.end(name)!;
@@ -138,7 +138,7 @@ export class PerformanceTracker {
     metadata?: Record<string, unknown>
   ): { result: T; performance: PerformanceResult } {
     this.start(name, metadata);
-    
+
     try {
       const result = fn();
       const performance = this.end(name)!;
@@ -156,7 +156,7 @@ export class PerformanceTracker {
     if (name) {
       return this.measurements.get(name) || [];
     }
-    
+
     const allResults: PerformanceResult[] = [];
     for (const results of this.measurements.values()) {
       allResults.push(...results);
@@ -185,7 +185,7 @@ export class PerformanceTracker {
     const durations = results.map(r => r.duration).sort((a, b) => a - b);
     const count = durations.length;
     const total = durations.reduce((sum, d) => sum + d, 0);
-    
+
     return {
       count,
       total,
@@ -194,7 +194,7 @@ export class PerformanceTracker {
       max: durations[count - 1],
       median: durations[Math.floor(count / 2)],
       p95: durations[Math.floor(count * 0.95)],
-      p99: durations[Math.floor(count * 0.99)]
+      p99: durations[Math.floor(count * 0.99)],
     };
   }
 
@@ -210,7 +210,7 @@ export class PerformanceTracker {
       arrayBuffers: mem.arrayBuffers,
       rss: mem.rss,
       systemFree: freemem(),
-      systemTotal: totalmem()
+      systemTotal: totalmem(),
     };
   }
 
@@ -232,11 +232,11 @@ export class PerformanceTracker {
    */
   generateReport(): string {
     const report: string[] = ['=== Performance Report ===\n'];
-    
-    for (const [name, results] of this.measurements) {
+
+    for (const [name, _results] of this.measurements) {
       const stats = this.getStatistics(name);
       if (!stats) continue;
-      
+
       report.push(`[${name}]`);
       report.push(`  Count: ${stats.count}`);
       report.push(`  Total: ${stats.total.toFixed(2)}ms`);
@@ -248,7 +248,7 @@ export class PerformanceTracker {
       report.push(`  P99: ${stats.p99.toFixed(2)}ms`);
       report.push('');
     }
-    
+
     return report.join('\n');
   }
 }
@@ -261,32 +261,32 @@ export function getSystemMetrics(): SystemMetrics {
   const memTotal = totalmem();
   const memFree = freemem();
   const memUsed = memTotal - memFree;
-  
+
   // CPU使用率の簡易計算
   let totalIdle = 0;
   let totalTick = 0;
-  
+
   cpuInfo.forEach(cpu => {
     for (const type in cpu.times) {
       totalTick += cpu.times[type as keyof typeof cpu.times];
     }
     totalIdle += cpu.times.idle;
   });
-  
-  const cpuUsage = 100 - (100 * totalIdle / totalTick);
-  
+
+  const cpuUsage = 100 - (100 * totalIdle) / totalTick;
+
   return {
     cpu: {
       count: cpuInfo.length,
       model: cpuInfo[0].model,
       speed: cpuInfo[0].speed,
-      usage: cpuUsage
+      usage: cpuUsage,
     },
     memory: {
       total: memTotal,
       free: memFree,
       used: memUsed,
-      usagePercent: (memUsed / memTotal) * 100
+      usagePercent: (memUsed / memTotal) * 100,
     },
     process: {
       uptime: process.uptime(),
@@ -295,9 +295,9 @@ export function getSystemMetrics(): SystemMetrics {
       memoryUsage: {
         ...memoryUsage(),
         systemFree: memFree,
-        systemTotal: memTotal
-      }
-    }
+        systemTotal: memTotal,
+      },
+    },
   };
 }
 
@@ -308,12 +308,12 @@ export function formatBytes(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let value = bytes;
   let unitIndex = 0;
-  
+
   while (value >= 1024 && unitIndex < units.length - 1) {
     value /= 1024;
     unitIndex++;
   }
-  
+
   return `${value.toFixed(2)} ${units[unitIndex]}`;
 }
 
@@ -325,17 +325,22 @@ export const globalTracker = new PerformanceTracker();
 /**
  * パフォーマンス測定デコレータ
  */
-export function measurePerformance(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function measurePerformance(
+  target: unknown,
+  propertyKey: string,
+  descriptor: PropertyDescriptor
+): void {
   const originalMethod = descriptor.value;
-  
-  descriptor.value = async function(...args: any[]) {
-    const className = target.constructor.name;
+
+  descriptor.value = async function (...args: unknown[]): Promise<unknown> {
+    const className = (target as { constructor: { name: string } }).constructor
+      .name;
     const measurementName = `${className}.${propertyKey}`;
-    
+
     return globalTracker.measure(measurementName, async () => {
       return originalMethod.apply(this, args);
     });
   };
-  
+
   return descriptor;
 }

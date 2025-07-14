@@ -5,14 +5,20 @@
 
 import Papa from 'papaparse';
 
+import type {
+  ICloudflareCSVRow,
+  ICSVParseResult,
+  // IFileReadResult,
+} from './types.js';
 import type { DNSRecordType, ICSVRecord } from '../../types/index.js';
-import type { ICloudflareCSVRow, ICSVParseResult, IFileReadResult } from './types.js';
 
 export class CloudflareCSVParser {
   /**
    * Cloudflare CSV形式の結果を処理
    */
-  processResults(results: Papa.ParseResult<ICloudflareCSVRow>): ICSVParseResult {
+  processResults(
+    results: Papa.ParseResult<ICloudflareCSVRow>
+  ): ICSVParseResult {
     const records: ICSVRecord[] = [];
     const errors: Papa.ParseError[] = [...results.errors];
 

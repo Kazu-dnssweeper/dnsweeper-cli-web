@@ -7,7 +7,13 @@ import { writeFile, mkdir, stat, readdir, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { createFormatter } from './formatters.js';
-import type { LogEntry, LogTransport, TransportConfig, RotationConfig } from './types.js';
+
+import type {
+  LogEntry,
+  LogTransport,
+  TransportConfig,
+  RotationConfig,
+} from './types.js';
 
 /**
  * コンソールトランスポート
@@ -25,10 +31,12 @@ export class ConsoleTransport implements LogTransport {
     }
 
     const formatted = this.formatter.format(entry);
-    
-    if (entry.level === 0) { // ERROR
+
+    if (entry.level === 0) {
+      // ERROR
       console.error(formatted);
     } else {
+      // eslint-disable-next-line no-console
       console.log(formatted);
     }
   }
@@ -58,7 +66,7 @@ export class FileTransport implements LogTransport {
     }
 
     const formatted = this.formatter.format(entry);
-    
+
     // ディレクトリを作成
     const dir = dirname(this.config.filename);
     if (!existsSync(dir)) {
@@ -100,7 +108,7 @@ export class RotatingFileTransport implements LogTransport {
     }
 
     const formatted = this.formatter.format(entry);
-    
+
     // ローテーションチェック
     await this.checkRotation();
 
@@ -124,7 +132,7 @@ export class RotatingFileTransport implements LogTransport {
     }
 
     const stats = await stat(this.config.filename);
-    
+
     if (stats.size >= this.rotationConfig.maxSize) {
       await this.rotateFile();
     }
@@ -135,14 +143,14 @@ export class RotatingFileTransport implements LogTransport {
       return;
     }
 
-    const dir = dirname(this.config.filename);
+    const _dir = dirname(this.config.filename);
     const filename = this.config.filename;
-    
+
     // 既存のローテーションファイルをシフト
     for (let i = this.rotationConfig.maxFiles - 1; i >= 1; i--) {
       const oldFile = `${filename}.${i}`;
       const newFile = `${filename}.${i + 1}`;
-      
+
       if (existsSync(oldFile)) {
         if (i === this.rotationConfig.maxFiles - 1) {
           // 最古のファイルを削除
@@ -177,7 +185,7 @@ export class RotatingFileTransport implements LogTransport {
 
     const dir = dirname(this.config.filename);
     const basename = this.config.filename.split('/').pop() || '';
-    
+
     try {
       const files = await readdir(dir);
       return files

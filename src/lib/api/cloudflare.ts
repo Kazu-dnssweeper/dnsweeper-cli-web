@@ -105,7 +105,6 @@ export class CloudflareClient {
     return data;
   }
 
-
   /**
    * CSVレコードをCloudflare DNS形式に変換
    */
@@ -198,8 +197,13 @@ export class CloudflareClient {
   /**
    * APIトークンの検証
    */
-  async verifyToken(): Promise<CloudflareResponse<any>> {
-    return this.request<any>('GET', '/user/tokens/verify');
+  async verifyToken(): Promise<
+    CloudflareResponse<{ id: string; status: string }>
+  > {
+    return this.request<{ id: string; status: string }>(
+      'GET',
+      '/user/tokens/verify'
+    );
   }
 
   /**
@@ -212,8 +216,13 @@ export class CloudflareClient {
   /**
    * DNSレコード一覧を取得
    */
-  async listDNSRecords(zoneId: string): Promise<CloudflareResponse<CloudflareDNSRecord[]>> {
-    return this.request<CloudflareDNSRecord[]>('GET', `/zones/${zoneId}/dns_records`);
+  async listDNSRecords(
+    zoneId: string
+  ): Promise<CloudflareResponse<CloudflareDNSRecord[]>> {
+    return this.request<CloudflareDNSRecord[]>(
+      'GET',
+      `/zones/${zoneId}/dns_records`
+    );
   }
 
   /**
@@ -223,7 +232,11 @@ export class CloudflareClient {
     zoneId: string,
     record: CloudflareDNSRecord
   ): Promise<CloudflareResponse<CloudflareDNSRecord>> {
-    return this.request<CloudflareDNSRecord>('POST', `/zones/${zoneId}/dns_records`, record);
+    return this.request<CloudflareDNSRecord>(
+      'POST',
+      `/zones/${zoneId}/dns_records`,
+      record
+    );
   }
 
   /**
@@ -234,7 +247,11 @@ export class CloudflareClient {
     recordId: string,
     record: CloudflareDNSRecord
   ): Promise<CloudflareResponse<CloudflareDNSRecord>> {
-    return this.request<CloudflareDNSRecord>('PUT', `/zones/${zoneId}/dns_records/${recordId}`, record);
+    return this.request<CloudflareDNSRecord>(
+      'PUT',
+      `/zones/${zoneId}/dns_records/${recordId}`,
+      record
+    );
   }
 
   /**
@@ -244,7 +261,10 @@ export class CloudflareClient {
     zoneId: string,
     recordId: string
   ): Promise<CloudflareResponse<{ id: string }>> {
-    return this.request<{ id: string }>('DELETE', `/zones/${zoneId}/dns_records/${recordId}`);
+    return this.request<{ id: string }>(
+      'DELETE',
+      `/zones/${zoneId}/dns_records/${recordId}`
+    );
   }
 
   /**
@@ -287,13 +307,13 @@ export class CloudflareClient {
     success: boolean;
     created: number;
     failed: number;
-    errors: any[];
+    errors: string[];
   }> {
     const results = {
       success: true,
       created: 0,
       failed: 0,
-      errors: [] as any[],
+      errors: [] as string[],
     };
 
     const cloudflareRecords = this.convertCSVToCloudflareRecords(records);
@@ -322,7 +342,9 @@ export class CloudflareClient {
     try {
       // TODO: optionsパラメータを使用してフィルタリングを実装
       const response = await this.listDNSRecords(zoneId);
-      const csvRecords = this.convertCloudflareToCSVRecords(response.result || []);
+      const csvRecords = this.convertCloudflareToCSVRecords(
+        response.result || []
+      );
 
       return {
         success: true,

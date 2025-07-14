@@ -36,12 +36,17 @@ export class Logger {
     // 構造化ログを初期化
     if (options.enableStructuredLogging !== false) {
       const logLevel = options.logLevel || (this.verbose ? 'debug' : 'info');
-      const level = logLevel === 'debug' ? LogLevel.DEBUG : 
-                     logLevel === 'verbose' ? LogLevel.VERBOSE :
-                     logLevel === 'warn' ? LogLevel.WARN :
-                     logLevel === 'error' ? LogLevel.ERROR :
-                     LogLevel.INFO;
-      
+      const level =
+        logLevel === 'debug'
+          ? LogLevel.DEBUG
+          : logLevel === 'verbose'
+            ? LogLevel.VERBOSE
+            : logLevel === 'warn'
+              ? LogLevel.WARN
+              : logLevel === 'error'
+                ? LogLevel.ERROR
+                : LogLevel.INFO;
+
       this.structuredLogger = createLogger({
         level,
         transports: [
@@ -50,12 +55,16 @@ export class Logger {
             level,
             format: 'json',
           },
-          ...(options.logFile ? [{
-            type: 'file' as const,
-            level,
-            format: 'json' as const,
-            filename: options.logFile,
-          }] : [])
+          ...(options.logFile
+            ? [
+                {
+                  type: 'file' as const,
+                  level,
+                  format: 'json' as const,
+                  filename: options.logFile,
+                },
+              ]
+            : []),
         ],
         defaultMeta: {
           service: 'dnsweeper',
@@ -235,7 +244,10 @@ export class Logger {
       enableStructuredLogging: false, // 既存の構造化ログを使用
     });
 
-    childLogger.structuredLogger = this.structuredLogger.child(context || 'child', meta);
+    childLogger.structuredLogger = this.structuredLogger.child(
+      context || 'child',
+      meta
+    );
     return childLogger;
   }
 

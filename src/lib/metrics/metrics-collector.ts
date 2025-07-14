@@ -4,16 +4,21 @@
 
 import { EventEmitter } from 'node:events';
 import { writeFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
+
+import {
+  globalTracker,
+  getSystemMetrics,
+  type SystemMetrics,
+} from '../../utils/performance.js';
 
 import type { DNSRecordType } from '../../types/index.js';
-import { globalTracker, getSystemMetrics, type SystemMetrics } from '../../utils/performance.js';
 
 /**
  * メトリクスのタイプ
  */
-export type MetricType = 
+export type MetricType =
   | 'dns_resolution'
   | 'csv_processing'
   | 'risk_analysis'
@@ -139,9 +144,9 @@ export class MetricsCollector extends EventEmitter {
         domain: data.domain,
         recordType: data.recordType,
         success: data.success ? 1 : 0,
-        cached: data.cached ? 1 : 0
+        cached: data.cached ? 1 : 0,
       },
-      metadata: data.error ? { error: data.error } : undefined
+      metadata: data.error ? { error: data.error } : undefined,
     });
   }
 
@@ -159,8 +164,8 @@ export class MetricsCollector extends EventEmitter {
         recordCount: data.recordCount,
         bytesProcessed: data.bytesProcessed,
         format: data.format,
-        errors: data.errors
-      }
+        errors: data.errors,
+      },
     });
   }
 
@@ -175,12 +180,12 @@ export class MetricsCollector extends EventEmitter {
       timestamp: new Date(),
       tags: {
         command: data.command,
-        success: data.success ? 1 : 0
+        success: data.success ? 1 : 0,
       },
       metadata: {
         args: data.args,
-        error: data.error
-      }
+        error: data.error,
+      },
     });
   }
 
@@ -195,13 +200,13 @@ export class MetricsCollector extends EventEmitter {
       timestamp: new Date(),
       tags: {
         errorType: error.constructor.name,
-        errorCode: (error as any).code || 'UNKNOWN'
+        errorCode: (error as Error & { code?: string }).code || 'UNKNOWN',
       },
       metadata: {
         message: error.message,
         stack: error.stack,
-        context
-      }
+        context,
+      },
     });
   }
 
@@ -216,8 +221,8 @@ export class MetricsCollector extends EventEmitter {
       timestamp: new Date(),
       tags: {
         hit: hit ? 1 : 0,
-        cacheType
-      }
+        cacheType,
+      },
     });
   }
 
@@ -227,7 +232,7 @@ export class MetricsCollector extends EventEmitter {
   aggregate(startDate?: Date, endDate?: Date): AggregatedMetrics {
     const start = startDate || this.startTime;
     const end = endDate || new Date();
-    
+
     const filteredMetrics = this.metrics.filter(
       m => m.timestamp >= start && m.timestamp <= end
     );
@@ -235,17 +240,21 @@ export class MetricsCollector extends EventEmitter {
     // DNS解決メトリクス
     const dnsMetrics = filteredMetrics.filter(m => m.type === 'dns_resolution');
     const dnsSuccessful = dnsMetrics.filter(m => m.tags?.success === 1);
-    
+
     // CSV処理メトリクス
     const csvMetrics = filteredMetrics.filter(m => m.type === 'csv_processing');
     const totalCsvRecords = csvMetrics.reduce(
-      (sum, m) => sum + (m.tags?.recordCount as number || 0), 
+      (sum, m) => sum + ((m.tags?.recordCount as number) || 0),
       0
     );
 
     // コマンド実行メトリクス
-    const commandMetrics = filteredMetrics.filter(m => m.type === 'command_execution');
-    const successfulCommands = commandMetrics.filter(m => m.tags?.success === 1);
+    const commandMetrics = filteredMetrics.filter(
+      m => m.type === 'command_execution'
+    );
+    const successfulCommands = commandMetrics.filter(
+      m => m.tags?.success === 1
+    );
 
     // エラーメトリクス
     const errorMetrics = filteredMetrics.filter(m => m.type === 'error');
@@ -258,7 +267,7 @@ export class MetricsCollector extends EventEmitter {
         domainCounts.set(domain, (domainCounts.get(domain) || 0) + 1);
       }
     });
-    
+
     const topDomains = Array.from(domainCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
@@ -270,18 +279,25 @@ export class MetricsCollector extends EventEmitter {
         dnsResolutions: dnsMetrics.length,
         csvRecordsProcessed: totalCsvRecords,
         commandsExecuted: commandMetrics.length,
-        errors: errorMetrics.length
+        errors: errorMetrics.length,
       },
       performance: {
-        avgDnsResolutionTime: this.calculateAverage(dnsSuccessful.map(m => m.value)),
-        avgCsvProcessingTime: this.calculateAverage(csvMetrics.map(m => m.value)),
-        avgCommandExecutionTime: this.calculateAverage(successfulCommands.map(m => m.value))
+        avgDnsResolutionTime: this.calculateAverage(
+          dnsSuccessful.map(m => m.value)
+        ),
+        avgCsvProcessingTime: this.calculateAverage(
+          csvMetrics.map(m => m.value)
+        ),
+        avgCommandExecutionTime: this.calculateAverage(
+          successfulCommands.map(m => m.value)
+        ),
       },
       topDomains,
-      errorRate: filteredMetrics.length > 0 
-        ? (errorMetrics.length / filteredMetrics.length) * 100 
-        : 0,
-      system: getSystemMetrics()
+      errorRate:
+        filteredMetrics.length > 0
+          ? (errorMetrics.length / filteredMetrics.length) * 100
+          : 0,
+      system: getSystemMetrics(),
     };
   }
 
@@ -303,14 +319,14 @@ export class MetricsCollector extends EventEmitter {
       version: '1.0',
       timestamp: new Date().toISOString(),
       metrics: this.metrics,
-      summary: this.aggregate()
+      summary: this.aggregate(),
     };
 
     await writeFile(filePath, JSON.stringify(data, null, 2));
-    
+
     // メモリをクリア
     this.metrics = [];
-    
+
     this.emit('flush', { fileName, recordCount: data.metrics.length });
   }
 
@@ -321,7 +337,7 @@ export class MetricsCollector extends EventEmitter {
     // パフォーマンス測定結果を自動的にメトリクスに変換
     setInterval(() => {
       const results = globalTracker.getResults();
-      
+
       results.forEach(result => {
         if (result.duration > 0) {
           this.record({
@@ -329,11 +345,11 @@ export class MetricsCollector extends EventEmitter {
             name: `performance.${result.name}`,
             value: result.duration,
             timestamp: new Date(result.startTime),
-            metadata: result.metadata
+            metadata: result.metadata,
           });
         }
       });
-      
+
       // 処理済みの結果をクリア
       globalTracker.clear();
     }, 10000); // 10秒ごと
@@ -344,7 +360,7 @@ export class MetricsCollector extends EventEmitter {
    */
   generateReport(format: 'text' | 'json' = 'text'): string {
     const aggregated = this.aggregate();
-    
+
     if (format === 'json') {
       return JSON.stringify(aggregated, null, 2);
     }
@@ -365,7 +381,7 @@ export class MetricsCollector extends EventEmitter {
       `Avg CSV Processing Time: ${aggregated.performance.avgCsvProcessingTime.toFixed(2)}ms`,
       `Avg Command Execution Time: ${aggregated.performance.avgCommandExecutionTime.toFixed(2)}ms`,
       '',
-      '--- Top Domains ---'
+      '--- Top Domains ---',
     ];
 
     aggregated.topDomains.forEach(({ domain, count }) => {
@@ -374,8 +390,12 @@ export class MetricsCollector extends EventEmitter {
 
     report.push('', '--- System Metrics ---');
     report.push(`CPU Usage: ${aggregated.system.cpu.usage.toFixed(1)}%`);
-    report.push(`Memory Usage: ${aggregated.system.memory.usagePercent.toFixed(1)}%`);
-    report.push(`Process Uptime: ${(aggregated.system.process.uptime / 60).toFixed(1)} minutes`);
+    report.push(
+      `Memory Usage: ${aggregated.system.memory.usagePercent.toFixed(1)}%`
+    );
+    report.push(
+      `Process Uptime: ${(aggregated.system.process.uptime / 60).toFixed(1)} minutes`
+    );
 
     return report.join('\n');
   }
@@ -406,7 +426,7 @@ export class MetricsCollector extends EventEmitter {
     if (this.flushInterval) {
       clearInterval(this.flushInterval);
     }
-    
+
     await this.flush();
     this.removeAllListeners();
   }

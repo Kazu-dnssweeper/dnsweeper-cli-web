@@ -285,7 +285,7 @@ export class MetricsCollector extends EventEmitter {
 
     const failedChecks = results.filter(r => r.status === 'fail').length;
     const warnChecks = results.filter(
-      r => 'status' in r && r.status === ('warn' as any)
+      r => 'status' in r && r.status === 'warn'
     ).length;
 
     let status: HealthCheckResult['status'];
@@ -526,24 +526,30 @@ export function getMetricsCollector(
 /**
  * メトリクスデコレーター
  */
-export function metric(name?: string) {
+export function metric(
+  name?: string
+): (
+  target: unknown,
+  propertyName: string,
+  descriptor: PropertyDescriptor
+) => void {
   return function (
-    target: any,
+    target: unknown,
     propertyName: string,
     descriptor: PropertyDescriptor
-  ) {
+  ): void {
     const metricName = name || `${target.constructor.name}.${propertyName}`;
     const originalMethod = descriptor.value;
     const collector = getMetricsCollector();
 
     if (originalMethod.constructor.name === 'AsyncFunction') {
-      descriptor.value = async function (...args: any[]) {
+      descriptor.value = async function (...args: unknown[]): Promise<unknown> {
         return collector.measureAsync(metricName, () =>
           originalMethod.apply(this, args)
         );
       };
     } else {
-      descriptor.value = function (...args: any[]) {
+      descriptor.value = function (...args: unknown[]): unknown {
         return collector.measure(metricName, () =>
           originalMethod.apply(this, args)
         );

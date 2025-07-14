@@ -10,8 +10,8 @@ import { normalizeIPv6, isValidIPv6 } from '../utils/ipv6.js';
 import { withTimeout, withRetry } from '../utils/retry.js';
 
 import { DnsCache, type DnsCacheOptions } from './dns-cache.js';
-import { MemoryOptimizer } from './performance/memory-optimizer.js';
 import { globalMetrics } from './metrics/metrics-collector.js';
+import { MemoryOptimizer } from './performance/memory-optimizer.js';
 
 import type { DNSRecordType, IDNSQuery } from '../types/index.js';
 
@@ -47,11 +47,11 @@ export interface IDNSResponse {
 
 /**
  * DNS解決を行うクラス
- * 
+ *
  * @class DNSResolver
  * @description 各種DNSレコードタイプの解決機能を提供します。
  * キャッシュ機能と並列処理により高速な解決を実現します。
- * 
+ *
  * @example
  * ```typescript
  * const resolver = new DNSResolver({
@@ -70,7 +70,7 @@ export class DNSResolver {
 
   /**
    * DNSResolverのインスタンスを作成します
-   * 
+   *
    * @param {Object} options - 設定オプション
    * @param {number} [options.timeout=5000] - DNS解決のタイムアウト時間（ミリ秒）
    * @param {string[]} [options.servers=['8.8.8.8', '8.8.4.4']] - 使用するDNSサーバー
@@ -109,7 +109,7 @@ export class DNSResolver {
       const cached = this.cache.get(query);
       if (cached) {
         const responseTime = Date.now() - startTime;
-        
+
         // キャッシュヒットをメトリクスに記録
         globalMetrics.recordCacheHit(true, 'dns');
         globalMetrics.recordDnsResolution({
@@ -117,9 +117,9 @@ export class DNSResolver {
           recordType: type,
           duration: responseTime,
           success: true,
-          cached: true
+          cached: true,
         });
-        
+
         return {
           ...cached,
           responseTime, // 新しいレスポンス時間を設定
@@ -155,7 +155,7 @@ export class DNSResolver {
         recordType: type,
         duration: responseTime,
         success: true,
-        cached: false
+        cached: false,
       });
 
       return response;
@@ -195,7 +195,7 @@ export class DNSResolver {
         duration: responseTime,
         success: false,
         cached: false,
-        error: errorMessage
+        error: errorMessage,
       });
 
       // エラーメトリクスも記録
@@ -413,7 +413,8 @@ export class DNSResolver {
 
   // Performance method for batch operations
   async batchResolve(queries: IDNSQuery[]): Promise<IDNSResponse[]> {
-    console.log(`Starting batch DNS resolution for ${queries.length} queries`);
+    // Debug: Starting batch DNS resolution
+    // console.log(`Starting batch DNS resolution for ${queries.length} queries`);
     MemoryOptimizer.logMemoryUsage('Before batch resolve');
 
     try {
@@ -439,9 +440,10 @@ export class DNSResolver {
       };
 
       MemoryOptimizer.logMemoryUsage('After batch resolve');
-      console.log(
-        `Batch resolution completed: ${result.successful.length} successful, ${result.failed.length} failed, ${result.duration}ms`
-      );
+      // Debug: Batch resolution completed
+      // console.log(
+      //   `Batch resolution completed: ${result.successful.length} successful, ${result.failed.length} failed, ${result.duration}ms`
+      // );
 
       // 成功した結果と失敗した結果を統合
       const allResults: IDNSResponse[] = [
@@ -500,13 +502,13 @@ export class DNSResolver {
     const executeQuery = async (query: IDNSQuery): Promise<IDNSResponse> => {
       try {
         const resolver = retryOnError
-          ? () =>
+          ? (): Promise<IDNSResponse> =>
               withTimeout(
                 () => this.resolve(query.domain, query.type),
                 this.timeout,
                 `DNS resolution timeout for ${query.domain}`
               )
-          : () => this.resolve(query.domain, query.type);
+          : (): Promise<IDNSResponse> => this.resolve(query.domain, query.type);
 
         const result = retryOnError
           ? await withRetry(resolver, {
@@ -591,7 +593,7 @@ export class DNSResolver {
   /**
    * キャッシュ統計を取得
    */
-  getCacheStats() {
+  getCacheStats(): object | null {
     return this.cache?.getStats() || null;
   }
 

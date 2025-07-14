@@ -3,8 +3,9 @@
  */
 
 import { Route53Auth } from './auth.js';
-import { Route53Parser } from './parser.js';
 import { Route53BatchProcessor } from './batch.js';
+import { Route53Parser } from './parser.js';
+
 import type {
   Route53Config,
   Route53HostedZone,
@@ -15,7 +16,6 @@ import type {
   Route53BatchOptions,
   Route53BatchResult,
 } from './types.js';
-
 import type { ICSVRecord } from '../../types/index.js';
 
 export class Route53Client {
@@ -69,10 +69,15 @@ export class Route53Client {
   /**
    * 特定のホステッドゾーンを取得
    */
-  async getHostedZone(zoneId: string): Promise<Route53Response<Route53HostedZone>> {
+  async getHostedZone(
+    zoneId: string
+  ): Promise<Route53Response<Route53HostedZone>> {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
-      const response = await this.makeRequest('GET', `/hostedzone/${cleanZoneId}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/hostedzone/${cleanZoneId}`
+      );
 
       if (!response.ok) {
         return {
@@ -100,10 +105,15 @@ export class Route53Client {
   /**
    * レコードセット一覧を取得
    */
-  async listResourceRecordSets(zoneId: string): Promise<Route53Response<Route53Record[]>> {
+  async listResourceRecordSets(
+    zoneId: string
+  ): Promise<Route53Response<Route53Record[]>> {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
-      const response = await this.makeRequest('GET', `/hostedzone/${cleanZoneId}/rrset`);
+      const response = await this.makeRequest(
+        'GET',
+        `/hostedzone/${cleanZoneId}/rrset`
+      );
 
       if (!response.ok) {
         return {
@@ -174,7 +184,7 @@ export class Route53Client {
     zoneId: string,
     records: ICSVRecord[]
   ): Promise<Route53BatchResult> {
-    return this.batchProcessor.processBatch(records, async (changes) => {
+    return this.batchProcessor.processBatch(records, async changes => {
       const changeBatch: Route53ChangeBatch = {
         Comment: `Bulk import from CSV - ${new Date().toISOString()}`,
         Changes: changes,
@@ -188,10 +198,15 @@ export class Route53Client {
   /**
    * 変更ステータスを取得
    */
-  async getChangeStatus(changeId: string): Promise<Route53Response<Route53ChangeInfo>> {
+  async getChangeStatus(
+    changeId: string
+  ): Promise<Route53Response<Route53ChangeInfo>> {
     try {
       const cleanChangeId = this.cleanChangeId(changeId);
-      const response = await this.makeRequest('GET', `/change/${cleanChangeId}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/change/${cleanChangeId}`
+      );
 
       if (!response.ok) {
         return {
@@ -256,13 +271,17 @@ export class Route53Client {
       id: `r53-${record.Name}-${record.Type}`,
       name: record.Name,
       type: record.Type,
-      value: record.ResourceRecords?.[0]?.Value || record.AliasTarget?.DNSName || '',
+      value:
+        record.ResourceRecords?.[0]?.Value || record.AliasTarget?.DNSName || '',
       ttl: record.TTL || 300,
-      priority: record.Type === 'MX' ? this.extractMXPriority(record.ResourceRecords?.[0]?.Value) : undefined,
+      priority:
+        record.Type === 'MX'
+          ? this.extractMXPriority(record.ResourceRecords?.[0]?.Value)
+          : undefined,
       weight: record.Weight,
       created: new Date(),
       updated: new Date(),
-      setIdentifier: record.SetIdentifier
+      setIdentifier: record.SetIdentifier,
     }));
   }
 
@@ -274,18 +293,22 @@ export class Route53Client {
       const r53Record: Route53Record = {
         Name: record.name,
         Type: record.type,
-        TTL: record.ttl
+        TTL: record.ttl,
       };
 
       // MXレコードの処理
       if (record.type === 'MX' && record.priority !== undefined) {
-        r53Record.ResourceRecords = [{
-          Value: `${record.priority} ${record.value}`
-        }];
+        r53Record.ResourceRecords = [
+          {
+            Value: `${record.priority} ${record.value}`,
+          },
+        ];
       } else {
-        r53Record.ResourceRecords = [{
-          Value: record.value
-        }];
+        r53Record.ResourceRecords = [
+          {
+            Value: record.value,
+          },
+        ];
       }
 
       // オプションフィールド
@@ -308,11 +331,14 @@ export class Route53Client {
   /**
    * ChangeResourceRecordSets XMLを構築
    */
-  private buildChangeResourceRecordSetsXml(changeBatch: Route53ChangeBatch): string {
+  private buildChangeResourceRecordSetsXml(
+    changeBatch: Route53ChangeBatch
+  ): string {
     const changes = changeBatch.Changes.map(change => {
       const resourceRecords = change.ResourceRecordSet.ResourceRecords
         ? change.ResourceRecordSet.ResourceRecords.map(
-            rr => `        <ResourceRecord><Value>${rr.Value}</Value></ResourceRecord>`
+            rr =>
+              `        <ResourceRecord><Value>${rr.Value}</Value></ResourceRecord>`
           ).join('\n')
         : '';
 

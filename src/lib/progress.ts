@@ -57,6 +57,7 @@ export class ProgressDisplay {
    */
   start(text: string, _type: SpinnerType = 'processing'): this {
     if (!this.isEnabled) {
+      // eslint-disable-next-line no-console
       console.log(text);
       return this;
     }
@@ -88,6 +89,7 @@ export class ProgressDisplay {
       this._spinner.succeed(text);
       this._spinner = null;
     } else if (text) {
+      // eslint-disable-next-line no-console
       console.log(colorize.success('✓'), text);
     }
     return this;
@@ -101,6 +103,7 @@ export class ProgressDisplay {
       this._spinner.fail(text);
       this._spinner = null;
     } else if (text) {
+      // eslint-disable-next-line no-console
       console.log(colorize.error('✗'), text);
     }
     return this;
@@ -114,6 +117,7 @@ export class ProgressDisplay {
       this._spinner.warn(text);
       this._spinner = null;
     } else if (text) {
+      // eslint-disable-next-line no-console
       console.log(colorize.warning('⚠'), text);
     }
     return this;
@@ -127,6 +131,7 @@ export class ProgressDisplay {
       this._spinner.info(text);
       this._spinner = null;
     } else if (text) {
+      // eslint-disable-next-line no-console
       console.log(colorize.info('ℹ'), text);
     }
     return this;

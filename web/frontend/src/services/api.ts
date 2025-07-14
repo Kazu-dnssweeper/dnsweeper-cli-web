@@ -46,7 +46,13 @@ const api = createApiClient();
 // ファイルアップロード関連API
 export const uploadApi = {
   // CSVファイルのアップロード
-  uploadFile: async (file: File): Promise<ApiResponse<{ fileId: string; recordCount: number }>> => {
+  uploadFile: async (file: File): Promise<ApiResponse<{ 
+    id: string; 
+    originalName: string; 
+    filename: string; 
+    size: number; 
+    uploadedAt: string; 
+  }>> => {
     const formData = new FormData();
     formData.append('file', file);
     
@@ -111,25 +117,25 @@ export const dnsApi = {
 export const analysisApi = {
   // 分析結果一覧の取得
   getAnalyses: async (): Promise<ApiResponse<AnalysisResult[]>> => {
-    return api.get('/analysis');
+    return api.get('/analyze');
   },
 
   // 特定分析結果の取得
   getAnalysis: async (id: string): Promise<ApiResponse<AnalysisResult>> => {
-    return api.get(`/analysis/${id}`);
+    return api.get(`/analyze/${id}`);
   },
 
   // 新規分析の開始
-  startAnalysis: async (recordIds: string[], options?: {
+  startAnalysis: async (fileId: string, options?: {
     includeRiskCalculation?: boolean;
     includeDnsResolution?: boolean;
-  }): Promise<ApiResponse<{ analysisId: string }>> => {
-    return api.post('/analysis/start', { recordIds, options });
+  }): Promise<ApiResponse<{ analysisId: string; status: string }>> => {
+    return api.post('/analyze', { fileId, options });
   },
 
   // 分析結果のエクスポート
   exportAnalysis: async (id: string, format: 'csv' | 'excel' | 'pdf'): Promise<Blob> => {
-    const response = await api.get(`/analysis/${id}/export`, {
+    const response = await api.get(`/analyze/${id}/export`, {
       params: { format },
       responseType: 'blob',
     });

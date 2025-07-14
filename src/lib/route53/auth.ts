@@ -22,7 +22,7 @@ export class Route53Auth {
     headers: Record<string, string>,
     body: string = ''
   ): string {
-    const timestamp = new Date().toISOString().replace(/[:\-]|\.\d{3}/g, '');
+    const timestamp = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
     const date = timestamp.substr(0, 8);
     const service = 'route53';
     const region = this.config.region || 'us-east-1';
@@ -82,11 +82,11 @@ export class Route53Auth {
     uri: string,
     body: string = ''
   ): Record<string, string> {
-    const timestamp = new Date().toISOString().replace(/[:\-]|\.\d{3}/g, '');
-    
+    const timestamp = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+
     const headers: Record<string, string> = {
       'X-Amz-Date': timestamp,
-      'Host': 'route53.amazonaws.com',
+      Host: 'route53.amazonaws.com',
       'Content-Type': 'application/xml',
     };
 

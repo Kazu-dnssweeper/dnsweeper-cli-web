@@ -3,8 +3,9 @@
  */
 
 import { createTransport } from './transports.js';
-import type { LogEntry, LoggerConfig, LogTransport } from './types.js';
 import { LogLevel, LOG_LEVEL_NAMES } from './types.js';
+
+import type { LogEntry, LoggerConfig, LogTransport } from './types.js';
 
 /**
  * 構造化ロガー
@@ -17,7 +18,7 @@ export class StructuredLogger {
 
   constructor(config: LoggerConfig) {
     this.config = config;
-    this.transports = config.transports.map(transportConfig => 
+    this.transports = config.transports.map(transportConfig =>
       createTransport(transportConfig)
     );
   }
@@ -57,16 +58,18 @@ export class StructuredLogger {
       meta: { ...this.config.defaultMeta, ...meta },
       context: this.context,
       correlationId: this.correlationId,
-      error: error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      } : undefined,
+      error: error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
     };
 
     // 全トランスポートに並列でログを送信
     const promises = this.transports.map(transport => transport.log(entry));
-    
+
     try {
       await Promise.all(promises);
     } catch (error) {
@@ -79,7 +82,11 @@ export class StructuredLogger {
   /**
    * ERROR レベルログ
    */
-  async error(message: string, error?: Error, meta?: Record<string, unknown>): Promise<void> {
+  async error(
+    message: string,
+    error?: Error,
+    meta?: Record<string, unknown>
+  ): Promise<void> {
     await this.log(LogLevel.ERROR, message, meta, error);
   }
 
@@ -107,7 +114,10 @@ export class StructuredLogger {
   /**
    * VERBOSE レベルログ
    */
-  async verbose(message: string, meta?: Record<string, unknown>): Promise<void> {
+  async verbose(
+    message: string,
+    meta?: Record<string, unknown>
+  ): Promise<void> {
     await this.log(LogLevel.VERBOSE, message, meta);
   }
 
@@ -130,7 +140,7 @@ export class StructuredLogger {
    */
   startTimer(label: string): () => void {
     const start = Date.now();
-    
+
     return () => {
       const duration = Date.now() - start;
       this.log(LogLevel.INFO, `Timer: ${label}`, { duration });
@@ -140,7 +150,10 @@ export class StructuredLogger {
   /**
    * 子ロガーを作成
    */
-  child(context: string, defaultMeta?: Record<string, unknown>): StructuredLogger {
+  child(
+    context: string,
+    defaultMeta?: Record<string, unknown>
+  ): StructuredLogger {
     const childConfig: LoggerConfig = {
       ...this.config,
       defaultMeta: { ...this.config.defaultMeta, ...defaultMeta },
@@ -148,7 +161,7 @@ export class StructuredLogger {
 
     const childLogger = new StructuredLogger(childConfig);
     childLogger.setContext(context);
-    
+
     if (this.correlationId) {
       childLogger.setCorrelationId(this.correlationId);
     }
@@ -206,7 +219,9 @@ export const DEFAULT_LOGGER_CONFIG: LoggerConfig = {
 /**
  * ロガーファクトリー
  */
-export function createLogger(config: Partial<LoggerConfig> = {}): StructuredLogger {
+export function createLogger(
+  config: Partial<LoggerConfig> = {}
+): StructuredLogger {
   const mergedConfig: LoggerConfig = {
     ...DEFAULT_LOGGER_CONFIG,
     ...config,
@@ -227,8 +242,10 @@ export const defaultLogger = createLogger();
 export const LogLevelUtil = {
   fromString(level: string): LogLevel {
     const levelName = level.toLowerCase();
-    const entry = Object.entries(LOG_LEVEL_NAMES).find(([, name]) => name === levelName);
-    return entry ? Number(entry[0]) as LogLevel : LogLevel.INFO;
+    const entry = Object.entries(LOG_LEVEL_NAMES).find(
+      ([, name]) => name === levelName
+    );
+    return entry ? (Number(entry[0]) as LogLevel) : LogLevel.INFO;
   },
 
   toString(level: LogLevel): string {

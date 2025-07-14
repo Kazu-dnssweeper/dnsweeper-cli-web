@@ -204,13 +204,16 @@ export function detectBufferEncoding(buffer: Buffer): EncodingDetectionResult {
   const alternatives = Array.isArray(detections)
     ? detections
         .slice(1)
-        .map((d: any) => ({
+        .map((d: { name: string; confidence: number }) => ({
           encoding:
             ENCODING_MAPPING[d.name.toUpperCase()] ||
             ('utf-8' as SupportedEncoding),
           confidence: d.confidence || 0,
         }))
-        .filter((alt: any) => alt.encoding !== mappedEncoding)
+        .filter(
+          (alt: { encoding: SupportedEncoding; confidence: number }) =>
+            alt.encoding !== mappedEncoding
+        )
         .slice(0, 3) // 上位3つまで
     : [];
 

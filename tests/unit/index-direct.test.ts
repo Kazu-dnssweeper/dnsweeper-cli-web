@@ -16,6 +16,8 @@ vi.mock('../../src/commands/index.js', () => ({
   createLookupCommand: vi.fn(() => new Command('lookup')),
   createSweepCommand: vi.fn(() => new Command('sweep')),
   createValidateCommand: vi.fn(() => new Command('validate')),
+  performanceCommand: new Command('performance'),
+  createSyncCommand: vi.fn(() => new Command('sync')),
 }));
 
 vi.mock('../../src/lib/logger.js', () => ({

@@ -19,6 +19,7 @@ export const validateFile = async (req: Request, res: Response, next: NextFuncti
     if (file.size > 100 * 1024 * 1024) { // 100MB
       await cleanupFile(file.path);
       return res.status(413).json({
+        success: false,
         error: 'File too large',
         message: 'File size must be less than 100MB'
       });
@@ -31,6 +32,7 @@ export const validateFile = async (req: Request, res: Response, next: NextFuncti
     if (!allowedExtensions.includes(fileExtension)) {
       await cleanupFile(file.path);
       return res.status(400).json({
+        success: false,
         error: 'Invalid file type',
         message: 'Only CSV files are allowed'
       });
@@ -41,6 +43,7 @@ export const validateFile = async (req: Request, res: Response, next: NextFuncti
     if (!isValidCsv) {
       await cleanupFile(file.path);
       return res.status(400).json({
+        success: false,
         error: 'Invalid CSV format',
         message: 'The uploaded file is not a valid CSV format'
       });
@@ -57,6 +60,7 @@ export const validateFile = async (req: Request, res: Response, next: NextFuncti
     }
     
     res.status(500).json({
+      success: false,
       error: 'File validation failed',
       message: 'An error occurred while validating the file'
     });

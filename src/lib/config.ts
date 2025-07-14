@@ -160,7 +160,8 @@ export async function loadConfig(
       // 深いマージを実行
       config = deepMerge(config, fileConfig);
 
-      console.log(`設定ファイルを読み込みました: ${actualConfigPath}`);
+      // Debug: 設定ファイルを読み込みました
+      // console.log(`設定ファイルを読み込みました: ${actualConfigPath}`);
     } catch (error) {
       console.error(`設定ファイルの読み込みエラー: ${actualConfigPath}`, error);
       throw error;
@@ -230,7 +231,10 @@ function mergeEnvironmentVariables(config: DnsSweeperConfig): DnsSweeperConfig {
 /**
  * オブジェクトの深いマージ
  */
-function deepMerge(target: any, source: any): any {
+function deepMerge(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>
+): Record<string, unknown> {
   const result = { ...target };
 
   for (const key in source) {
@@ -298,7 +302,8 @@ export async function saveConfig(
   try {
     const configContent = JSON.stringify(config, null, 2);
     await fs.writeFile(actualConfigPath, configContent, 'utf8');
-    console.log(`設定ファイルを保存しました: ${actualConfigPath}`);
+    // Debug: 設定ファイルを保存しました
+    // console.log(`設定ファイルを保存しました: ${actualConfigPath}`);
   } catch (error) {
     console.error(`設定ファイルの保存エラー: ${actualConfigPath}`, error);
     throw error;

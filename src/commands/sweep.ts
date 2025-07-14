@@ -391,45 +391,51 @@ function convertToIDNSRecords(
 
   const now = new Date();
 
-  return lookupResult.records.map((record: unknown, index: number): IDNSRecord => {
-    let value: string;
-    let priority: number | undefined;
-    let weight: number | undefined;
-    let port: number | undefined;
+  return lookupResult.records.map(
+    (record: unknown, index: number): IDNSRecord => {
+      let value: string;
+      let priority: number | undefined;
+      let weight: number | undefined;
+      let port: number | undefined;
 
-    // レコードタイプ別の値の処理
-    const recordObj = record as Record<string, unknown>;
-    switch (recordType) {
-      case 'MX':
-        value = String(recordObj.exchange || recordObj.value || record);
-        priority = recordObj.priority ? Number(recordObj.priority) : undefined;
-        break;
-      case 'SRV':
-        value = String(recordObj.target || recordObj.value || record);
-        priority = recordObj.priority ? Number(recordObj.priority) : undefined;
-        weight = recordObj.weight ? Number(recordObj.weight) : undefined;
-        port = recordObj.port ? Number(recordObj.port) : undefined;
-        break;
-      case 'TXT':
-        value = Array.isArray(record) ? record.join(' ') : String(record);
-        break;
-      default:
-        value = String(recordObj.address || recordObj.value || record);
+      // レコードタイプ別の値の処理
+      const recordObj = record as Record<string, unknown>;
+      switch (recordType) {
+        case 'MX':
+          value = String(recordObj.exchange || recordObj.value || record);
+          priority = recordObj.priority
+            ? Number(recordObj.priority)
+            : undefined;
+          break;
+        case 'SRV':
+          value = String(recordObj.target || recordObj.value || record);
+          priority = recordObj.priority
+            ? Number(recordObj.priority)
+            : undefined;
+          weight = recordObj.weight ? Number(recordObj.weight) : undefined;
+          port = recordObj.port ? Number(recordObj.port) : undefined;
+          break;
+        case 'TXT':
+          value = Array.isArray(record) ? record.join(' ') : String(record);
+          break;
+        default:
+          value = String(recordObj.address || recordObj.value || record);
+      }
+
+      return {
+        id: `${domain}-${recordType.toLowerCase()}-${index}`,
+        name: domain,
+        type: recordType,
+        value,
+        ttl: recordObj.ttl ? Number(recordObj.ttl) : 300,
+        ...(priority !== undefined && { priority }),
+        ...(weight !== undefined && { weight }),
+        ...(port !== undefined && { port }),
+        created: now,
+        updated: now,
+      };
     }
-
-    return {
-      id: `${domain}-${recordType.toLowerCase()}-${index}`,
-      name: domain,
-      type: recordType,
-      value,
-      ttl: recordObj.ttl ? Number(recordObj.ttl) : 300,
-      ...(priority !== undefined && { priority }),
-      ...(weight !== undefined && { weight }),
-      ...(port !== undefined && { port }),
-      created: now,
-      updated: now,
-    };
-  });
+  );
 }
 
 /**

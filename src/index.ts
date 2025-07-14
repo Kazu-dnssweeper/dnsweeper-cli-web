@@ -14,9 +14,11 @@ import {
   createLookupCommand,
   createSweepCommand,
   createValidateCommand,
-  createPerformanceCommand,
+  performanceCommand,
   createSyncCommand,
 } from './commands/index.js';
+import { createOptimizeCommand } from './commands/optimize.js';
+import { createSecurityCommand } from './commands/security.js';
 import { loadConfig } from './lib/config.js';
 import { Logger } from './lib/logger.js';
 
@@ -47,8 +49,10 @@ export function createProgram(): Command {
   program.addCommand(createLookupCommand());
   program.addCommand(createSweepCommand());
   program.addCommand(createValidateCommand());
-  program.addCommand(createPerformanceCommand());
+  program.addCommand(performanceCommand);
   program.addCommand(createSyncCommand());
+  program.addCommand(createOptimizeCommand());
+  program.addCommand(createSecurityCommand());
 
   program.on('command:*', () => {
     const logger = new Logger();
@@ -77,7 +81,9 @@ export async function main(): Promise<void> {
     const config = await loadConfig(opts.config);
 
     // グローバル設定をプログラムに追加
-    (program as any).dnsSweeperConfig = config;
+    (
+      program as typeof program & { dnsSweeperConfig: typeof config }
+    ).dnsSweeperConfig = config;
 
     await program.parseAsync(process.argv);
   } catch (error) {

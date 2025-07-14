@@ -5,8 +5,8 @@
 
 import Papa from 'papaparse';
 
-import type { DNSRecordType, ICSVRecord } from '../../types/index.js';
 import type { IRoute53CSVRow, ICSVParseResult } from './types.js';
+import type { DNSRecordType, ICSVRecord } from '../../types/index.js';
 
 export class Route53CSVParser {
   /**

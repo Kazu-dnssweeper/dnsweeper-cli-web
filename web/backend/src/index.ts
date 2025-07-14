@@ -14,20 +14,17 @@ import { apiRouter } from './routes/index.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
 import { logger } from './utils/logger.js';
+import { SocketServer } from './websocket/socket-server.js';
 
 // 環境変数の読み込み
 dotenv.config();
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
-});
-
 const PORT = process.env.PORT || 3001;
+
+// WebSocket サーバーの初期化
+const socketServer = SocketServer.getInstance(server);
 
 // セキュリティミドルウェア
 app.use(helmet({
@@ -47,20 +44,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // リクエストログ
 app.use(requestLogger);
 
-// WebSocket設定
-io.on('connection', (socket) => {
-  logger.info(`WebSocket client connected: ${socket.id}`);
-  
-  socket.on('disconnect', () => {
-    logger.info(`WebSocket client disconnected: ${socket.id}`);
-  });
-  
-  // 分析進捗の購読
-  socket.on('subscribe:analysis', (analysisId) => {
-    socket.join(`analysis:${analysisId}`);
-    logger.info(`Client ${socket.id} subscribed to analysis ${analysisId}`);
-  });
-});
+// WebSocket設定は SocketServer クラスで管理
 
 // APIルート
 app.use('/api', apiRouter);
@@ -115,4 +99,4 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-export { app, io };
+export { app, server, socketServer };

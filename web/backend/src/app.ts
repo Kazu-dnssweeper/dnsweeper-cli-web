@@ -10,6 +10,7 @@ import { historyRouter } from './routes/history';
 import { exportRouter } from './routes/export';
 import authRouter from './routes/auth';
 import reportsRouter from './routes/reports';
+import aiOptimizationRouter from './routes/ai-optimization';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/logger';
 import { configureCors, securityHeaders } from './middleware/auth';
@@ -64,6 +65,7 @@ export const createApp = async (): Promise<express.Application> => {
   app.use('/api/history', historyRouter);
   app.use('/api/export', exportRouter);
   app.use('/api/reports', reportsRouter);
+  app.use('/api/ai-optimization', aiOptimizationRouter);
 
   // 404 ハンドラー
   app.use('*', (req, res) => {

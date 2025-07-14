@@ -9,7 +9,7 @@ export interface BatchProcessorOptions {
   retries: number;
   retryDelay: number;
   onProgress?: (processed: number, total: number) => void;
-  onError?: (error: Error, item: any) => void;
+  onError?: (error: Error, item: T) => void;
 }
 
 export interface BatchResult<T, R> {
@@ -179,7 +179,7 @@ class Semaphore {
 /**
  * DNS解決専用のバッチプロセッサー
  */
-export class DNSBatchProcessor extends BatchProcessor<string, any> {
+export class DNSBatchProcessor extends BatchProcessor<string, unknown> {
   constructor(options: Partial<BatchProcessorOptions> = {}) {
     super({
       batchSize: 100,

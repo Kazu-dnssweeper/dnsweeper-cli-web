@@ -360,7 +360,7 @@ function getValidationChecks(): IValidationCheck[] {
       name: 'Aレコード存在チェック',
       description: 'ドメインにAレコードが設定されているかチェック',
       severity: 'error',
-      execute: records => {
+      execute: (records): IValidationResult[] => {
         const aRecords = records.filter(r => r.type === 'A');
         return [
           {
@@ -392,7 +392,7 @@ function getValidationChecks(): IValidationCheck[] {
       name: 'MXレコード存在チェック',
       description: 'メール配信のためのMXレコードが設定されているかチェック',
       severity: 'warning',
-      execute: records => {
+      execute: (records): IValidationResult[] => {
         const mxRecords = records.filter(r => r.type === 'MX');
         return [
           {
@@ -422,7 +422,7 @@ function getValidationChecks(): IValidationCheck[] {
       name: 'TTL値の整合性チェック',
       description: '同じタイプのレコードでTTL値が統一されているかチェック',
       severity: 'info',
-      execute: records => {
+      execute: (records): IValidationResult[] => {
         const results: IValidationResult[] = [];
         const recordsByType = records.reduce(
           (acc, record) => {
@@ -462,7 +462,7 @@ function getValidationChecks(): IValidationCheck[] {
       name: 'CNAMEレコード競合チェック',
       description: 'CNAMEレコードと他のレコードが競合していないかチェック',
       severity: 'error',
-      execute: records => {
+      execute: (records): IValidationResult[] => {
         const results: IValidationResult[] = [];
         const cnameRecords = records.filter(r => r.type === 'CNAME');
 
@@ -499,7 +499,7 @@ function getValidationChecks(): IValidationCheck[] {
       name: '短すぎるTTL警告',
       description: 'TTL値が短すぎる場合の警告',
       severity: 'warning',
-      execute: records => {
+      execute: (records): IValidationResult[] => {
         const shortTtlRecords = records.filter(r => r.ttl < 300); // 5分未満
 
         if (shortTtlRecords.length > 0) {
@@ -596,11 +596,13 @@ async function outputValidationResults(
     await formatter.writeToFile(analysisResult, options.output);
     logger.success(`結果を ${options.output} に保存しました`);
   } else {
+    /* eslint-disable-next-line no-console */
     console.log(output);
   }
 
   // 概要表示
   if (!options.quiet && format === 'table') {
+    /* eslint-disable no-console */
     console.log('\n=== 検証結果概要 ===');
     console.log(`✅ 合格: ${stats.passed}件`);
     if (stats.warnings > 0) {
@@ -609,6 +611,7 @@ async function outputValidationResults(
     if (stats.failed > 0) {
       console.log(`❌ エラー: ${stats.failed}件`);
     }
+    /* eslint-enable no-console */
   }
 }
 

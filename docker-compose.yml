@@ -1,0 +1,120 @@
+# DNSweeper Production Docker Compose
+version: '3.8'
+
+services:
+  # DNSweeper CLI Service
+  dnsweeper-cli:
+    build:
+      context: .
+      target: production
+    container_name: dnsweeper-cli
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    networks:
+      - dnsweeper-network
+
+  # DNSweeper Web Backend
+  dnsweeper-backend:
+    build:
+      context: ./web/backend
+      target: production
+    container_name: dnsweeper-backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./web/backend/uploads:/app/uploads
+      - ./web/backend/logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - dnsweeper-network
+
+  # DNSweeper Web Frontend
+  dnsweeper-frontend:
+    build:
+      context: ./web/frontend
+      target: production
+    container_name: dnsweeper-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:3001}
+    depends_on:
+      - dnsweeper-backend
+    restart: unless-stopped
+    networks:
+      - dnsweeper-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: dnsweeper-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-dnsweeper}
+      - POSTGRES_USER=${POSTGRES_USER:-dnsweeper}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - dnsweeper-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: dnsweeper-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-secure_redis_password}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - dnsweeper-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: dnsweeper-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - dnsweeper-frontend
+      - dnsweeper-backend
+    restart: unless-stopped
+    networks:
+      - dnsweeper-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  dnsweeper-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

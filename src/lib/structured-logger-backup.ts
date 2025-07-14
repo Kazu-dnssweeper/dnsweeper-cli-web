@@ -162,6 +162,7 @@ export class ConsoleTransport extends LogTransport {
     } else if (entry.level === LogLevel.WARN) {
       console.warn(formatted);
     } else {
+      // eslint-disable-next-line no-console
       console.log(formatted);
     }
   }
@@ -321,7 +322,7 @@ export class StructuredLogger {
         name: options.error.name,
         message: options.error.message,
         stack: options.error.stack,
-        code: (options.error as any).code,
+        code: (options.error as { code?: string }).code,
       };
     }
 
@@ -559,13 +560,13 @@ export function logMethod(
     target: unknown,
     propertyName: string,
     descriptor: PropertyDescriptor
-  ) {
+  ): PropertyDescriptor {
     if (!descriptor || typeof descriptor.value !== 'function') {
       return descriptor;
     }
     const method = descriptor.value;
 
-    descriptor.value = async function (...args: unknown[]) {
+    descriptor.value = async function (...args: unknown[]): Promise<unknown> {
       const logger = getLogger();
       const className = target.constructor.name;
       const methodName = `${className}.${propertyName}`;

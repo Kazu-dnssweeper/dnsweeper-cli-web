@@ -16,8 +16,8 @@ import {
   type ICSVParseResult,
 } from './csv-parsers/index.js';
 import { CsvProcessingError } from './errors.js';
+// import { globalMetrics } from './metrics/metrics-collector.js';
 import { CSVBatchProcessor } from './performance/batch-processor.js';
-import { globalMetrics } from './metrics/metrics-collector.js';
 
 import type { ICSVRecord, DNSRecordType } from '../types/index.js';
 
@@ -50,10 +50,11 @@ export class CSVProcessor {
     this.batchProcessor = new CSVBatchProcessor({
       batchSize: 10000,
       concurrency: 4,
-      onProgress: (processed, total) => {
-        console.log(
-          `CSV processing progress: ${processed}/${total} (${Math.round((processed / total) * 100)}%)`
-        );
+      onProgress: (_processed: number, _total: number): void => {
+        // Debug: CSV processing progress
+        // console.log(
+        //   `CSV processing progress: ${processed}/${total} (${Math.round((processed / total) * 100)}%)`
+        // );
       },
     });
   }
@@ -132,10 +133,10 @@ export class CSVProcessor {
       case 'generic':
         return this.parseGeneric(filePath);
       default:
-        throw new CsvProcessingError(
-          'サポートされていないCSV形式です。',
-          { filePath, format }
-        );
+        throw new CsvProcessingError('サポートされていないCSV形式です。', {
+          filePath,
+          format,
+        });
     }
   }
 
@@ -195,9 +196,9 @@ export class CSVProcessor {
    */
   async processBatch(
     filePath: string,
-    batchSize: number = 1000
+    _batchSize: number = 1000
   ): Promise<ICSVParseResult> {
-    const format = await this.autoDetector.detectFormat(filePath);
+    const _format = await this.autoDetector.detectFormat(filePath);
     const result = await this.parseAuto(filePath);
 
     // バッチ処理でレコードを処理
