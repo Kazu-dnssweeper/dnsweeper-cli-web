@@ -105,8 +105,11 @@ export abstract class LogTransport {
         : '';
 
     const context = entry.context ? ` [${entry.context}]` : '';
-    const correlationId = entry.correlationId ? ` (${entry.correlationId})` : '';
-    const duration = entry.duration !== undefined ? ` +${entry.duration}ms` : '';
+    const correlationId = entry.correlationId
+      ? ` (${entry.correlationId})`
+      : '';
+    const duration =
+      entry.duration !== undefined ? ` +${entry.duration}ms` : '';
 
     const parts = [
       timestamp && `[${timestamp}]`,
@@ -118,7 +121,9 @@ export abstract class LogTransport {
       meta,
     ].filter(Boolean);
 
-    return this.format.align ? parts.join(' ').replace(/\s+/g, ' ') : parts.join(' ');
+    return this.format.align
+      ? parts.join(' ').replace(/\s+/g, ' ')
+      : parts.join(' ');
   }
 
   private colorizeLevel(levelName: string): string {
@@ -144,7 +149,7 @@ export abstract class LogTransport {
 export class ConsoleTransport extends LogTransport {
   constructor(
     level: LogLevel = LogLevel.INFO,
-    format: LogFormat = { colorize: true, timestamp: true },
+    format: LogFormat = { colorize: true, timestamp: true }
   ) {
     super(level, format);
   }
@@ -175,7 +180,7 @@ export class FileTransport extends LogTransport {
     filename: string,
     level: LogLevel = LogLevel.INFO,
     format: LogFormat = { json: true, timestamp: true },
-    options: { maxSize?: number; maxFiles?: number } = {},
+    options: { maxSize?: number; maxFiles?: number } = {}
   ) {
     super(level, format);
     this.filename = filename;
@@ -280,7 +285,9 @@ export class StructuredLogger {
    * 現在のコンテキストを取得
    */
   getCurrentContext(): string | undefined {
-    return this.contextStack.length > 0 ? this.contextStack.join(':') : undefined;
+    return this.contextStack.length > 0
+      ? this.contextStack.join(':')
+      : undefined;
   }
 
   /**
@@ -295,7 +302,7 @@ export class StructuredLogger {
       correlationId?: string;
       duration?: number;
       error?: Error;
-    },
+    }
   ): void {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
@@ -323,7 +330,7 @@ export class StructuredLogger {
       if (transport.shouldLog(level)) {
         const result = transport.write(entry);
         if (result instanceof Promise) {
-          result.catch((error) => {
+          result.catch(error => {
             console.error('Transport write error:', error);
           });
         }
@@ -398,7 +405,7 @@ export class StructuredLogger {
   async profile<T>(
     label: string,
     fn: () => Promise<T> | T,
-    level: LogLevel = LogLevel.INFO,
+    level: LogLevel = LogLevel.INFO
   ): Promise<T> {
     const start = Date.now();
     this.log(level, `Starting: ${label}`);
@@ -413,7 +420,7 @@ export class StructuredLogger {
       this.error(
         `Failed: ${label}`,
         { duration },
-        error instanceof Error ? error : new Error(String(error)),
+        error instanceof Error ? error : new Error(String(error))
       );
       throw error;
     }
@@ -472,7 +479,7 @@ export function createLogger(
     console?: boolean;
     file?: string;
     meta?: Record<string, any>;
-  } = {},
+  } = {}
 ): StructuredLogger {
   const level =
     typeof options.level === 'string'
@@ -546,9 +553,13 @@ export function getLogger(): StructuredLogger {
 export function logMethod(
   level: LogLevel = LogLevel.DEBUG,
   includeArgs: boolean = false,
-  includeResult: boolean = false,
+  includeResult: boolean = false
 ) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
     if (!descriptor || typeof descriptor.value !== 'function') {
       return descriptor;
     }
@@ -584,7 +595,7 @@ export function logMethod(
         logger.error(
           `Method failed: ${methodName}`,
           meta,
-          error instanceof Error ? error : new Error(String(error)),
+          error instanceof Error ? error : new Error(String(error))
         );
         timer();
         throw error;

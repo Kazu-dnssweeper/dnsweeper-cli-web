@@ -14,7 +14,10 @@ export function createDeleteCommand(): Command {
     .option('-v, --verbose', 'Show detailed output')
     .option('-q, --quiet', 'Suppress non-error output')
     .action(async (id: string, options: IDeleteOptions) => {
-      const logger = new Logger({ verbose: options.verbose, quiet: options.quiet });
+      const logger = new Logger({
+        verbose: options.verbose,
+        quiet: options.quiet,
+      });
 
       try {
         if (!options.force) {
@@ -36,13 +39,15 @@ export function createDeleteCommand(): Command {
         logger.startSpinner(`Deleting DNS record ${id}...`);
 
         // TODO: Implement actual DNS record deletion logic
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         logger.stopSpinner(true, 'DNS record deleted successfully');
         logger.success(`Deleted DNS record: ${id}`);
       } catch (error) {
         logger.stopSpinner(false, 'Failed to delete DNS record');
-        logger.error(error instanceof Error ? error.message : 'Unknown error occurred');
+        logger.error(
+          error instanceof Error ? error.message : 'Unknown error occurred'
+        );
         process.exit(1);
       }
     });

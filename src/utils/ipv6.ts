@@ -51,7 +51,7 @@ export function expandIPv6(address: string): string {
   // 各セグメントを4桁に補完
   return addr
     .split(':')
-    .map((part) => part.padStart(4, '0'))
+    .map(part => part.padStart(4, '0'))
     .join(':');
 }
 
@@ -63,7 +63,7 @@ export function compressIPv6(address: string): string {
   const parts = addr.split(':');
 
   // 各パートから先頭のゼロを削除
-  const trimmed = parts.map((part) => part.replace(/^0+/, '') || '0');
+  const trimmed = parts.map(part => part.replace(/^0+/, '') || '0');
 
   // 最長のゼロ連続を見つける
   let maxZeroStart = -1;
@@ -178,7 +178,10 @@ export function isMulticastIPv6(address: string): boolean {
 /**
  * IPv6アドレスからプレフィックスを抽出
  */
-export function extractIPv6Prefix(address: string, prefixLength: number): string {
+export function extractIPv6Prefix(
+  address: string,
+  prefixLength: number
+): string {
   if (prefixLength < 0 || prefixLength > 128) {
     throw new Error(`Invalid prefix length: ${prefixLength}`);
   }
@@ -224,8 +227,14 @@ export function extractIPv6Prefix(address: string, prefixLength: number): string
  * IPv6アドレスのスコープを取得
  */
 export function getIPv6Scope(
-  address: string,
-): 'global' | 'unique-local' | 'link-local' | 'multicast' | 'loopback' | 'unspecified' {
+  address: string
+):
+  | 'global'
+  | 'unique-local'
+  | 'link-local'
+  | 'multicast'
+  | 'loopback'
+  | 'unspecified' {
   const normalized = normalizeIPv6(address);
 
   if (normalized === '::1') {

@@ -10,7 +10,6 @@ import { normalizeIPv6, isValidIPv6 } from '../utils/ipv6.js';
 import { withTimeout, withRetry } from '../utils/retry.js';
 
 import { DnsCache, type DnsCacheOptions } from './dns-cache.js';
-
 import { MemoryOptimizer } from './performance/memory-optimizer.js';
 
 import type { DNSRecordType, IDNSQuery } from '../types/index.js';
@@ -29,7 +28,6 @@ export interface IDNSRecord {
   exchange?: string; // For MX records
   target?: string; // For SRV records
 }
-
 
 export interface IDNSResponse {
   query: IDNSQuery;
@@ -53,7 +51,7 @@ export class DNSResolver {
       cacheOptions?: DnsCacheOptions;
       batchSize?: number;
       concurrency?: number;
-    } = {},
+    } = {}
   ) {
     this.servers = options.servers ?? ['8.8.8.8', '1.1.1.1'];
     this.timeout = options.timeout ?? 5000;
@@ -85,7 +83,10 @@ export class DNSResolver {
     }
 
     try {
-      const records = await this.withTimeout(this.resolveByType(domain, type), this.timeout);
+      const records = await this.withTimeout(
+        this.resolveByType(domain, type),
+        this.timeout
+      );
       const responseTime = Date.now() - startTime;
 
       const response: IDNSResponse = {
@@ -140,7 +141,10 @@ export class DNSResolver {
     }
   }
 
-  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number
+  ): Promise<T> {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         reject(new Error(`Operation timeout after ${timeoutMs}ms`));
@@ -150,7 +154,10 @@ export class DNSResolver {
     return Promise.race([promise, timeoutPromise]);
   }
 
-  private async resolveByType(domain: string, type: DNSRecordType): Promise<IDNSRecord[]> {
+  private async resolveByType(
+    domain: string,
+    type: DNSRecordType
+  ): Promise<IDNSRecord[]> {
     switch (type) {
       case 'A':
         return this.resolveA(domain);
@@ -179,7 +186,7 @@ export class DNSResolver {
 
   private async resolveA(domain: string): Promise<IDNSRecord[]> {
     const addresses = await dns.resolve4(domain);
-    return addresses.map((value) => ({
+    return addresses.map(value => ({
       type: 'A' as const,
       value,
     }));
@@ -187,7 +194,7 @@ export class DNSResolver {
 
   private async resolveAAAA(domain: string): Promise<IDNSRecord[]> {
     const addresses = await dns.resolve6(domain);
-    return addresses.map((value) => {
+    return addresses.map(value => {
       // IPv6アドレスを正規化
       const normalizedValue = isValidIPv6(value) ? normalizeIPv6(value) : value;
       return {
@@ -199,7 +206,7 @@ export class DNSResolver {
 
   private async resolveCNAME(domain: string): Promise<IDNSRecord[]> {
     const cnames = await dns.resolveCname(domain);
-    return cnames.map((value) => ({
+    return cnames.map(value => ({
       type: 'CNAME' as const,
       value,
     }));
@@ -223,7 +230,7 @@ export class DNSResolver {
       const validation = validateCnameChain(cnameChain);
 
       // CNAMEレコードを作成
-      const records: IDNSRecord[] = cnameChain.chain.slice(1).map((target) => ({
+      const records: IDNSRecord[] = cnameChain.chain.slice(1).map(target => ({
         type: 'CNAME' as const,
         value: target,
       }));
@@ -235,7 +242,10 @@ export class DNSResolver {
         records,
         responseTime,
         status: validation.isValid ? 'success' : 'error',
-        error: validation.issues.length > 0 ? validation.issues.join('; ') : undefined,
+        error:
+          validation.issues.length > 0
+            ? validation.issues.join('; ')
+            : undefined,
         cnameChain,
       };
     } catch (error) {
@@ -253,7 +263,7 @@ export class DNSResolver {
 
   private async resolveMX(domain: string): Promise<IDNSRecord[]> {
     const mxRecords = await dns.resolveMx(domain);
-    return mxRecords.map((record) => ({
+    return mxRecords.map(record => ({
       type: 'MX' as const,
       value: record.exchange,
       priority: record.priority,
@@ -263,7 +273,7 @@ export class DNSResolver {
 
   private async resolveTXT(domain: string): Promise<IDNSRecord[]> {
     const txtRecords = await dns.resolveTxt(domain);
-    return txtRecords.map((record) => ({
+    return txtRecords.map(record => ({
       type: 'TXT' as const,
       value: Array.isArray(record) ? record.join('') : record,
     }));
@@ -271,7 +281,7 @@ export class DNSResolver {
 
   private async resolveNS(domain: string): Promise<IDNSRecord[]> {
     const nsRecords = await dns.resolveNs(domain);
-    return nsRecords.map((value) => ({
+    return nsRecords.map(value => ({
       type: 'NS' as const,
       value,
     }));
@@ -289,7 +299,7 @@ export class DNSResolver {
 
   private async resolveSRV(domain: string): Promise<IDNSRecord[]> {
     const srvRecords = await dns.resolveSrv(domain);
-    return srvRecords.map((record) => ({
+    return srvRecords.map(record => ({
       type: 'SRV' as const,
       value: record.name,
       priority: record.priority,
@@ -301,7 +311,7 @@ export class DNSResolver {
 
   private async resolvePTR(domain: string): Promise<IDNSRecord[]> {
     const ptrRecords = await dns.resolvePtr(domain);
-    return ptrRecords.map((value) => ({
+    return ptrRecords.map(value => ({
       type: 'PTR' as const,
       value,
     }));
@@ -310,13 +320,18 @@ export class DNSResolver {
   private resolveCAA(domain: string): IDNSRecord[] {
     // node:dns doesn't support CAA records natively
     // For now, return empty array - could be implemented with dns2 if needed
-    console.warn(`CAA records not supported with node:dns for domain: ${domain}`);
+    console.warn(
+      `CAA records not supported with node:dns for domain: ${domain}`
+    );
     return [];
   }
 
   // Utility methods
-  async lookupMultiple(domains: string[], type: DNSRecordType): Promise<IDNSResponse[]> {
-    const promises = domains.map((domain) => this.resolve(domain, type));
+  async lookupMultiple(
+    domains: string[],
+    type: DNSRecordType
+  ): Promise<IDNSResponse[]> {
+    const promises = domains.map(domain => this.resolve(domain, type));
     return Promise.all(promises);
   }
 
@@ -353,13 +368,13 @@ export class DNSResolver {
 
       MemoryOptimizer.logMemoryUsage('After batch resolve');
       console.log(
-        `Batch resolution completed: ${result.successful.length} successful, ${result.failed.length} failed, ${result.duration}ms`,
+        `Batch resolution completed: ${result.successful.length} successful, ${result.failed.length} failed, ${result.duration}ms`
       );
 
       // 成功した結果と失敗した結果を統合
       const allResults: IDNSResponse[] = [
         ...result.successful,
-        ...result.failed.map((failure) => ({
+        ...result.failed.map(failure => ({
           query: failure.item,
           records: [],
           responseTime: 0,
@@ -372,9 +387,11 @@ export class DNSResolver {
     } catch (error) {
       console.error('Batch resolve failed:', error);
       // フォールバックとして従来の方法を使用
-      const promises = queries.map((query) => this.resolve(query.domain, query.type));
-      return Promise.allSettled(promises).then((results) =>
-        results.map((result) =>
+      const promises = queries.map(query =>
+        this.resolve(query.domain, query.type)
+      );
+      return Promise.allSettled(promises).then(results =>
+        results.map(result =>
           result.status === 'fulfilled'
             ? result.value
             : {
@@ -383,8 +400,8 @@ export class DNSResolver {
                 responseTime: 0,
                 status: 'error' as const,
                 error: 'Promise rejected',
-              },
-        ),
+              }
+        )
       );
     }
   }
@@ -396,13 +413,13 @@ export class DNSResolver {
       concurrency?: number;
       retryOnError?: boolean;
       onProgress?: (completed: number, total: number) => void;
-    } = {},
+    } = {}
   ): Promise<IDNSResponse[]> {
     const { concurrency = 10, retryOnError = true, onProgress } = options;
 
     // 進捗トラッカーの設定
     const tracker = onProgress
-      ? new ProgressTracker(queries.length, (info) => {
+      ? new ProgressTracker(queries.length, info => {
           onProgress(info.completed, info.total);
         })
       : null;
@@ -415,7 +432,7 @@ export class DNSResolver {
               withTimeout(
                 () => this.resolve(query.domain, query.type),
                 this.timeout,
-                `DNS resolution timeout for ${query.domain}`,
+                `DNS resolution timeout for ${query.domain}`
               )
           : () => this.resolve(query.domain, query.type);
 
@@ -425,7 +442,10 @@ export class DNSResolver {
               delay: 500,
               backoff: 'exponential',
               onRetry: (attempt, error) => {
-                console.warn(`Retry attempt ${attempt} for ${query.domain}:`, error);
+                console.warn(
+                  `Retry attempt ${attempt} for ${query.domain}:`,
+                  error
+                );
               },
             })
           : await resolver();
@@ -461,7 +481,7 @@ export class DNSResolver {
       recordTypes?: DNSRecordType[];
       concurrency?: number;
       onProgress?: (completed: number, total: number) => void;
-    } = {},
+    } = {}
   ): Promise<Map<string, IDNSResponse[]>> {
     const {
       recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS'],

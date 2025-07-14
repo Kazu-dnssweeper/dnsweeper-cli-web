@@ -157,7 +157,7 @@ export class OutputFormatter {
       'Recommendations',
     ];
 
-    const rows = result.records.map((record) => [
+    const rows = result.records.map(record => [
       record.id,
       record.name,
       record.type,
@@ -174,7 +174,7 @@ export class OutputFormatter {
     ]);
 
     return [headers, ...rows]
-      .map((row) => row.map((cell) => this.escapeCsvCell(String(cell))).join(','))
+      .map(row => row.map(cell => this.escapeCsvCell(String(cell))).join(','))
       .join('\n');
   }
 
@@ -233,15 +233,21 @@ export class OutputFormatter {
     lines.push(this.colorize('📊 分析サマリー', 'title'));
     lines.push(this.createSeparator());
 
-    lines.push(`総レコード数: ${this.colorize(summary.total.toString(), 'number')}`);
-    lines.push(`分析時間: ${this.colorize((summary.duration / 1000).toFixed(2) + 's', 'number')}`);
+    lines.push(
+      `総レコード数: ${this.colorize(summary.total.toString(), 'number')}`
+    );
+    lines.push(
+      `分析時間: ${this.colorize((summary.duration / 1000).toFixed(2) + 's', 'number')}`
+    );
     lines.push('');
 
     // レコードタイプ別統計
     lines.push('📝 レコードタイプ別:');
     for (const [type, count] of Object.entries(summary.byType)) {
       if (count > 0) {
-        lines.push(`  ${type.padEnd(6)}: ${this.colorize(count.toString(), 'number')}`);
+        lines.push(
+          `  ${type.padEnd(6)}: ${this.colorize(count.toString(), 'number')}`
+        );
       }
     }
     lines.push('');
@@ -250,11 +256,14 @@ export class OutputFormatter {
     lines.push('⚠️  リスクレベル別:');
     for (const [level, count] of Object.entries(summary.byRisk)) {
       if (count > 0) {
-        const coloredLevel = this.colorizeRisk(level as RiskLevel, level.toUpperCase());
+        const coloredLevel = this.colorizeRisk(
+          level as RiskLevel,
+          level.toUpperCase()
+        );
         // パディング計算時は色なしの文字列長を使用
         const paddingLength = 15 - level.toUpperCase().length;
         lines.push(
-          `  ${coloredLevel}${' '.repeat(paddingLength)}: ${this.colorize(count.toString(), 'number')}`,
+          `  ${coloredLevel}${' '.repeat(paddingLength)}: ${this.colorize(count.toString(), 'number')}`
         );
       }
     }
@@ -276,7 +285,8 @@ export class OutputFormatter {
         header: 'Risk',
         width: 10,
         align: 'center',
-        format: (level: RiskLevel) => this.colorizeRisk(level, level.toUpperCase()),
+        format: (level: RiskLevel) =>
+          this.colorizeRisk(level, level.toUpperCase()),
       },
       { key: 'riskScore', header: 'Score', width: 6, align: 'right' },
     ];
@@ -285,18 +295,20 @@ export class OutputFormatter {
 
     // ヘッダー
     const headerLine = columns
-      .map((col) => this.padCell(this.colorize(col.header, 'header'), col.width, col.align))
+      .map(col =>
+        this.padCell(this.colorize(col.header, 'header'), col.width, col.align)
+      )
       .join(' | ');
     lines.push(headerLine);
 
     // セパレーター
-    const separatorLine = columns.map((col) => '-'.repeat(col.width)).join('-+-');
+    const separatorLine = columns.map(col => '-'.repeat(col.width)).join('-+-');
     lines.push(separatorLine);
 
     // データ行
     for (const record of records) {
       const dataLine = columns
-        .map((col) => {
+        .map(col => {
           const value = record[col.key as keyof typeof record];
           const formattedValue = col.format ? col.format(value) : String(value);
           return this.padCell(formattedValue, col.width, col.align);
@@ -318,7 +330,7 @@ export class OutputFormatter {
     lines.push(`   値: ${record.value}`);
     lines.push(`   TTL: ${record.ttl}s`);
     lines.push(
-      `   リスク: ${this.colorizeRisk(record.riskLevel, record.riskLevel.toUpperCase())} (スコア: ${record.riskScore})`,
+      `   リスク: ${this.colorizeRisk(record.riskLevel, record.riskLevel.toUpperCase())} (スコア: ${record.riskScore})`
     );
 
     if (record.recommendations.length > 0) {
@@ -359,7 +371,10 @@ export class OutputFormatter {
   /**
    * 汎用色付け
    */
-  private colorize(text: string, type: 'title' | 'header' | 'number' | 'normal'): string {
+  private colorize(
+    text: string,
+    type: 'title' | 'header' | 'number' | 'normal'
+  ): string {
     if (!this.options.colors) {
       return text;
     }
@@ -380,8 +395,13 @@ export class OutputFormatter {
   /**
    * セルの文字列調整
    */
-  private padCell(text: string, width: number, align: 'left' | 'center' | 'right'): string {
+  private padCell(
+    text: string,
+    width: number,
+    align: 'left' | 'center' | 'right'
+  ): string {
     // ANSIエスケープシーケンスを除いた実際の文字数を取得
+    // eslint-disable-next-line no-control-regex
     const cleanText = text.replace(/\u001b\[[0-9;]*m/g, '');
     const padding = width - cleanText.length;
 
@@ -392,10 +412,11 @@ export class OutputFormatter {
     switch (align) {
       case 'right':
         return ' '.repeat(padding) + text;
-      case 'center':
+      case 'center': {
         const leftPad = Math.floor(padding / 2);
         const rightPad = padding - leftPad;
         return ' '.repeat(leftPad) + text + ' '.repeat(rightPad);
+      }
       case 'left':
       default:
         return text + ' '.repeat(padding);
@@ -424,7 +445,9 @@ export class OutputFormatter {
 /**
  * デフォルト設定でのフォーマッター作成
  */
-export function createFormatter(options?: Partial<OutputOptions>): OutputFormatter {
+export function createFormatter(
+  options?: Partial<OutputOptions>
+): OutputFormatter {
   return new OutputFormatter(options);
 }
 
@@ -434,7 +457,7 @@ export function createFormatter(options?: Partial<OutputOptions>): OutputFormatt
 export function formatAnalysisResult(
   result: AnalysisResult,
   format: OutputFormat = 'table',
-  colors: boolean = true,
+  colors: boolean = true
 ): string {
   const formatter = new OutputFormatter({ format, colors });
   return formatter.format(result);

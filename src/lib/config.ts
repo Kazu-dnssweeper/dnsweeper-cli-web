@@ -98,11 +98,16 @@ const DEFAULT_CONFIG: DnsSweeperConfig = {
  * 設定ファイルのパスを検索
  */
 async function findConfigFile(): Promise<string | null> {
-  const configFileNames = ['.dnsweeper.json', '.dnsweeperrc', 'dnsweeper.config.json'];
+  const configFileNames = [
+    '.dnsweeper.json',
+    '.dnsweeperrc',
+    'dnsweeper.config.json',
+  ];
 
   // 現在のディレクトリから上位ディレクトリまで探索
   let currentDir = process.cwd();
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     for (const fileName of configFileNames) {
       const configPath = path.join(currentDir, fileName);
@@ -139,7 +144,9 @@ async function findConfigFile(): Promise<string | null> {
 /**
  * 設定ファイルを読み込む
  */
-export async function loadConfig(configPath?: string): Promise<DnsSweeperConfig> {
+export async function loadConfig(
+  configPath?: string
+): Promise<DnsSweeperConfig> {
   let config = { ...DEFAULT_CONFIG };
 
   // 設定ファイルパスが指定されていない場合は自動検索
@@ -207,7 +214,10 @@ function mergeEnvironmentVariables(config: DnsSweeperConfig): DnsSweeperConfig {
   // 出力設定
   if (env.DNSWEEPER_OUTPUT_FORMAT) {
     config.output = config.output || {};
-    config.output.format = env.DNSWEEPER_OUTPUT_FORMAT as 'json' | 'csv' | 'table';
+    config.output.format = env.DNSWEEPER_OUTPUT_FORMAT as
+      | 'json'
+      | 'csv'
+      | 'table';
   }
   if (env.NO_COLOR || env.DNSWEEPER_NO_COLOR) {
     config.output = config.output || {};
@@ -224,8 +234,12 @@ function deepMerge(target: any, source: any): any {
   const result = { ...target };
 
   for (const key in source) {
-    if (source.hasOwnProperty(key)) {
-      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      if (
+        source[key] &&
+        typeof source[key] === 'object' &&
+        !Array.isArray(source[key])
+      ) {
         result[key] = deepMerge(result[key] || {}, source[key]);
       } else {
         result[key] = source[key];
@@ -251,7 +265,10 @@ export function validateConfig(config: DnsSweeperConfig): void {
   // リスク重みの検証
   if (config.risk?.weights) {
     const weights = config.risk.weights;
-    const total = (weights.unusedDays || 0) + (weights.namingPattern || 0) + (weights.ttl || 0);
+    const total =
+      (weights.unusedDays || 0) +
+      (weights.namingPattern || 0) +
+      (weights.ttl || 0);
     if (Math.abs(total - 1.0) > 0.01) {
       throw new Error('Risk weights must sum to 1.0');
     }
@@ -261,7 +278,9 @@ export function validateConfig(config: DnsSweeperConfig): void {
   if (config.risk?.thresholds) {
     const { high = 70, medium = 40 } = config.risk.thresholds;
     if (high <= medium) {
-      throw new Error('High risk threshold must be greater than medium threshold');
+      throw new Error(
+        'High risk threshold must be greater than medium threshold'
+      );
     }
   }
 }
@@ -269,8 +288,12 @@ export function validateConfig(config: DnsSweeperConfig): void {
 /**
  * 設定をファイルに保存
  */
-export async function saveConfig(config: DnsSweeperConfig, configPath?: string): Promise<void> {
-  const actualConfigPath = configPath || path.join(process.cwd(), '.dnsweeper.json');
+export async function saveConfig(
+  config: DnsSweeperConfig,
+  configPath?: string
+): Promise<void> {
+  const actualConfigPath =
+    configPath || path.join(process.cwd(), '.dnsweeper.json');
 
   try {
     const configContent = JSON.stringify(config, null, 2);

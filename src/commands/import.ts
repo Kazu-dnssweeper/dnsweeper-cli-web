@@ -13,7 +13,11 @@ export function createImportCommand(): Command {
   const importCmd = new Command('import')
     .description('Import DNS records from CSV file')
     .argument('<file>', 'CSV file path to import')
-    .option('-f, --format <format>', 'CSV format (cloudflare, route53, generic, auto)', 'auto')
+    .option(
+      '-f, --format <format>',
+      'CSV format (cloudflare, route53, generic, auto)',
+      'auto'
+    )
     .option('-r, --resolve', 'Resolve DNS records after import to verify')
     .option('-s, --streaming', 'Use streaming for large files')
     .option('-l, --limit <number>', 'Limit number of records to import')
@@ -21,7 +25,10 @@ export function createImportCommand(): Command {
     .option('-j, --json', 'Output as JSON')
     .option('-q, --quiet', 'Suppress non-error output')
     .action(async (file: string, options: IImportOptions) => {
-      const logger = new Logger({ verbose: options.verbose, quiet: options.quiet });
+      const logger = new Logger({
+        verbose: options.verbose,
+        quiet: options.quiet,
+      });
 
       try {
         // Validate file exists
@@ -31,7 +38,9 @@ export function createImportCommand(): Command {
         }
 
         const processor = new CSVProcessor();
-        logger.startSpinner(`Importing DNS records from ${path.basename(filePath)}...`);
+        logger.startSpinner(
+          `Importing DNS records from ${path.basename(filePath)}...`
+        );
 
         let result;
         let recordCount = 0;
@@ -43,7 +52,7 @@ export function createImportCommand(): Command {
 
           const streamResult = await processor.parseStreaming(
             filePath,
-            (record) => {
+            record => {
               if (recordCount >= limit) return;
 
               processedRecords.push(record);
@@ -53,7 +62,7 @@ export function createImportCommand(): Command {
                 logger.info(`Processed ${recordCount} records...`);
               }
             },
-            options.format === 'auto' ? 'generic' : (options.format as any),
+            options.format === 'auto' ? 'generic' : (options.format as any)
           );
 
           result = {
@@ -85,7 +94,10 @@ export function createImportCommand(): Command {
           }
         }
 
-        logger.stopSpinner(true, `Successfully imported ${result.records.length} DNS records`);
+        logger.stopSpinner(
+          true,
+          `Successfully imported ${result.records.length} DNS records`
+        );
 
         // Display summary
         if (!options.json) {
@@ -101,7 +113,7 @@ export function createImportCommand(): Command {
               acc[record.type] = (acc[record.type] || 0) + 1;
               return acc;
             },
-            {} as Record<string, number>,
+            {} as Record<string, number>
           );
 
           logger.info('\nRecord types imported:');
@@ -121,7 +133,10 @@ export function createImportCommand(): Command {
           for (const record of result.records.slice(0, 10)) {
             // Limit to first 10 for verification
             try {
-              const dnsResult = await resolver.resolve(record.domain, record.type);
+              const dnsResult = await resolver.resolve(
+                record.domain,
+                record.type
+              );
               if (dnsResult.status === 'success') {
                 resolvedCount++;
               } else {
@@ -146,7 +161,7 @@ export function createImportCommand(): Command {
 
           logger.stopSpinner(
             true,
-            `Verification complete: ${resolvedCount} resolved, ${failedCount} failed`,
+            `Verification complete: ${resolvedCount} resolved, ${failedCount} failed`
           );
         }
 
@@ -170,7 +185,9 @@ export function createImportCommand(): Command {
         }
       } catch (error) {
         logger.stopSpinner(false, 'Import failed');
-        logger.error(error instanceof Error ? error.message : 'Unknown error occurred');
+        logger.error(
+          error instanceof Error ? error.message : 'Unknown error occurred'
+        );
 
         if (options.json) {
           logger.json({

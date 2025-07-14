@@ -9,7 +9,10 @@ import { Command } from 'commander';
 import { CSVProcessor } from '../lib/csv-processor.js';
 import { DNSResolver } from '../lib/dns-resolver.js';
 import { Logger } from '../lib/logger.js';
-import { createFormatter, type AnalysisResult } from '../lib/output-formatter.js';
+import {
+  createFormatter,
+  type AnalysisResult,
+} from '../lib/output-formatter.js';
 import { RiskCalculator } from '../lib/risk-calculator.js';
 
 import type { DNSRecordType, IDNSRecord } from '../types/index.js';
@@ -53,14 +56,21 @@ export function createSweepCommand(): Command {
     .argument('[domains...]', 'スキャンするドメインのリスト')
     .option('-f, --file <file>', 'ドメインリストファイル（1行1ドメイン）')
     .option('--csv <file>', 'CSVファイルからドメインを読み込み')
-    .option('-t, --types <types>', 'レコードタイプのリスト（カンマ区切り）', 'A,AAAA,CNAME,MX')
+    .option(
+      '-t, --types <types>',
+      'レコードタイプのリスト（カンマ区切り）',
+      'A,AAAA,CNAME,MX'
+    )
     .option('--format <format>', '出力形式 (table, json, csv, text)', 'table')
     .option('-o, --output <file>', '結果をファイルに出力')
     .option('--timeout <ms>', 'タイムアウト時間（ミリ秒）', '5000')
     .option('--nameserver <server>', '使用するネームサーバー')
     .option('-c, --concurrency <num>', '並列実行数', '5')
     .option('-a, --analyze', 'リスク分析を含める')
-    .option('--risk-level <level>', '指定リスクレベル以上のみ表示 (low,medium,high,critical)')
+    .option(
+      '--risk-level <level>',
+      '指定リスクレベル以上のみ表示 (low,medium,high,critical)'
+    )
     .option('--progress', '進捗バーを表示')
     .option('-v, --verbose', '詳細出力')
     .option('-j, --json', 'JSON形式で出力（--format jsonと同等）')
@@ -75,7 +85,10 @@ export function createSweepCommand(): Command {
       try {
         await executeSweep(domains, options, logger);
       } catch (error) {
-        logger.error('スキャンエラー:', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'スキャンエラー:',
+          error instanceof Error ? error : new Error(String(error))
+        );
         process.exit(1);
       }
     });
@@ -89,7 +102,7 @@ export function createSweepCommand(): Command {
 async function executeSweep(
   domains: string[],
   options: ISweepOptions,
-  logger: Logger,
+  logger: Logger
 ): Promise<void> {
   // ドメインリストの取得
   const domainSource = await getDomainSource(domains, options, logger);
@@ -117,7 +130,7 @@ async function executeSweep(
   const concurrency = parseInt(options.concurrency || '5', 10);
 
   logger.info(
-    `スキャン開始: ${domainSource.data.length}ドメイン × ${recordTypes.length}レコードタイプ`,
+    `スキャン開始: ${domainSource.data.length}ドメイン × ${recordTypes.length}レコードタイプ`
   );
   logger.info(`並列実行数: ${concurrency}`);
 
@@ -133,95 +146,101 @@ async function executeSweep(
     logger.info(`総操作数: ${totalOperations}`);
   }
 
-  try {
-    // 並列DNS解決実行
-    const allRecords: IDNSRecord[] = [];
-    const errors: Array<{ domain: string; type: DNSRecordType; error: string }> = [];
+  // 並列DNS解決実行
+  const allRecords: IDNSRecord[] = [];
+  const errors: Array<{
+    domain: string;
+    type: DNSRecordType;
+    error: string;
+  }> = [];
 
-    // ドメインごとに処理
-    for (let i = 0; i < domainSource.data.length; i += concurrency) {
-      const batch = domainSource.data.slice(i, i + concurrency);
+  // ドメインごとに処理
+  for (let i = 0; i < domainSource.data.length; i += concurrency) {
+    const batch = domainSource.data.slice(i, i + concurrency);
 
-      if (options.progress && !options.quiet) {
-        logger.info(
-          `バッチ ${Math.floor(i / concurrency) + 1}/${Math.ceil(domainSource.data.length / concurrency)} 処理中...`,
-        );
-      }
+    if (options.progress && !options.quiet) {
+      logger.info(
+        `バッチ ${Math.floor(i / concurrency) + 1}/${Math.ceil(domainSource.data.length / concurrency)} 処理中...`
+      );
+    }
 
-      // バッチ内の各ドメインを並列処理
-      const batchPromises = batch.map(async (domain) => {
-        const domainRecords: IDNSRecord[] = [];
+    // バッチ内の各ドメインを並列処理
+    const batchPromises = batch.map(async domain => {
+      const domainRecords: IDNSRecord[] = [];
 
-        for (const recordType of recordTypes) {
-          try {
-            const lookupResult = await resolver.resolve(domain, recordType);
+      for (const recordType of recordTypes) {
+        try {
+          const lookupResult = await resolver.resolve(domain, recordType);
 
-            if (lookupResult.status === 'success' && lookupResult.records) {
-              const records = convertToIDNSRecords(lookupResult, domain, recordType);
-              domainRecords.push(...records);
-            }
-          } catch (error) {
-            errors.push({
+          if (lookupResult.status === 'success' && lookupResult.records) {
+            const records = convertToIDNSRecords(
+              lookupResult,
               domain,
-              type: recordType,
-              error: error instanceof Error ? error.message : String(error),
-            });
+              recordType
+            );
+            domainRecords.push(...records);
           }
-
-          progress++;
-
-          if (options.progress && !options.quiet && progress % 10 === 0) {
-            const percentage = Math.round((progress / totalOperations) * 100);
-            logger.info(`進捗: ${progress}/${totalOperations} (${percentage}%)`);
-          }
+        } catch (error) {
+          errors.push({
+            domain,
+            type: recordType,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
 
-        return domainRecords;
-      });
+        progress++;
 
-      const batchResults = await Promise.all(batchPromises);
-      batchResults.forEach((records) => allRecords.push(...records));
-    }
-
-    const duration = Date.now() - startTime;
-
-    logger.success(`スキャン完了: ${allRecords.length}レコード取得 (${duration}ms)`);
-
-    if (errors.length > 0) {
-      logger.warn(`${errors.length}件のエラーが発生しました`);
-      if (options.verbose) {
-        errors.forEach((err) => {
-          logger.warn(`  ${err.domain} (${err.type}): ${err.error}`);
-        });
+        if (options.progress && !options.quiet && progress % 10 === 0) {
+          const percentage = Math.round((progress / totalOperations) * 100);
+          logger.info(`進捗: ${progress}/${totalOperations} (${percentage}%)`);
+        }
       }
-    }
 
-    if (allRecords.length === 0) {
-      logger.warn('有効なレコードが見つかりませんでした');
-      return;
-    }
+      return domainRecords;
+    });
 
-    // リスク分析（オプション）
-    let analysisResult: AnalysisResult;
-
-    if (options.analyze) {
-      logger.info('リスク分析を実行中...');
-      analysisResult = await performRiskAnalysis(allRecords, duration, errors);
-    } else {
-      analysisResult = createBasicAnalysisResult(allRecords, duration, errors);
-    }
-
-    // リスクレベルフィルタリング
-    if (options.riskLevel) {
-      analysisResult = filterByRiskLevel(analysisResult, options.riskLevel);
-      logger.info(`リスクレベル ${options.riskLevel} 以上のレコードのみ表示`);
-    }
-
-    // 結果出力
-    await outputResults(analysisResult, format, options, logger);
-  } catch (error) {
-    throw error;
+    const batchResults = await Promise.all(batchPromises);
+    batchResults.forEach(records => allRecords.push(...records));
   }
+
+  const duration = Date.now() - startTime;
+
+  logger.success(
+    `スキャン完了: ${allRecords.length}レコード取得 (${duration}ms)`
+  );
+
+  if (errors.length > 0) {
+    logger.warn(`${errors.length}件のエラーが発生しました`);
+    if (options.verbose) {
+      errors.forEach(err => {
+        logger.warn(`  ${err.domain} (${err.type}): ${err.error}`);
+      });
+    }
+  }
+
+  if (allRecords.length === 0) {
+    logger.warn('有効なレコードが見つかりませんでした');
+    return;
+  }
+
+  // リスク分析（オプション）
+  let analysisResult: AnalysisResult;
+
+  if (options.analyze) {
+    logger.info('リスク分析を実行中...');
+    analysisResult = await performRiskAnalysis(allRecords, duration, errors);
+  } else {
+    analysisResult = createBasicAnalysisResult(allRecords, duration, errors);
+  }
+
+  // リスクレベルフィルタリング
+  if (options.riskLevel) {
+    analysisResult = filterByRiskLevel(analysisResult, options.riskLevel);
+    logger.info(`リスクレベル ${options.riskLevel} 以上のレコードのみ表示`);
+  }
+
+  // 結果出力
+  await outputResults(analysisResult, format, options, logger);
 }
 
 /**
@@ -230,7 +249,7 @@ async function executeSweep(
 async function getDomainSource(
   domains: string[],
   options: ISweepOptions,
-  logger: Logger,
+  logger: Logger
 ): Promise<DomainSource> {
   // CSVファイルから読み込み
   if (options.csv) {
@@ -240,7 +259,10 @@ async function getDomainSource(
 
     // CSVの最初の列をドメイン名として扱う
     const csvDomains = records.records
-      .map((record: any) => record.domain || record.name || Object.values(record)[0])
+      .map(
+        (record: any) =>
+          record.domain || record.name || Object.values(record)[0]
+      )
       .filter((domain: any) => typeof domain === 'string' && domain.length > 0)
       .map((domain: any) => String(domain).trim());
 
@@ -256,9 +278,9 @@ async function getDomainSource(
     const fileContent = readFileSync(options.file, 'utf-8');
     const fileDomains = fileContent
       .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !line.startsWith('#'))
-      .map((line) => line.split(/\s+/)[0])
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && !line.startsWith('#'))
+      .map(line => line.split(/\s+/)[0])
       .filter((domain): domain is string => domain !== undefined); // 最初の単語のみ使用
 
     return {
@@ -333,13 +355,17 @@ function parseRecordTypes(typesString: string): DNSRecordType[] {
 
   const types = typesString
     .split(',')
-    .map((type) => type.trim().toUpperCase())
-    .filter((type) => type.length > 0);
+    .map(type => type.trim().toUpperCase())
+    .filter(type => type.length > 0);
 
-  const invalidTypes = types.filter((type) => !validTypes.includes(type as DNSRecordType));
+  const invalidTypes = types.filter(
+    type => !validTypes.includes(type as DNSRecordType)
+  );
 
   if (invalidTypes.length > 0) {
-    throw new Error(`サポートされていないレコードタイプ: ${invalidTypes.join(', ')}`);
+    throw new Error(
+      `サポートされていないレコードタイプ: ${invalidTypes.join(', ')}`
+    );
   }
 
   return types as DNSRecordType[];
@@ -351,7 +377,7 @@ function parseRecordTypes(typesString: string): DNSRecordType[] {
 function convertToIDNSRecords(
   lookupResult: any,
   domain: string,
-  recordType: DNSRecordType,
+  recordType: DNSRecordType
 ): IDNSRecord[] {
   if (!lookupResult.records || !Array.isArray(lookupResult.records)) {
     return [];
@@ -405,13 +431,13 @@ function convertToIDNSRecords(
 async function performRiskAnalysis(
   records: IDNSRecord[],
   duration: number,
-  _errors: Array<{ domain: string; type: DNSRecordType; error: string }>,
+  _errors: Array<{ domain: string; type: DNSRecordType; error: string }>
 ): Promise<AnalysisResult> {
   const calculator = new RiskCalculator();
   const analysisDate = new Date();
 
   // リスク分析実行
-  const recordsWithRisk = records.map((record) => {
+  const recordsWithRisk = records.map(record => {
     const riskResult = calculator.calculateRisk(record, analysisDate);
     return {
       ...record,
@@ -429,14 +455,14 @@ async function performRiskAnalysis(
         acc[record.type] = (acc[record.type] || 0) + 1;
         return acc;
       },
-      {} as Record<DNSRecordType, number>,
+      {} as Record<DNSRecordType, number>
     ),
     byRisk: recordsWithRisk.reduce(
       (acc, record) => {
         acc[record.riskLevel] = (acc[record.riskLevel] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     ),
     duration,
   };
@@ -454,7 +480,7 @@ async function performRiskAnalysis(
     'PTR',
     'CAA',
   ];
-  allTypes.forEach((type) => {
+  allTypes.forEach(type => {
     if (!summary.byType[type]) {
       summary.byType[type] = 0;
     }
@@ -477,10 +503,10 @@ async function performRiskAnalysis(
 function createBasicAnalysisResult(
   records: IDNSRecord[],
   duration: number,
-  _errors: Array<{ domain: string; type: DNSRecordType; error: string }>,
+  _errors: Array<{ domain: string; type: DNSRecordType; error: string }>
 ): AnalysisResult {
   // デフォルトのリスク情報付きレコード
-  const recordsWithDefaults = records.map((record) => ({
+  const recordsWithDefaults = records.map(record => ({
     ...record,
     riskLevel: 'low' as const,
     riskScore: 0,
@@ -494,7 +520,7 @@ function createBasicAnalysisResult(
         acc[record.type] = (acc[record.type] || 0) + 1;
         return acc;
       },
-      {} as Record<DNSRecordType, number>,
+      {} as Record<DNSRecordType, number>
     ),
     byRisk: {
       low: records.length,
@@ -518,7 +544,7 @@ function createBasicAnalysisResult(
     'PTR',
     'CAA',
   ];
-  allTypes.forEach((type) => {
+  allTypes.forEach(type => {
     if (!summary.byType[type]) {
       summary.byType[type] = 0;
     }
@@ -538,12 +564,16 @@ function createBasicAnalysisResult(
 /**
  * リスクレベルでフィルタリング
  */
-function filterByRiskLevel(result: AnalysisResult, minLevel: string): AnalysisResult {
+function filterByRiskLevel(
+  result: AnalysisResult,
+  minLevel: string
+): AnalysisResult {
   const levelOrder = { low: 0, medium: 1, high: 2, critical: 3 };
   const minLevelValue = levelOrder[minLevel as keyof typeof levelOrder] ?? 0;
 
-  const filteredRecords = result.records.filter((record) => {
-    const recordLevelValue = levelOrder[record.riskLevel as keyof typeof levelOrder] ?? 0;
+  const filteredRecords = result.records.filter(record => {
+    const recordLevelValue =
+      levelOrder[record.riskLevel as keyof typeof levelOrder] ?? 0;
     return recordLevelValue >= minLevelValue;
   });
 
@@ -555,14 +585,14 @@ function filterByRiskLevel(result: AnalysisResult, minLevel: string): AnalysisRe
         acc[record.type] = (acc[record.type] || 0) + 1;
         return acc;
       },
-      {} as Record<DNSRecordType, number>,
+      {} as Record<DNSRecordType, number>
     ),
     byRisk: filteredRecords.reduce(
       (acc, record) => {
         acc[record.riskLevel] = (acc[record.riskLevel] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     ),
     duration: result.summary.duration,
   };
@@ -580,7 +610,7 @@ function filterByRiskLevel(result: AnalysisResult, minLevel: string): AnalysisRe
     'PTR',
     'CAA',
   ];
-  allTypes.forEach((type) => {
+  allTypes.forEach(type => {
     if (!filteredSummary.byType[type]) {
       filteredSummary.byType[type] = 0;
     }
@@ -600,7 +630,7 @@ async function outputResults(
   result: AnalysisResult,
   format: string,
   options: ISweepOptions,
-  logger: Logger,
+  logger: Logger
 ): Promise<void> {
   const formatter = createFormatter({
     format: format as any,

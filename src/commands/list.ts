@@ -16,7 +16,10 @@ export function createListCommand(): Command {
     .option('-j, --json', 'Output as JSON')
     .option('-q, --quiet', 'Suppress non-error output')
     .action(async (options: IListOptions) => {
-      const logger = new Logger({ verbose: options.verbose, quiet: options.quiet });
+      const logger = new Logger({
+        verbose: options.verbose,
+        quiet: options.quiet,
+      });
       const resolver = new DNSResolver();
 
       try {
@@ -32,7 +35,7 @@ export function createListCommand(): Command {
         // Convert DNS responses to display format
         const records = results.flatMap((result, index) => {
           if (result.status === 'success') {
-            return result.records.map((record) => ({
+            return result.records.map(record => ({
               id: `${index + 1}`,
               name: result.query.domain,
               type: record.type,
@@ -49,12 +52,16 @@ export function createListCommand(): Command {
         // Apply filters
         let filteredRecords = records;
         if (options.name) {
-          filteredRecords = records.filter((record) =>
-            record.name.toLowerCase().includes(options.name?.toLowerCase() ?? ''),
+          filteredRecords = records.filter(record =>
+            record.name
+              .toLowerCase()
+              .includes(options.name?.toLowerCase() ?? '')
           );
         }
         if (options.type) {
-          filteredRecords = records.filter((record) => record.type === options.type);
+          filteredRecords = records.filter(
+            record => record.type === options.type
+          );
         }
 
         // Apply limit
@@ -75,7 +82,9 @@ export function createListCommand(): Command {
         logger.success(`Found ${filteredRecords.length} DNS records`);
       } catch (error) {
         logger.stopSpinner(false, 'Failed to fetch DNS records');
-        logger.error(error instanceof Error ? error.message : 'Unknown error occurred');
+        logger.error(
+          error instanceof Error ? error.message : 'Unknown error occurred'
+        );
         process.exit(1);
       }
     });

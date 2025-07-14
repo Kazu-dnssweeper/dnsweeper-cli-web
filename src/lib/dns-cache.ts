@@ -2,8 +2,8 @@
  * DNS解決結果のキャッシュ機能
  */
 
-import type { IDNSQuery } from '../types/index.js';
 import type { IDNSResponse } from './dns-resolver.js';
+import type { IDNSQuery } from '../types/index.js';
 
 /**
  * キャッシュエントリ
@@ -81,8 +81,8 @@ export class DnsCache {
   private calculateTtl(response: IDNSResponse): number {
     // レコードからTTLを取得
     const recordTtls = response.records
-      .map((record) => record.ttl)
-      .filter((ttl) => ttl !== undefined);
+      .map(record => record.ttl)
+      .filter(ttl => ttl !== undefined);
 
     let ttl = this.options.defaultTtl!;
 
@@ -227,7 +227,9 @@ export class DnsCache {
       let shouldDelete = false;
 
       if (domain && type) {
-        shouldDelete = cachedDomain === domain.toLowerCase() && cachedType === type.toUpperCase();
+        shouldDelete =
+          cachedDomain === domain.toLowerCase() &&
+          cachedType === type.toUpperCase();
       } else if (domain) {
         shouldDelete = cachedDomain === domain.toLowerCase();
       } else if (type) {
@@ -248,7 +250,8 @@ export class DnsCache {
    */
   getStats(): CacheStats {
     const totalRequests = this.stats.hits + this.stats.misses;
-    const hitRate = totalRequests > 0 ? (this.stats.hits / totalRequests) * 100 : 0;
+    const hitRate =
+      totalRequests > 0 ? (this.stats.hits / totalRequests) * 100 : 0;
 
     const now = Date.now();
     let totalTtl = 0;

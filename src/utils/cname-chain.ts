@@ -27,7 +27,7 @@ export interface CnameChainOptions {
  */
 export async function traceCnameChain(
   domain: string,
-  options: CnameChainOptions = {},
+  options: CnameChainOptions = {}
 ): Promise<CnameChainResult> {
   const { maxDepth = 10, timeout = 5000, followToEnd = true } = options;
 
@@ -55,7 +55,7 @@ export async function traceCnameChain(
         const cnames = await Promise.race([
           dns.resolveCname(currentDomain),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), timeout),
+            setTimeout(() => reject(new Error('Timeout')), timeout)
           ),
         ]);
 
@@ -87,15 +87,18 @@ export async function traceCnameChain(
         }
 
         if (error instanceof Error && error.message === 'Timeout') {
-          throw new DnsResolutionError(`CNAME resolution timeout for ${currentDomain}`, {
-            domain: currentDomain,
-            timeout,
-          });
+          throw new DnsResolutionError(
+            `CNAME resolution timeout for ${currentDomain}`,
+            {
+              domain: currentDomain,
+              timeout,
+            }
+          );
         }
 
         throw new DnsResolutionError(
           `Failed to resolve CNAME for ${currentDomain}: ${nodeError.code || 'Unknown error'}`,
-          { domain: currentDomain, code: nodeError.code },
+          { domain: currentDomain, code: nodeError.code }
         );
       }
     }
@@ -107,7 +110,7 @@ export async function traceCnameChain(
   } catch (error) {
     // エラーが発生した場合でも、これまでの追跡結果を返す
     console.warn(
-      `CNAME chain tracing error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `CNAME chain tracing error: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 
@@ -136,26 +139,32 @@ export function validateCnameChain(result: CnameChainResult): {
   // ループの検知
   if (result.hasLoop) {
     issues.push('CNAMEチェーンにループが検出されました');
-    recommendations.push('DNSレコードの設定を確認し、循環参照を修正してください');
+    recommendations.push(
+      'DNSレコードの設定を確認し、循環参照を修正してください'
+    );
   }
 
   // 最大深度の到達
   if (result.maxDepthReached) {
     issues.push('CNAMEチェーンが最大深度に達しました');
-    recommendations.push('不必要に長いCNAMEチェーンを短縮することを検討してください');
+    recommendations.push(
+      '不必要に長いCNAMEチェーンを短縮することを検討してください'
+    );
   }
 
   // 長いチェーンの警告
   if (result.chain.length > 5) {
     issues.push(`CNAMEチェーンが長すぎます（${result.chain.length}段階）`);
     recommendations.push(
-      'パフォーマンスのため、CNAMEチェーンを5段階以下に短縮することをお勧めします',
+      'パフォーマンスのため、CNAMEチェーンを5段階以下に短縮することをお勧めします'
     );
   }
 
   // 解決時間の警告
   if (result.resolutionTime > 2000) {
-    issues.push(`CNAME解決に時間がかかりすぎています（${result.resolutionTime}ms）`);
+    issues.push(
+      `CNAME解決に時間がかかりすぎています（${result.resolutionTime}ms）`
+    );
     recommendations.push('DNSサーバーの応答性能を確認してください');
   }
 
@@ -194,10 +203,16 @@ export function getCnameChainStats(results: CnameChainResult[]): {
     };
   }
 
-  const totalDepth = results.reduce((sum, result) => sum + result.chain.length, 0);
-  const maxDepth = Math.max(...results.map((result) => result.chain.length));
-  const loopCount = results.filter((result) => result.hasLoop).length;
-  const totalResolutionTime = results.reduce((sum, result) => sum + result.resolutionTime, 0);
+  const totalDepth = results.reduce(
+    (sum, result) => sum + result.chain.length,
+    0
+  );
+  const maxDepth = Math.max(...results.map(result => result.chain.length));
+  const loopCount = results.filter(result => result.hasLoop).length;
+  const totalResolutionTime = results.reduce(
+    (sum, result) => sum + result.resolutionTime,
+    0
+  );
 
   // ヘルススコア計算（0-100）
   let healthScore = 100;
@@ -206,11 +221,13 @@ export function getCnameChainStats(results: CnameChainResult[]): {
   healthScore -= (loopCount / results.length) * 50;
 
   // 長いチェーンの影響
-  const longChains = results.filter((result) => result.chain.length > 5).length;
+  const longChains = results.filter(result => result.chain.length > 5).length;
   healthScore -= (longChains / results.length) * 20;
 
   // 最大深度到達の影響
-  const maxDepthReached = results.filter((result) => result.maxDepthReached).length;
+  const maxDepthReached = results.filter(
+    result => result.maxDepthReached
+  ).length;
   healthScore -= (maxDepthReached / results.length) * 30;
 
   return {
@@ -228,7 +245,7 @@ export function getCnameChainStats(results: CnameChainResult[]): {
  */
 export async function traceMultipleCnameChains(
   domains: string[],
-  options: CnameChainOptions & { concurrency?: number } = {},
+  options: CnameChainOptions & { concurrency?: number } = {}
 ): Promise<Map<string, CnameChainResult>> {
   const { concurrency = 5, ...chainOptions } = options;
   const results = new Map<string, CnameChainResult>();

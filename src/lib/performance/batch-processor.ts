@@ -35,7 +35,10 @@ export class BatchProcessor<T, R> {
   /**
    * アイテムのバッチを並列処理
    */
-  async process(items: T[], processor: (item: T) => Promise<R>): Promise<BatchResult<T, R>> {
+  async process(
+    items: T[],
+    processor: (item: T) => Promise<R>
+  ): Promise<BatchResult<T, R>> {
     const startTime = Date.now();
     const successful: R[] = [];
     const failed: Array<{ item: T; error: Error }> = [];
@@ -68,7 +71,7 @@ export class BatchProcessor<T, R> {
    */
   private async processBatch(
     batch: T[],
-    processor: (item: T) => Promise<R>,
+    processor: (item: T) => Promise<R>
   ): Promise<{ successful: R[]; failed: Array<{ item: T; error: Error }> }> {
     const successful: R[] = [];
     const failed: Array<{ item: T; error: Error }> = [];
@@ -76,7 +79,7 @@ export class BatchProcessor<T, R> {
     // 並行処理制限
     const semaphore = new Semaphore(this.options.concurrency);
 
-    const promises = batch.map(async (item) => {
+    const promises = batch.map(async item => {
       await semaphore.acquire();
 
       try {
@@ -99,7 +102,10 @@ export class BatchProcessor<T, R> {
   /**
    * リトライ機能付きアイテム処理
    */
-  private async processWithRetry(item: T, processor: (item: T) => Promise<R>): Promise<R> {
+  private async processWithRetry(
+    item: T,
+    processor: (item: T) => Promise<R>
+  ): Promise<R> {
     let lastError: Error;
 
     for (let attempt = 0; attempt <= this.options.retries; attempt++) {
@@ -134,7 +140,7 @@ export class BatchProcessor<T, R> {
    * 指定時間待機
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
 
@@ -155,7 +161,7 @@ class Semaphore {
       return;
     }
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>(resolve => {
       this.waiters.push(resolve);
     });
   }

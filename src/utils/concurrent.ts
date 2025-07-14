@@ -12,7 +12,7 @@ export interface ConcurrentOptions {
  */
 export async function runConcurrent<T>(
   tasks: (() => Promise<T>)[],
-  options: ConcurrentOptions = {},
+  options: ConcurrentOptions = {}
 ): Promise<T[]> {
   const { concurrency = 10, onProgress } = options;
 
@@ -56,8 +56,8 @@ export async function runConcurrent<T>(
   // エラーがある場合は集約エラーをスロー
   if (errors.length > 0) {
     throw new AggregateError(
-      errors.map((e) => e.error as Error),
-      `${errors.length} out of ${tasks.length} tasks failed`,
+      errors.map(e => e.error as Error),
+      `${errors.length} out of ${tasks.length} tasks failed`
     );
   }
 
@@ -70,7 +70,7 @@ export async function runConcurrent<T>(
 export async function mapConcurrent<T, R>(
   items: T[],
   mapper: (item: T, index: number) => Promise<R>,
-  options: ConcurrentOptions = {},
+  options: ConcurrentOptions = {}
 ): Promise<R[]> {
   const tasks = items.map((item, index) => () => mapper(item, index));
   return runConcurrent(tasks, options);
@@ -85,7 +85,7 @@ export class ProgressTracker {
 
   constructor(
     private total: number,
-    private onUpdate?: (progress: ProgressInfo) => void,
+    private onUpdate?: (progress: ProgressInfo) => void
   ) {
     this.startTime = Date.now();
   }
@@ -131,7 +131,7 @@ export interface ProgressInfo {
 export async function processBatch<T, R>(
   items: T[],
   batchSize: number,
-  processor: (batch: T[]) => Promise<R[]>,
+  processor: (batch: T[]) => Promise<R[]>
 ): Promise<R[]> {
   const results: R[] = [];
 
@@ -149,11 +149,11 @@ export async function processBatch<T, R>(
  */
 export async function runConcurrentWithRetry<T>(
   tasks: (() => Promise<T>)[],
-  options: ConcurrentOptions & { maxRetries?: number; retryDelay?: number } = {},
+  options: ConcurrentOptions & { maxRetries?: number; retryDelay?: number } = {}
 ): Promise<T[]> {
   const { maxRetries = 3, retryDelay = 1000, ...concurrentOptions } = options;
 
-  const tasksWithRetry = tasks.map((task) => async () => {
+  const tasksWithRetry = tasks.map(task => async () => {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -162,7 +162,9 @@ export async function runConcurrentWithRetry<T>(
       } catch (error) {
         lastError = error;
         if (attempt < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay * (attempt + 1)));
+          await new Promise(resolve =>
+            setTimeout(resolve, retryDelay * (attempt + 1))
+          );
         }
       }
     }

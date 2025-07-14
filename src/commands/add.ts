@@ -17,42 +17,51 @@ export function createAddCommand(): Command {
     .option('-v, --verbose', 'Show detailed output')
     .option('-j, --json', 'Output as JSON')
     .option('-q, --quiet', 'Suppress non-error output')
-    .action((name: string, type: string, value: string, options: IAddOptions) => {
-      const logger = new Logger({ verbose: options.verbose, quiet: options.quiet });
+    .action(
+      (name: string, type: string, value: string, options: IAddOptions) => {
+        const logger = new Logger({
+          verbose: options.verbose,
+          quiet: options.quiet,
+        });
 
-      try {
-        const recordType = type.toUpperCase() as DNSRecordType;
+        try {
+          const recordType = type.toUpperCase() as DNSRecordType;
 
-        logger.startSpinner(`Adding ${recordType} record for ${name}...`);
+          logger.startSpinner(`Adding ${recordType} record for ${name}...`);
 
-        // TODO: Implement actual DNS record creation logic
-        const newRecord = {
-          id: Date.now().toString(),
-          name,
-          type: recordType,
-          value,
-          ttl: parseInt(options.ttl ?? '3600', 10),
-          priority: options.priority ? parseInt(options.priority, 10) : undefined,
-          weight: options.weight ? parseInt(options.weight, 10) : undefined,
-          port: options.port ? parseInt(options.port, 10) : undefined,
-          created: new Date(),
-          updated: new Date(),
-        };
+          // TODO: Implement actual DNS record creation logic
+          const newRecord = {
+            id: Date.now().toString(),
+            name,
+            type: recordType,
+            value,
+            ttl: parseInt(options.ttl ?? '3600', 10),
+            priority: options.priority
+              ? parseInt(options.priority, 10)
+              : undefined,
+            weight: options.weight ? parseInt(options.weight, 10) : undefined,
+            port: options.port ? parseInt(options.port, 10) : undefined,
+            created: new Date(),
+            updated: new Date(),
+          };
 
-        logger.stopSpinner(true, 'DNS record added successfully');
+          logger.stopSpinner(true, 'DNS record added successfully');
 
-        if (options.json) {
-          logger.json(newRecord);
-        } else {
-          logger.success(`Added ${recordType} record: ${name} → ${value}`);
-          logger.info(`TTL: ${newRecord.ttl} seconds`);
+          if (options.json) {
+            logger.json(newRecord);
+          } else {
+            logger.success(`Added ${recordType} record: ${name} → ${value}`);
+            logger.info(`TTL: ${newRecord.ttl} seconds`);
+          }
+        } catch (error) {
+          logger.stopSpinner(false, 'Failed to add DNS record');
+          logger.error(
+            error instanceof Error ? error.message : 'Unknown error occurred'
+          );
+          process.exit(1);
         }
-      } catch (error) {
-        logger.stopSpinner(false, 'Failed to add DNS record');
-        logger.error(error instanceof Error ? error.message : 'Unknown error occurred');
-        process.exit(1);
       }
-    });
+    );
 
   return add;
 }

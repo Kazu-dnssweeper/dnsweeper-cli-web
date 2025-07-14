@@ -93,7 +93,11 @@ export class MetricsCollector extends EventEmitter {
   /**
    * カウンターを増加
    */
-  increment(name: string, value: number = 1, tags?: Record<string, string>): void {
+  increment(
+    name: string,
+    value: number = 1,
+    tags?: Record<string, string>
+  ): void {
     const key = this.getCounterKey(name, tags);
     const counter = this.counters.get(key);
 
@@ -116,14 +120,23 @@ export class MetricsCollector extends EventEmitter {
   /**
    * カウンターを減少
    */
-  decrement(name: string, value: number = 1, tags?: Record<string, string>): void {
+  decrement(
+    name: string,
+    value: number = 1,
+    tags?: Record<string, string>
+  ): void {
     this.increment(name, -value, tags);
   }
 
   /**
    * ゲージ値を設定
    */
-  gauge(name: string, value: number, tags?: Record<string, string>, unit?: string): void {
+  gauge(
+    name: string,
+    value: number,
+    tags?: Record<string, string>,
+    unit?: string
+  ): void {
     const key = this.getGaugeKey(name, tags);
     const metric: Metric = {
       name,
@@ -196,7 +209,7 @@ export class MetricsCollector extends EventEmitter {
   async measureAsync<T>(
     name: string,
     fn: () => Promise<T>,
-    tags?: Record<string, string>,
+    tags?: Record<string, string>
   ): Promise<T> {
     const timerKey = this.startTimer(name, tags);
     try {
@@ -235,7 +248,7 @@ export class MetricsCollector extends EventEmitter {
     checks: Array<{
       name: string;
       check: () => Promise<boolean | { pass: boolean; message?: string }>;
-    }>,
+    }>
   ): Promise<HealthCheckResult> {
     const results = await Promise.all(
       checks.map(async ({ name, check }) => {
@@ -267,11 +280,13 @@ export class MetricsCollector extends EventEmitter {
             duration,
           };
         }
-      }),
+      })
     );
 
-    const failedChecks = results.filter((r) => r.status === 'fail').length;
-    const warnChecks = results.filter((r) => 'status' in r && r.status === ('warn' as any)).length;
+    const failedChecks = results.filter(r => r.status === 'fail').length;
+    const warnChecks = results.filter(
+      r => 'status' in r && r.status === ('warn' as any)
+    ).length;
 
     let status: HealthCheckResult['status'];
     if (failedChecks > 0) {
@@ -304,7 +319,7 @@ export class MetricsCollector extends EventEmitter {
     // CPU使用率計算
     let totalIdle = 0;
     let totalTick = 0;
-    cpus.forEach((cpu) => {
+    cpus.forEach(cpu => {
       for (const type in cpu.times) {
         totalTick += cpu.times[type as keyof typeof cpu.times];
       }
@@ -332,16 +347,36 @@ export class MetricsCollector extends EventEmitter {
     };
 
     // ゲージとして記録
-    this.gauge('system.cpu.usage', metrics.cpu.usage, { type: 'percentage' }, '%');
-    this.gauge('system.memory.used', metrics.memory.used, { type: 'bytes' }, 'bytes');
-    this.gauge('system.memory.percentage', metrics.memory.percentage, { type: 'percentage' }, '%');
+    this.gauge(
+      'system.cpu.usage',
+      metrics.cpu.usage,
+      { type: 'percentage' },
+      '%'
+    );
+    this.gauge(
+      'system.memory.used',
+      metrics.memory.used,
+      { type: 'bytes' },
+      'bytes'
+    );
+    this.gauge(
+      'system.memory.percentage',
+      metrics.memory.percentage,
+      { type: 'percentage' },
+      '%'
+    );
     this.gauge(
       'process.memory.heapUsed',
       metrics.process.memoryUsage.heapUsed,
       { type: 'bytes' },
-      'bytes',
+      'bytes'
     );
-    this.gauge('process.uptime', metrics.process.uptime, { type: 'seconds' }, 's');
+    this.gauge(
+      'process.uptime',
+      metrics.process.uptime,
+      { type: 'seconds' },
+      's'
+    );
 
     return metrics;
   }
@@ -479,7 +514,9 @@ let defaultCollector: MetricsCollector | null = null;
 /**
  * デフォルトのメトリクスコレクターを取得
  */
-export function getMetricsCollector(options?: MetricsOptions): MetricsCollector {
+export function getMetricsCollector(
+  options?: MetricsOptions
+): MetricsCollector {
   if (!defaultCollector) {
     defaultCollector = new MetricsCollector(options);
   }
@@ -490,18 +527,26 @@ export function getMetricsCollector(options?: MetricsOptions): MetricsCollector 
  * メトリクスデコレーター
  */
 export function metric(name?: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
     const metricName = name || `${target.constructor.name}.${propertyName}`;
     const originalMethod = descriptor.value;
     const collector = getMetricsCollector();
 
     if (originalMethod.constructor.name === 'AsyncFunction') {
       descriptor.value = async function (...args: any[]) {
-        return collector.measureAsync(metricName, () => originalMethod.apply(this, args));
+        return collector.measureAsync(metricName, () =>
+          originalMethod.apply(this, args)
+        );
       };
     } else {
       descriptor.value = function (...args: any[]) {
-        return collector.measure(metricName, () => originalMethod.apply(this, args));
+        return collector.measure(metricName, () =>
+          originalMethod.apply(this, args)
+        );
       };
     }
 

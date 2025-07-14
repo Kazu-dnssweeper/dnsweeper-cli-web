@@ -24,7 +24,7 @@ export class Logger {
       enableStructuredLogging?: boolean;
       logFile?: string;
       logLevel?: string;
-    } = {},
+    } = {}
   ) {
     this.verbose = options.verbose ?? false;
     this.quiet = options.quiet ?? false;
@@ -86,14 +86,24 @@ export class Logger {
     this.structuredLogger.info(`SPINNER_START: ${text}`, meta);
   }
 
-  stopSpinner(success: boolean = true, text?: string, meta?: Record<string, any>): void {
+  stopSpinner(
+    success: boolean = true,
+    text?: string,
+    meta?: Record<string, any>
+  ): void {
     if (this.spinner) {
       if (success) {
         this.spinner.succeed(text);
-        this.structuredLogger.info(`SPINNER_SUCCESS: ${text || 'Operation completed'}`, meta);
+        this.structuredLogger.info(
+          `SPINNER_SUCCESS: ${text || 'Operation completed'}`,
+          meta
+        );
       } else {
         this.spinner.fail(text);
-        this.structuredLogger.error(`SPINNER_FAIL: ${text || 'Operation failed'}`, meta);
+        this.structuredLogger.error(
+          `SPINNER_FAIL: ${text || 'Operation failed'}`,
+          meta
+        );
       }
       this.spinner = null;
     }
@@ -124,7 +134,7 @@ export class Logger {
     url: string,
     statusCode?: number,
     duration?: number,
-    meta?: Record<string, any>,
+    meta?: Record<string, any>
   ): void {
     const message = `${method} ${url}${statusCode ? ` ${statusCode}` : ''}${duration ? ` ${duration}ms` : ''}`;
 
@@ -148,7 +158,7 @@ export class Logger {
   async profile<T>(
     label: string,
     fn: () => Promise<T> | T,
-    meta?: Record<string, any>,
+    meta?: Record<string, any>
   ): Promise<T> {
     const start = Date.now();
     this.debug(`Starting: ${label}`, meta);
@@ -156,14 +166,17 @@ export class Logger {
     try {
       const result = await fn();
       const duration = Date.now() - start;
-      this.success(`Completed: ${label} (${duration}ms)`, { ...meta, duration });
+      this.success(`Completed: ${label} (${duration}ms)`, {
+        ...meta,
+        duration,
+      });
       return result;
     } catch (error) {
       const duration = Date.now() - start;
       this.error(
         `Failed: ${label} (${duration}ms)`,
         error instanceof Error ? error : new Error(String(error)),
-        { ...meta, duration },
+        { ...meta, duration }
       );
       throw error;
     }
@@ -178,7 +191,10 @@ export class Logger {
 
     return () => {
       const duration = Date.now() - start;
-      this.info(`Timer: ${label} completed in ${duration}ms`, { ...meta, duration });
+      this.info(`Timer: ${label} completed in ${duration}ms`, {
+        ...meta,
+        duration,
+      });
     };
   }
 
@@ -223,7 +239,9 @@ export class Logger {
    */
   setLogLevel(level: string): void {
     // 注意: 既存のトランスポートのレベルは変更されない
-    this.structuredLogger.info(`Log level change requested: ${level}`, { newLevel: level });
+    this.structuredLogger.info(`Log level change requested: ${level}`, {
+      newLevel: level,
+    });
   }
 
   /**
@@ -241,7 +259,10 @@ export class Logger {
     if (!this.quiet) {
       console.log(chalk.magenta('🔒 SECURITY'), message);
     }
-    this.structuredLogger.warn(`SECURITY: ${message}`, { ...meta, category: 'security' });
+    this.structuredLogger.warn(`SECURITY: ${message}`, {
+      ...meta,
+      category: 'security',
+    });
   }
 
   /**
@@ -251,7 +272,7 @@ export class Logger {
     message: string,
     duration: number,
     threshold: number = 1000,
-    meta?: Record<string, any>,
+    meta?: Record<string, any>
   ): void {
     const isWarning = duration > threshold;
     const color = isWarning ? chalk.yellow : chalk.green;
@@ -261,9 +282,17 @@ export class Logger {
     }
 
     if (isWarning) {
-      this.structuredLogger.warn(`PERFORMANCE: ${message}`, { ...meta, duration, threshold });
+      this.structuredLogger.warn(`PERFORMANCE: ${message}`, {
+        ...meta,
+        duration,
+        threshold,
+      });
     } else {
-      this.structuredLogger.info(`PERFORMANCE: ${message}`, { ...meta, duration, threshold });
+      this.structuredLogger.info(`PERFORMANCE: ${message}`, {
+        ...meta,
+        duration,
+        threshold,
+      });
     }
   }
 
@@ -274,7 +303,10 @@ export class Logger {
     if (!this.quiet) {
       console.log(chalk.blue('📊 BUSINESS'), message);
     }
-    this.structuredLogger.info(`BUSINESS: ${message}`, { ...meta, category: 'business' });
+    this.structuredLogger.info(`BUSINESS: ${message}`, {
+      ...meta,
+      category: 'business',
+    });
   }
 
   /**

@@ -67,17 +67,19 @@ export class CloudflareClient {
   constructor(config: CloudflareConfig) {
     if (config.apiToken) {
       this.headers = {
-        'Authorization': `Bearer ${config.apiToken}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${config.apiToken}`,
+        'Content-Type': 'application/json',
       };
     } else if (config.email && config.apiKey) {
       this.headers = {
         'X-Auth-Email': config.email,
         'X-Auth-Key': config.apiKey,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       };
     } else {
-      throw new Error('Cloudflare認証情報が不正です。APIトークンまたはEmail+APIキーを指定してください');
+      throw new Error(
+        'Cloudflare認証情報が不正です。APIトークンまたはEmail+APIキーを指定してください'
+      );
     }
   }
 
@@ -89,13 +91,15 @@ export class CloudflareClient {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: this.headers,
-      ...(body && { body: JSON.stringify(body) })
+      ...(body && { body: JSON.stringify(body) }),
     });
 
-    const data = await response.json() as CloudflareResponse<T>;
-    
+    const data = (await response.json()) as CloudflareResponse<T>;
+
     if (!response.ok) {
-      throw new Error(`Cloudflare API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Cloudflare API error: ${response.status} ${response.statusText}`
+      );
     }
 
     return data;
@@ -107,53 +111,90 @@ export class CloudflareClient {
   }
 
   async getZone(zoneId: string): Promise<CloudflareZone> {
-    const response = await this.request<CloudflareZone>('GET', `/zones/${zoneId}`);
+    const response = await this.request<CloudflareZone>(
+      'GET',
+      `/zones/${zoneId}`
+    );
     return response.result;
   }
 
   async listDNSRecords(zoneId: string): Promise<CloudflareDNSRecord[]> {
-    const response = await this.request<CloudflareDNSRecord[]>('GET', `/zones/${zoneId}/dns_records`);
+    const response = await this.request<CloudflareDNSRecord[]>(
+      'GET',
+      `/zones/${zoneId}/dns_records`
+    );
     return response.result;
   }
 
-  async getDNSRecord(zoneId: string, recordId: string): Promise<CloudflareDNSRecord> {
-    const response = await this.request<CloudflareDNSRecord>('GET', `/zones/${zoneId}/dns_records/${recordId}`);
+  async getDNSRecord(
+    zoneId: string,
+    recordId: string
+  ): Promise<CloudflareDNSRecord> {
+    const response = await this.request<CloudflareDNSRecord>(
+      'GET',
+      `/zones/${zoneId}/dns_records/${recordId}`
+    );
     return response.result;
   }
 
-  async createDNSRecord(zoneId: string, record: CloudflareDNSRecord): Promise<CloudflareDNSRecord> {
-    const response = await this.request<CloudflareDNSRecord>('POST', `/zones/${zoneId}/dns_records`, record);
+  async createDNSRecord(
+    zoneId: string,
+    record: CloudflareDNSRecord
+  ): Promise<CloudflareDNSRecord> {
+    const response = await this.request<CloudflareDNSRecord>(
+      'POST',
+      `/zones/${zoneId}/dns_records`,
+      record
+    );
     return response.result;
   }
 
-  async updateDNSRecord(zoneId: string, recordId: string, record: CloudflareDNSRecord): Promise<CloudflareDNSRecord> {
-    const response = await this.request<CloudflareDNSRecord>('PUT', `/zones/${zoneId}/dns_records/${recordId}`, record);
+  async updateDNSRecord(
+    zoneId: string,
+    recordId: string,
+    record: CloudflareDNSRecord
+  ): Promise<CloudflareDNSRecord> {
+    const response = await this.request<CloudflareDNSRecord>(
+      'PUT',
+      `/zones/${zoneId}/dns_records/${recordId}`,
+      record
+    );
     return response.result;
   }
 
-  async deleteDNSRecord(zoneId: string, recordId: string): Promise<{ id: string }> {
-    const response = await this.request<{ id: string }>('DELETE', `/zones/${zoneId}/dns_records/${recordId}`);
+  async deleteDNSRecord(
+    zoneId: string,
+    recordId: string
+  ): Promise<{ id: string }> {
+    const response = await this.request<{ id: string }>(
+      'DELETE',
+      `/zones/${zoneId}/dns_records/${recordId}`
+    );
     return response.result;
   }
 
   /**
    * CSVレコードをCloudflare DNS形式に変換
    */
-  convertCSVToCloudflareRecords(csvRecords: ICSVRecord[]): CloudflareDNSRecord[] {
+  convertCSVToCloudflareRecords(
+    csvRecords: ICSVRecord[]
+  ): CloudflareDNSRecord[] {
     return csvRecords.map(csvRecord => ({
       name: csvRecord.domain,
       type: csvRecord.type,
       content: csvRecord.value,
       ttl: csvRecord.ttl || 1, // CloudflareのTTL 1 = automatic
       priority: csvRecord.priority,
-      proxied: false // デフォルトはプロキシ無効
+      proxied: false, // デフォルトはプロキシ無効
     }));
   }
 
   /**
    * Cloudflare DNSレコードをCSV形式に変換
    */
-  convertCloudflareToCSVRecords(cfRecords: CloudflareDNSRecord[]): ICSVRecord[] {
+  convertCloudflareToCSVRecords(
+    cfRecords: CloudflareDNSRecord[]
+  ): ICSVRecord[] {
     return cfRecords.map(cfRecord => ({
       domain: cfRecord.name,
       type: cfRecord.type,
@@ -161,7 +202,7 @@ export class CloudflareClient {
       ttl: cfRecord.ttl === 1 ? 0 : cfRecord.ttl || 300,
       priority: cfRecord.priority,
       weight: undefined,
-      port: undefined
+      port: undefined,
     }));
   }
 
@@ -169,14 +210,20 @@ export class CloudflareClient {
    * ゾーンファイルのエクスポート
    */
   async exportZone(zoneId: string): Promise<string> {
-    const response = await this.request<string>('GET', `/zones/${zoneId}/dns_records/export`);
+    const response = await this.request<string>(
+      'GET',
+      `/zones/${zoneId}/dns_records/export`
+    );
     return response.result;
   }
 
   /**
    * ゾーンファイルのインポート
    */
-  async importZone(zoneId: string, zoneFile: string): Promise<{
+  async importZone(
+    zoneId: string,
+    zoneFile: string
+  ): Promise<{
     recs_added: number;
     total_records_parsed: number;
   }> {
@@ -184,7 +231,7 @@ export class CloudflareClient {
       recs_added: number;
       total_records_parsed: number;
     }>('POST', `/zones/${zoneId}/dns_records/import`, {
-      file: zoneFile
+      file: zoneFile,
     });
     return response.result;
   }

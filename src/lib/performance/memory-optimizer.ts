@@ -54,7 +54,7 @@ export class MemoryOptimizer {
    */
   static checkMemoryWarning(
     threshold = this.DEFAULT_WARNING_THRESHOLD,
-    onWarning?: (usage: MemoryUsage) => void,
+    onWarning?: (usage: MemoryUsage) => void
   ): boolean {
     const usage = this.getMemoryUsage();
 
@@ -73,7 +73,9 @@ export class MemoryOptimizer {
     if (global.gc) {
       global.gc();
     } else {
-      console.warn('Garbage collection is not exposed. Run with --expose-gc flag.');
+      console.warn(
+        'Garbage collection is not exposed. Run with --expose-gc flag.'
+      );
     }
   }
 
@@ -84,7 +86,7 @@ export class MemoryOptimizer {
     array: T[],
     processor: (chunk: T[]) => Promise<R[]>,
     chunkSize = 1000,
-    onProgress?: (processed: number, total: number) => void,
+    onProgress?: (processed: number, total: number) => void
   ): Promise<R[]> {
     const results: R[] = [];
     let processed = 0;
@@ -99,7 +101,7 @@ export class MemoryOptimizer {
       onProgress?.(processed, array.length);
 
       // メモリ警告チェック
-      this.checkMemoryWarning(512, (usage) => {
+      this.checkMemoryWarning(512, usage => {
         console.warn(`Memory warning: ${usage.heapUsed}MB used`);
         this.forceGarbageCollection();
       });
@@ -198,7 +200,7 @@ export class StreamProcessor<T> {
    */
   async processStream<R>(
     items: AsyncIterable<T> | Iterable<T>,
-    processor: (item: T) => Promise<R> | R,
+    processor: (item: T) => Promise<R> | R
   ): Promise<R[]> {
     const results: R[] = [];
     let chunk: T[] = [];
@@ -225,7 +227,10 @@ export class StreamProcessor<T> {
     return results;
   }
 
-  private async processChunk<R>(chunk: T[], processor: (item: T) => Promise<R> | R): Promise<R[]> {
+  private async processChunk<R>(
+    chunk: T[],
+    processor: (item: T) => Promise<R> | R
+  ): Promise<R[]> {
     const results: R[] = [];
 
     for (const item of chunk) {
@@ -244,7 +249,7 @@ export class StreamProcessor<T> {
   private checkMemoryAndCleanup(): void {
     const threshold = this.options.memoryWarningThreshold || 512;
 
-    MemoryOptimizer.checkMemoryWarning(threshold, (usage) => {
+    MemoryOptimizer.checkMemoryWarning(threshold, usage => {
       this.options.onMemoryWarning?.(usage);
       MemoryOptimizer.forceGarbageCollection();
     });

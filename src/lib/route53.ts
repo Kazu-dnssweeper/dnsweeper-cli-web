@@ -2,7 +2,6 @@
  * Amazon Route 53 API クライアント
  */
 
-
 import type { DNSRecordType, ICSVRecord } from '../types/index.js';
 
 /**
@@ -138,10 +137,15 @@ export class Route53Client {
   /**
    * 特定のホステッドゾーンを取得
    */
-  async getHostedZone(zoneId: string): Promise<Route53Response<Route53HostedZone>> {
+  async getHostedZone(
+    zoneId: string
+  ): Promise<Route53Response<Route53HostedZone>> {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
-      const response = await this.makeRequest('GET', `/hostedzone/${cleanZoneId}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/hostedzone/${cleanZoneId}`
+      );
 
       if (!response.ok) {
         return {
@@ -175,7 +179,7 @@ export class Route53Client {
       type?: DNSRecordType;
       name?: string;
       maxItems?: number;
-    } = {},
+    } = {}
   ): Promise<Route53Response<Route53Record[]>> {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
@@ -218,15 +222,20 @@ export class Route53Client {
    */
   async changeResourceRecordSets(
     zoneId: string,
-    changeBatch: Route53ChangeBatch,
+    changeBatch: Route53ChangeBatch
   ): Promise<Route53Response<Route53ChangeInfo>> {
     try {
       const cleanZoneId = this.cleanZoneId(zoneId);
       const xml = this.buildChangeBatchXml(changeBatch);
 
-      const response = await this.makeRequest('POST', `/hostedzone/${cleanZoneId}/rrset`, xml, {
-        'Content-Type': 'text/xml',
-      });
+      const response = await this.makeRequest(
+        'POST',
+        `/hostedzone/${cleanZoneId}/rrset`,
+        xml,
+        {
+          'Content-Type': 'text/xml',
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -255,12 +264,17 @@ export class Route53Client {
   /**
    * 変更状況を取得
    */
-  async getChange(changeId: string): Promise<Route53Response<Route53ChangeInfo>> {
+  async getChange(
+    changeId: string
+  ): Promise<Route53Response<Route53ChangeInfo>> {
     try {
       const cleanChangeId = changeId.startsWith('/change/')
         ? changeId.replace('/change/', '')
         : changeId;
-      const response = await this.makeRequest('GET', `/change/${cleanChangeId}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/change/${cleanChangeId}`
+      );
 
       if (!response.ok) {
         return {
@@ -289,7 +303,7 @@ export class Route53Client {
    * CSVレコードをRoute53レコードに変換
    */
   convertCSVToRoute53Records(csvRecords: ICSVRecord[]): Route53Record[] {
-    return csvRecords.map((record) => {
+    return csvRecords.map(record => {
       const route53Record: Route53Record = {
         Name: record.domain.endsWith('.') ? record.domain : `${record.domain}.`,
         Type: record.type,
@@ -299,7 +313,9 @@ export class Route53Client {
 
       // MXレコードの場合、優先度を値に含める
       if (record.type === 'MX' && record.priority !== undefined) {
-        route53Record.ResourceRecords = [{ Value: `${record.priority} ${record.value}` }];
+        route53Record.ResourceRecords = [
+          { Value: `${record.priority} ${record.value}` },
+        ];
       }
 
       // SRVレコードの場合、重み・優先度・ポートを値に含める
@@ -310,7 +326,9 @@ export class Route53Client {
         record.port !== undefined
       ) {
         route53Record.ResourceRecords = [
-          { Value: `${record.priority} ${record.weight} ${record.port} ${record.value}` },
+          {
+            Value: `${record.priority} ${record.weight} ${record.port} ${record.value}`,
+          },
         ];
       }
 
@@ -328,7 +346,7 @@ export class Route53Client {
    * Route53レコードをCSVレコードに変換
    */
   convertRoute53ToCSVRecords(route53Records: Route53Record[]): ICSVRecord[] {
-    return route53Records.map((record) => {
+    return route53Records.map(record => {
       let value = '';
       let priority: number | undefined;
       let weight: number | undefined;
@@ -371,7 +389,9 @@ export class Route53Client {
       }
 
       return {
-        domain: record.Name.endsWith('.') ? record.Name.slice(0, -1) : record.Name,
+        domain: record.Name.endsWith('.')
+          ? record.Name.slice(0, -1)
+          : record.Name,
         type: record.Type,
         value,
         ttl: record.TTL || 300,
@@ -392,10 +412,14 @@ export class Route53Client {
       replace?: boolean;
       comment?: string;
       batchSize?: number;
-    } = {},
+    } = {}
   ): Promise<Route53Response<Route53ChangeInfo[]>> {
     try {
-      const { replace = false, comment = 'Imported by DNSweeper', batchSize = 100 } = options;
+      const {
+        replace = false,
+        comment = 'Imported by DNSweeper',
+        batchSize = 100,
+      } = options;
       const route53Records = this.convertCSVToRoute53Records(records);
       const changeInfos: Route53ChangeInfo[] = [];
 
@@ -403,7 +427,7 @@ export class Route53Client {
       for (let i = 0; i < route53Records.length; i += batchSize) {
         const batch = route53Records.slice(i, i + batchSize);
 
-        const changes: Route53Change[] = batch.map((record) => ({
+        const changes: Route53Change[] = batch.map(record => ({
           Action: replace ? 'UPSERT' : 'CREATE',
           ResourceRecordSet: record,
         }));
@@ -413,12 +437,15 @@ export class Route53Client {
           Changes: changes,
         };
 
-        const response = await this.changeResourceRecordSets(zoneId, changeBatch);
+        const response = await this.changeResourceRecordSets(
+          zoneId,
+          changeBatch
+        );
 
         if (response.error) {
           return {
             ...response,
-            data: [] as Route53ChangeInfo[]
+            data: [] as Route53ChangeInfo[],
           };
         }
 
@@ -447,7 +474,7 @@ export class Route53Client {
     options: {
       type?: DNSRecordType;
       format?: 'csv' | 'json';
-    } = {},
+    } = {}
   ): Promise<Route53Response<ICSVRecord[]>> {
     try {
       const response = await this.listResourceRecordSets(zoneId, {
@@ -457,7 +484,7 @@ export class Route53Client {
       if (response.error || !response.data) {
         return {
           ...response,
-          data: [] as ICSVRecord[]
+          data: [] as ICSVRecord[],
         };
       }
 
@@ -483,7 +510,7 @@ export class Route53Client {
     method: 'GET' | 'POST' | 'DELETE',
     path: string,
     body?: string,
-    headers: Record<string, string> = {},
+    headers: Record<string, string> = {}
   ): Promise<Response> {
     const url = `${this.baseUrl}${path}`;
     const timestamp = new Date().toISOString();
@@ -527,7 +554,9 @@ export class Route53Client {
    * ゾーンIDをクリーンアップ
    */
   private cleanZoneId(zoneId: string): string {
-    return zoneId.startsWith('/hostedzone/') ? zoneId.replace('/hostedzone/', '') : zoneId;
+    return zoneId.startsWith('/hostedzone/')
+      ? zoneId.replace('/hostedzone/', '')
+      : zoneId;
   }
 
   /**
@@ -554,7 +583,7 @@ export class Route53Client {
         },
         ResourceRecordSetCount: parseInt(
           this.extractXmlValue(zoneXml, 'ResourceRecordSetCount') || '0',
-          10,
+          10
         ),
         CallerReference: this.extractXmlValue(zoneXml, 'CallerReference') || '',
       };
@@ -576,7 +605,7 @@ export class Route53Client {
       },
       ResourceRecordSetCount: parseInt(
         this.extractXmlValue(xml, 'ResourceRecordSetCount') || '0',
-        10,
+        10
       ),
       CallerReference: this.extractXmlValue(xml, 'CallerReference') || '',
     };
@@ -613,14 +642,16 @@ export class Route53Client {
   private parseChangeInfoXml(xml: string): Route53ChangeInfo {
     return {
       Id: this.extractXmlValue(xml, 'Id') || '',
-      Status: (this.extractXmlValue(xml, 'Status') as 'PENDING' | 'INSYNC') || 'PENDING',
+      Status:
+        (this.extractXmlValue(xml, 'Status') as 'PENDING' | 'INSYNC') ||
+        'PENDING',
       SubmittedAt: this.extractXmlValue(xml, 'SubmittedAt') || '',
       Comment: this.extractXmlValue(xml, 'Comment'),
     };
   }
 
   private extractXmlValue(xml: string, tagName: string): string | undefined {
-    const pattern = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const pattern = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 's');
     const match = xml.match(pattern);
     return match?.[1]?.trim();
   }
@@ -641,11 +672,11 @@ export class Route53Client {
   }
 
   private buildChangeBatchXml(changeBatch: Route53ChangeBatch): string {
-    const changes = changeBatch.Changes.map((change) => {
+    const changes = changeBatch.Changes.map(change => {
       const record = change.ResourceRecordSet;
       const resourceRecords =
         record.ResourceRecords?.map(
-          (rr) => `<ResourceRecord><Value>${rr.Value}</Value></ResourceRecord>`,
+          rr => `<ResourceRecord><Value>${rr.Value}</Value></ResourceRecord>`
         ).join('') || '';
 
       return `

@@ -76,10 +76,18 @@ export function detectBOM(buffer: Buffer): {
 
   // UTF-32 BOMを先にチェック（UTF-16と区別するため）
   if (uint8Array.length >= 4) {
-    if (uint8Array.subarray(0, 4).every((byte, i) => byte === BOM_PATTERNS['utf-32le'][i])) {
+    if (
+      uint8Array
+        .subarray(0, 4)
+        .every((byte, i) => byte === BOM_PATTERNS['utf-32le'][i])
+    ) {
       return { encoding: null, bomLength: 4 }; // UTF-32はサポートしない
     }
-    if (uint8Array.subarray(0, 4).every((byte, i) => byte === BOM_PATTERNS['utf-32be'][i])) {
+    if (
+      uint8Array
+        .subarray(0, 4)
+        .every((byte, i) => byte === BOM_PATTERNS['utf-32be'][i])
+    ) {
       return { encoding: null, bomLength: 4 }; // UTF-32はサポートしない
     }
   }
@@ -87,17 +95,27 @@ export function detectBOM(buffer: Buffer): {
   // UTF-8 BOM
   if (
     uint8Array.length >= 3 &&
-    uint8Array.subarray(0, 3).every((byte, i) => byte === BOM_PATTERNS['utf-8'][i])
+    uint8Array
+      .subarray(0, 3)
+      .every((byte, i) => byte === BOM_PATTERNS['utf-8'][i])
   ) {
     return { encoding: 'utf-8', bomLength: 3 };
   }
 
   // UTF-16 BOM
   if (uint8Array.length >= 2) {
-    if (uint8Array.subarray(0, 2).every((byte, i) => byte === BOM_PATTERNS['utf-16le'][i])) {
+    if (
+      uint8Array
+        .subarray(0, 2)
+        .every((byte, i) => byte === BOM_PATTERNS['utf-16le'][i])
+    ) {
       return { encoding: 'utf-16le', bomLength: 2 };
     }
-    if (uint8Array.subarray(0, 2).every((byte, i) => byte === BOM_PATTERNS['utf-16be'][i])) {
+    if (
+      uint8Array
+        .subarray(0, 2)
+        .every((byte, i) => byte === BOM_PATTERNS['utf-16be'][i])
+    ) {
       return { encoding: 'utf-16be', bomLength: 2 };
     }
   }
@@ -108,7 +126,9 @@ export function detectBOM(buffer: Buffer): {
 /**
  * ファイルのエンコーディングを自動検出
  */
-export async function detectFileEncoding(filePath: string): Promise<EncodingDetectionResult> {
+export async function detectFileEncoding(
+  filePath: string
+): Promise<EncodingDetectionResult> {
   try {
     // ファイルの最初の数KBを読み込み（大容量ファイル対応）
     const buffer = await readFile(filePath);
@@ -120,7 +140,10 @@ export async function detectFileEncoding(filePath: string): Promise<EncodingDete
     throw new DnsSweeperError(
       `ファイルエンコーディング検出に失敗: ${filePath}`,
       'ENCODING_DETECTION_ERROR',
-      { filePath, error: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        filePath,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
     );
   }
 }
@@ -156,11 +179,13 @@ export function detectBufferEncoding(buffer: Buffer): EncodingDetectionResult {
   }
 
   // 検出結果の配列処理
-  const detections: Array<{ name: string; confidence: number }> = Array.isArray(detected) 
-    ? detected 
+  const detections: Array<{ name: string; confidence: number }> = Array.isArray(
+    detected
+  )
+    ? detected
     : [{ name: detected as string, confidence: 80 }];
   const primary = detections[0];
-  
+
   if (!primary) {
     return {
       encoding: 'utf-8' as SupportedEncoding,
@@ -172,14 +197,17 @@ export function detectBufferEncoding(buffer: Buffer): EncodingDetectionResult {
   }
 
   // エンコーディング名のマッピング
-  const mappedEncoding = ENCODING_MAPPING[primary.name.toUpperCase()] || 'utf-8';
+  const mappedEncoding =
+    ENCODING_MAPPING[primary.name.toUpperCase()] || 'utf-8';
 
   // 代替候補の処理
-  const alternatives = Array.isArray(detections) 
+  const alternatives = Array.isArray(detections)
     ? detections
         .slice(1)
         .map((d: any) => ({
-          encoding: ENCODING_MAPPING[d.name.toUpperCase()] || ('utf-8' as SupportedEncoding),
+          encoding:
+            ENCODING_MAPPING[d.name.toUpperCase()] ||
+            ('utf-8' as SupportedEncoding),
           confidence: d.confidence || 0,
         }))
         .filter((alt: any) => alt.encoding !== mappedEncoding)
@@ -198,20 +226,28 @@ export function detectBufferEncoding(buffer: Buffer): EncodingDetectionResult {
 /**
  * 指定されたエンコーディングでバッファをデコード
  */
-export function decodeBuffer(buffer: Buffer, encoding: SupportedEncoding): string {
+export function decodeBuffer(
+  buffer: Buffer,
+  encoding: SupportedEncoding
+): string {
   try {
     // BOMを除去
     const bomResult = detectBOM(buffer);
-    const actualBuffer = bomResult.bomLength > 0 ? buffer.subarray(bomResult.bomLength) : buffer;
+    const actualBuffer =
+      bomResult.bomLength > 0 ? buffer.subarray(bomResult.bomLength) : buffer;
 
     // TextDecoderでデコード
     const decoder = new TextDecoder(encoding, { fatal: false });
     return decoder.decode(actualBuffer);
   } catch (error) {
-    throw new DnsSweeperError(`文字デコードに失敗: ${encoding}`, 'DECODE_ERROR', {
-      encoding,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    throw new DnsSweeperError(
+      `文字デコードに失敗: ${encoding}`,
+      'DECODE_ERROR',
+      {
+        encoding,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    );
   }
 }
 
@@ -261,7 +297,7 @@ export function evaluateDetectionReliability(result: EncodingDetectionResult): {
   if (result.confidence >= 65) {
     if (result.alternatives.length > 0) {
       recommendations.push(
-        `代替候補: ${result.alternatives.map((alt) => `${alt.encoding} (${alt.confidence}%)`).join(', ')}`,
+        `代替候補: ${result.alternatives.map(alt => `${alt.encoding} (${alt.confidence}%)`).join(', ')}`
       );
     }
 
@@ -272,11 +308,17 @@ export function evaluateDetectionReliability(result: EncodingDetectionResult): {
     };
   }
 
-  recommendations.push('ファイルのエンコーディングを手動で指定することを検討してください');
-  recommendations.push('ファイルの文字化けが発生する場合は、別のエンコーディングを試してください');
+  recommendations.push(
+    'ファイルのエンコーディングを手動で指定することを検討してください'
+  );
+  recommendations.push(
+    'ファイルの文字化けが発生する場合は、別のエンコーディングを試してください'
+  );
 
   if (result.alternatives.length > 0) {
-    recommendations.push(`試行候補: ${result.alternatives.map((alt) => alt.encoding).join(', ')}`);
+    recommendations.push(
+      `試行候補: ${result.alternatives.map(alt => alt.encoding).join(', ')}`
+    );
   }
 
   return {
@@ -306,12 +348,15 @@ export async function detectCsvEncoding(filePath: string): Promise<
   try {
     sampleContent = decodeBuffer(
       buffer.subarray(0, Math.min(buffer.length, 2048)),
-      detection.encoding,
+      detection.encoding
     );
   } catch {
     // デコードに失敗した場合はUTF-8で再試行
     try {
-      sampleContent = decodeBuffer(buffer.subarray(0, Math.min(buffer.length, 2048)), 'utf-8');
+      sampleContent = decodeBuffer(
+        buffer.subarray(0, Math.min(buffer.length, 2048)),
+        'utf-8'
+      );
     } catch {
       sampleContent = '';
     }
@@ -322,12 +367,14 @@ export async function detectCsvEncoding(filePath: string): Promise<
   // CSV判定（簡易）
   const looksLikeCsv =
     lines.length > 0 &&
-    lines.some((line) => line.includes(',') || line.includes(';') || line.includes('\t'));
+    lines.some(
+      line => line.includes(',') || line.includes(';') || line.includes('\t')
+    );
 
   // 潜在的な区切り文字を検出
   const delimiters = [',', ';', '\t', '|'];
-  const potentialDelimiters = delimiters.filter((delimiter) =>
-    lines.some((line) => line.includes(delimiter)),
+  const potentialDelimiters = delimiters.filter(delimiter =>
+    lines.some(line => line.includes(delimiter))
   );
 
   return {

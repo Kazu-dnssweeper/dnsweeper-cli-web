@@ -22,7 +22,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export function createProgram(): Command {
-  const packageJson = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
+  const packageJson = JSON.parse(
+    readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
+  ) as {
     version: string;
     description: string;
   };
@@ -68,7 +70,9 @@ export async function main(): Promise<void> {
     await program.parseAsync(process.argv);
   } catch (error) {
     const logger = new Logger();
-    logger.error(error instanceof Error ? error.message : 'Unknown error occurred');
+    logger.error(
+      error instanceof Error ? error.message : 'Unknown error occurred'
+    );
     process.exit(1);
   }
 }

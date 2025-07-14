@@ -48,9 +48,9 @@ export class RiskCalculator {
       '-bak',
     ];
 
-    this.suspiciousPatterns = (options.suspiciousPatterns || defaultPatterns).map(
-      (pattern) => new RegExp(pattern, 'i'),
-    );
+    this.suspiciousPatterns = (
+      options.suspiciousPatterns || defaultPatterns
+    ).map(pattern => new RegExp(pattern, 'i'));
 
     this.highRiskTTLThreshold = options.highRiskTTLThreshold || 300; // 5 minutes
     this.unusedDaysThreshold = options.unusedDaysThreshold || 180; // 6 months
@@ -63,7 +63,11 @@ export class RiskCalculator {
     const factors = this.analyzeRiskFactors(record, lastSeenDate);
     const total = this.computeTotalScore(factors);
     const level = this.determineRiskLevel(total);
-    const recommendations = this.generateRecommendations(record, factors, level);
+    const recommendations = this.generateRecommendations(
+      record,
+      factors,
+      level
+    );
 
     return {
       total,
@@ -78,7 +82,7 @@ export class RiskCalculator {
    */
   calculateBatchRisk(
     records: IDNSRecord[],
-    lastSeenDates?: Map<string, Date>,
+    lastSeenDates?: Map<string, Date>
   ): Map<string, IRiskScore> {
     const results = new Map<string, IRiskScore>();
 
@@ -93,7 +97,10 @@ export class RiskCalculator {
   /**
    * Analyze individual risk factors
    */
-  private analyzeRiskFactors(record: IDNSRecord, lastSeenDate?: Date): IRiskFactors {
+  private analyzeRiskFactors(
+    record: IDNSRecord,
+    lastSeenDate?: Date
+  ): IRiskFactors {
     const lastSeenDays = this.calculateDaysSinceLastSeen(lastSeenDate);
     const hasSuspiciousPattern = this.checkSuspiciousPatterns(record.name);
     const ttlScore = this.calculateTTLRiskScore(record.ttl);
@@ -126,7 +133,7 @@ export class RiskCalculator {
    * Check for suspicious naming patterns
    */
   private checkSuspiciousPatterns(domain: string): boolean {
-    return this.suspiciousPatterns.some((pattern) => pattern.test(domain));
+    return this.suspiciousPatterns.some(pattern => pattern.test(domain));
   }
 
   /**
@@ -227,38 +234,42 @@ export class RiskCalculator {
   private generateRecommendations(
     record: IDNSRecord,
     factors: IRiskFactors,
-    level: IRiskScore['level'],
+    level: IRiskScore['level']
   ): string[] {
     const recommendations: string[] = [];
 
     if (factors.lastSeenDays >= this.unusedDaysThreshold) {
       recommendations.push(
-        `Record unused for ${factors.lastSeenDays} days. Consider removal if no longer needed.`,
+        `Record unused for ${factors.lastSeenDays} days. Consider removal if no longer needed.`
       );
     }
 
     if (factors.hasSuspiciousPattern) {
       recommendations.push(
-        'Domain name contains suspicious pattern. Verify if this is a temporary or test record.',
+        'Domain name contains suspicious pattern. Verify if this is a temporary or test record.'
       );
     }
 
     if (factors.ttlScore >= 20) {
       recommendations.push(
-        `Very short TTL (${record.ttl}s) detected. Consider increasing TTL if record is stable.`,
+        `Very short TTL (${record.ttl}s) detected. Consider increasing TTL if record is stable.`
       );
     }
 
     if (factors.domainDepth >= 10) {
       recommendations.push(
-        'Deep subdomain detected. Review if this level of nesting is necessary.',
+        'Deep subdomain detected. Review if this level of nesting is necessary.'
       );
     }
 
     if (level === 'critical') {
-      recommendations.push('CRITICAL: This record should be reviewed immediately.');
+      recommendations.push(
+        'CRITICAL: This record should be reviewed immediately.'
+      );
     } else if (level === 'high') {
-      recommendations.push('HIGH RISK: Schedule review of this record within 30 days.');
+      recommendations.push(
+        'HIGH RISK: Schedule review of this record within 30 days.'
+      );
     }
 
     if (record.type === 'CNAME' && factors.lastSeenDays > 90) {
@@ -266,7 +277,9 @@ export class RiskCalculator {
     }
 
     if (record.type === 'TXT' && factors.hasSuspiciousPattern) {
-      recommendations.push('TXT record with suspicious name. May be old verification record.');
+      recommendations.push(
+        'TXT record with suspicious name. May be old verification record.'
+      );
     }
 
     return recommendations;
@@ -278,12 +291,12 @@ export class RiskCalculator {
   filterByRiskLevel(
     records: IDNSRecord[],
     minLevel: IRiskScore['level'],
-    lastSeenDates?: Map<string, Date>,
+    lastSeenDates?: Map<string, Date>
   ): IDNSRecord[] {
     const levelValues = { low: 0, medium: 1, high: 2, critical: 3 };
     const minValue = levelValues[minLevel];
 
-    return records.filter((record) => {
+    return records.filter(record => {
       const risk = this.calculateRisk(record, lastSeenDates?.get(record.id));
       return levelValues[risk.level] >= minValue;
     });
@@ -294,7 +307,7 @@ export class RiskCalculator {
    */
   getRiskSummary(
     records: IDNSRecord[],
-    lastSeenDates?: Map<string, Date>,
+    lastSeenDates?: Map<string, Date>
   ): {
     total: number;
     byLevel: Record<IRiskScore['level'], number>;

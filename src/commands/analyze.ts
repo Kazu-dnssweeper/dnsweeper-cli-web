@@ -15,11 +15,15 @@ export function createAnalyzeCommand(): Command {
     .alias('scan')
     .description('Analyze DNS records for risks and generate report')
     .argument('<file>', 'CSV file to analyze')
-    .option('-f, --format <format>', 'CSV format (cloudflare, route53, generic, auto)', 'auto')
+    .option(
+      '-f, --format <format>',
+      'CSV format (cloudflare, route53, generic, auto)',
+      'auto'
+    )
     .option(
       '-l, --level <level>',
       'Minimum risk level to report (low, medium, high, critical)',
-      'medium',
+      'medium'
     )
     .option('-c, --check-dns', 'Check current DNS status for each record')
     .option('-o, --output <file>', 'Save report to file')
@@ -27,7 +31,10 @@ export function createAnalyzeCommand(): Command {
     .option('-j, --json', 'Output as JSON')
     .option('-q, --quiet', 'Suppress non-error output')
     .action(async (file: string, options: IAnalyzeOptions) => {
-      const logger = new Logger({ verbose: options.verbose, quiet: options.quiet });
+      const logger = new Logger({
+        verbose: options.verbose,
+        quiet: options.quiet,
+      });
 
       try {
         // Validate file exists
@@ -39,7 +46,9 @@ export function createAnalyzeCommand(): Command {
         const processor = new CSVProcessor();
         const calculator = new RiskCalculator();
 
-        logger.startSpinner(`Analyzing DNS records from ${path.basename(filePath)}...`);
+        logger.startSpinner(
+          `Analyzing DNS records from ${path.basename(filePath)}...`
+        );
 
         // Parse CSV file
         let parseResult;
@@ -57,7 +66,10 @@ export function createAnalyzeCommand(): Command {
             parseResult = await processor.parseAuto(filePath);
         }
 
-        logger.stopSpinner(true, `Loaded ${parseResult.records.length} DNS records`);
+        logger.stopSpinner(
+          true,
+          `Loaded ${parseResult.records.length} DNS records`
+        );
 
         // Check DNS status if requested
         const lastSeenDates = new Map<string, Date>();
@@ -75,7 +87,9 @@ export function createAnalyzeCommand(): Command {
               checkedCount++;
 
               if (!options.quiet && checkedCount % 10 === 0) {
-                logger.info(`Checked ${checkedCount}/${parseResult.records.length} records...`);
+                logger.info(
+                  `Checked ${checkedCount}/${parseResult.records.length} records...`
+                );
               }
             } catch (error) {
               // DNS check failed, record might not exist
@@ -88,26 +102,33 @@ export function createAnalyzeCommand(): Command {
         // Calculate risk scores
         logger.startSpinner('Calculating risk scores...');
         // Convert CSV records to DNS records format
-        const dnsRecords: IDNSRecord[] = parseResult.records.map((csvRecord, index) => {
-          const record: IDNSRecord = {
-            id: `record-${index}`,
-            name: csvRecord.domain,
-            type: csvRecord.type,
-            value: csvRecord.value,
-            ttl: csvRecord.ttl || 300,
-            created: new Date(),
-            updated: new Date(),
-          };
+        const dnsRecords: IDNSRecord[] = parseResult.records.map(
+          (csvRecord, index) => {
+            const record: IDNSRecord = {
+              id: `record-${index}`,
+              name: csvRecord.domain,
+              type: csvRecord.type,
+              value: csvRecord.value,
+              ttl: csvRecord.ttl || 300,
+              created: new Date(),
+              updated: new Date(),
+            };
 
-          // オプショナルフィールドは値が存在する場合のみ設定
-          if (csvRecord.priority !== undefined) record.priority = csvRecord.priority;
-          if (csvRecord.weight !== undefined) record.weight = csvRecord.weight;
-          if (csvRecord.port !== undefined) record.port = csvRecord.port;
+            // オプショナルフィールドは値が存在する場合のみ設定
+            if (csvRecord.priority !== undefined)
+              record.priority = csvRecord.priority;
+            if (csvRecord.weight !== undefined)
+              record.weight = csvRecord.weight;
+            if (csvRecord.port !== undefined) record.port = csvRecord.port;
 
-          return record;
-        });
+            return record;
+          }
+        );
 
-        const riskScores = calculator.calculateBatchRisk(dnsRecords, lastSeenDates);
+        const riskScores = calculator.calculateBatchRisk(
+          dnsRecords,
+          lastSeenDates
+        );
         const summary = calculator.getRiskSummary(dnsRecords, lastSeenDates);
         logger.stopSpinner(true, 'Risk analysis complete');
 
@@ -126,7 +147,7 @@ export function createAnalyzeCommand(): Command {
             totalRecommendations: summary.recommendations,
           },
           records: riskyRecords
-            .map((record) => {
+            .map(record => {
               const risk = riskScores.get(record.id)!;
               return {
                 domain: record.name,
@@ -157,13 +178,19 @@ export function createAnalyzeCommand(): Command {
           logger.info('\n📊 Risk Analysis Summary');
           logger.info('========================');
           logger.info(`Total records analyzed: ${report.summary.totalRecords}`);
-          logger.info(`Records at risk (${minLevel}+): ${report.summary.riskyRecords}`);
-          logger.info(`Average risk score: ${report.summary.averageRiskScore}/100`);
+          logger.info(
+            `Records at risk (${minLevel}+): ${report.summary.riskyRecords}`
+          );
+          logger.info(
+            `Average risk score: ${report.summary.averageRiskScore}/100`
+          );
           logger.info('\nRisk Distribution:');
           logger.info(`  🟢 Low: ${report.summary.riskBreakdown.low}`);
           logger.info(`  🟡 Medium: ${report.summary.riskBreakdown.medium}`);
           logger.info(`  🟠 High: ${report.summary.riskBreakdown.high}`);
-          logger.info(`  🔴 Critical: ${report.summary.riskBreakdown.critical}`);
+          logger.info(
+            `  🔴 Critical: ${report.summary.riskBreakdown.critical}`
+          );
 
           // Display top risky records
           if (report.records.length > 0) {
@@ -183,7 +210,7 @@ export function createAnalyzeCommand(): Command {
 
               logger.info(`\n${icon} ${record.domain} (${record.type})`);
               logger.info(
-                `   Risk Score: ${record.risk.score}/100 [${record.risk.level.toUpperCase()}]`,
+                `   Risk Score: ${record.risk.score}/100 [${record.risk.level.toUpperCase()}]`
               );
               logger.info(`   TTL: ${record.ttl}s | Value: ${record.value}`);
 
@@ -196,7 +223,9 @@ export function createAnalyzeCommand(): Command {
             }
 
             if (report.records.length > 10) {
-              logger.info(`\n... and ${report.records.length - 10} more records`);
+              logger.info(
+                `\n... and ${report.records.length - 10} more records`
+              );
             }
           }
 
@@ -212,14 +241,18 @@ export function createAnalyzeCommand(): Command {
         if (!options.json && !options.quiet) {
           logger.success('\n✅ Analysis complete!');
           if (report.summary.riskyRecords > 0) {
-            logger.warn(`Found ${report.summary.riskyRecords} records that need attention.`);
+            logger.warn(
+              `Found ${report.summary.riskyRecords} records that need attention.`
+            );
           } else {
             logger.success('No significant risks detected.');
           }
         }
       } catch (error) {
         logger.stopSpinner(false, 'Analysis failed');
-        logger.error(error instanceof Error ? error.message : 'Unknown error occurred');
+        logger.error(
+          error instanceof Error ? error.message : 'Unknown error occurred'
+        );
 
         if (options.json) {
           logger.json({

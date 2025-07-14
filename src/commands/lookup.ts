@@ -6,7 +6,10 @@ import { Command } from 'commander';
 
 import { DNSResolver } from '../lib/dns-resolver.js';
 import { Logger } from '../lib/logger.js';
-import { createFormatter, type AnalysisResult } from '../lib/output-formatter.js';
+import {
+  createFormatter,
+  type AnalysisResult,
+} from '../lib/output-formatter.js';
 import { RiskCalculator } from '../lib/risk-calculator.js';
 
 import type { DNSRecordType, IDNSRecord } from '../types/index.js';
@@ -35,8 +38,16 @@ export function createLookupCommand(): Command {
     .alias('resolve')
     .description('DNS解決を実行して結果を表示')
     .argument('<domain>', '解決するドメイン名')
-    .option('-t, --type <type>', 'レコードタイプ (A, AAAA, CNAME, MX, TXT, NS, SOA, SRV, PTR)', 'A')
-    .option('-f, --format <format>', '出力形式 (table, json, csv, text)', 'table')
+    .option(
+      '-t, --type <type>',
+      'レコードタイプ (A, AAAA, CNAME, MX, TXT, NS, SOA, SRV, PTR)',
+      'A'
+    )
+    .option(
+      '-f, --format <format>',
+      '出力形式 (table, json, csv, text)',
+      'table'
+    )
     .option('-o, --output <file>', '結果をファイルに出力')
     .option('--timeout <ms>', 'タイムアウト時間（ミリ秒）', '5000')
     .option('--nameserver <server>', '使用するネームサーバー')
@@ -54,7 +65,10 @@ export function createLookupCommand(): Command {
       try {
         await executeLookup(domain, options, logger);
       } catch (error) {
-        logger.error('DNS解決エラー:', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'DNS解決エラー:',
+          error instanceof Error ? error : new Error(String(error))
+        );
         process.exit(1);
       }
     });
@@ -68,7 +82,7 @@ export function createLookupCommand(): Command {
 async function executeLookup(
   domain: string,
   options: ILookupOptions,
-  logger: Logger,
+  logger: Logger
 ): Promise<void> {
   // パラメータ検証
   validateDomain(domain);
@@ -207,7 +221,7 @@ function validateOptions(options: ILookupOptions): void {
 function convertToIDNSRecords(
   lookupResult: any,
   domain: string,
-  recordType: DNSRecordType,
+  recordType: DNSRecordType
 ): IDNSRecord[] {
   if (!lookupResult.records || !Array.isArray(lookupResult.records)) {
     return [];
@@ -261,13 +275,13 @@ function convertToIDNSRecords(
 async function performRiskAnalysis(
   records: IDNSRecord[],
   domain: string,
-  duration: number,
+  duration: number
 ): Promise<AnalysisResult> {
   const calculator = new RiskCalculator();
   const analysisDate = new Date();
 
   // リスク分析実行
-  const recordsWithRisk = records.map((record) => {
+  const recordsWithRisk = records.map(record => {
     const riskResult = calculator.calculateRisk(record, analysisDate);
     return {
       ...record,
@@ -285,14 +299,14 @@ async function performRiskAnalysis(
         acc[record.type] = (acc[record.type] || 0) + 1;
         return acc;
       },
-      {} as Record<DNSRecordType, number>,
+      {} as Record<DNSRecordType, number>
     ),
     byRisk: recordsWithRisk.reduce(
       (acc, record) => {
         acc[record.riskLevel] = (acc[record.riskLevel] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     ),
     duration,
   };
@@ -310,7 +324,7 @@ async function performRiskAnalysis(
     'PTR',
     'CAA',
   ];
-  allTypes.forEach((type) => {
+  allTypes.forEach(type => {
     if (!summary.byType[type]) {
       summary.byType[type] = 0;
     }
@@ -333,10 +347,10 @@ async function performRiskAnalysis(
 function createBasicAnalysisResult(
   records: IDNSRecord[],
   domain: string,
-  duration: number,
+  duration: number
 ): AnalysisResult {
   // デフォルトのリスク情報付きレコード
-  const recordsWithDefaults = records.map((record) => ({
+  const recordsWithDefaults = records.map(record => ({
     ...record,
     riskLevel: 'low' as const,
     riskScore: 0,
@@ -350,7 +364,7 @@ function createBasicAnalysisResult(
         acc[record.type] = (acc[record.type] || 0) + 1;
         return acc;
       },
-      {} as Record<DNSRecordType, number>,
+      {} as Record<DNSRecordType, number>
     ),
     byRisk: {
       low: records.length,
@@ -374,7 +388,7 @@ function createBasicAnalysisResult(
     'PTR',
     'CAA',
   ];
-  allTypes.forEach((type) => {
+  allTypes.forEach(type => {
     if (!summary.byType[type]) {
       summary.byType[type] = 0;
     }
@@ -398,7 +412,7 @@ async function outputResults(
   result: AnalysisResult,
   format: string,
   options: ILookupOptions,
-  logger: Logger,
+  logger: Logger
 ): Promise<void> {
   const formatter = createFormatter({
     format: format as any,

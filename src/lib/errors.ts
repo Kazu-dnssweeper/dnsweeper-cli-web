@@ -5,7 +5,7 @@ export class DnsSweeperError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly details?: Record<string, any>,
+    public readonly details?: Record<string, any>
   ) {
     super(message);
     this.name = 'DnsSweeperError';
@@ -78,7 +78,7 @@ export class ApiError extends DnsSweeperError {
   constructor(
     message: string,
     public readonly statusCode?: number,
-    details?: Record<string, any>,
+    details?: Record<string, any>
   ) {
     super(message, 'API_ERROR', details);
     this.name = 'ApiError';
@@ -112,7 +112,11 @@ export class ErrorHandler {
   /**
    * エラーをラップして詳細情報を追加
    */
-  static wrap(error: unknown, context: string, details?: Record<string, any>): DnsSweeperError {
+  static wrap(
+    error: unknown,
+    context: string,
+    details?: Record<string, any>
+  ): DnsSweeperError {
     if (error instanceof DnsSweeperError) {
       // 既存のDnsSweeperErrorの場合は詳細を追加
       return new DnsSweeperError(`${context}: ${error.message}`, error.code, {
@@ -123,18 +127,26 @@ export class ErrorHandler {
 
     if (error instanceof Error) {
       // 通常のErrorの場合はラップ
-      return new DnsSweeperError(`${context}: ${error.message}`, 'WRAPPED_ERROR', {
-        originalError: error.name,
-        stack: error.stack,
-        ...details,
-      });
+      return new DnsSweeperError(
+        `${context}: ${error.message}`,
+        'WRAPPED_ERROR',
+        {
+          originalError: error.name,
+          stack: error.stack,
+          ...details,
+        }
+      );
     }
 
     // その他の場合
-    return new DnsSweeperError(`${context}: 不明なエラーが発生しました`, 'UNKNOWN_ERROR', {
-      error: String(error),
-      ...details,
-    });
+    return new DnsSweeperError(
+      `${context}: 不明なエラーが発生しました`,
+      'UNKNOWN_ERROR',
+      {
+        error: String(error),
+        ...details,
+      }
+    );
   }
 
   /**
@@ -158,7 +170,9 @@ export class ErrorHandler {
     }
 
     if (error instanceof ApiError) {
-      const status = error.statusCode ? ` (ステータスコード: ${error.statusCode})` : '';
+      const status = error.statusCode
+        ? ` (ステータスコード: ${error.statusCode})`
+        : '';
       return `APIエラー: ${error.message}${status}`;
     }
 
@@ -203,12 +217,21 @@ export class ErrorHandler {
   /**
    * エラーの重要度を判定
    */
-  static getSeverity(error: unknown): 'critical' | 'error' | 'warning' | 'info' {
-    if (error instanceof ConfigurationError || error instanceof ValidationError) {
+  static getSeverity(
+    error: unknown
+  ): 'critical' | 'error' | 'warning' | 'info' {
+    if (
+      error instanceof ConfigurationError ||
+      error instanceof ValidationError
+    ) {
       return 'critical'; // 設定ミスは修正が必要
     }
 
-    if (error instanceof ApiError && error.statusCode && error.statusCode >= 500) {
+    if (
+      error instanceof ApiError &&
+      error.statusCode &&
+      error.statusCode >= 500
+    ) {
       return 'error'; // サーバーエラー
     }
 
