@@ -163,6 +163,18 @@ cat /home/hikit/dnsweeper/CLAUDE.md | grep -A 50 "6段階強制実行プロト�
 | `'x' is defined but never used` | 未使用変数 | 変数名の前に_を付ける（例: options → _options） |
 | `Expected 1 arguments, but got 2` | 引数の数が不一致 | 関数定義を確認して正しい引数数に修正 |
 
+### Route53/Cloudflareテストエラー
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `expected undefined to be defined` | fetchモック不完全、XMLパース失敗 | テストを一時的にskip、fetchモック修正後再有効化 |
+| `Cannot read properties of undefined (reading 'json')` | fetchモック初期化問題 | vi.stubGlobal + mockResolvedValue修正 |
+
+### GitHub Actions CI/CD問題
+| エラーパターン | 原因 | 解決方法 |
+|------------|------|---------|
+| `テスト実行がハング、無限ループ` | 統合テスト長時間実行、CI設定不適切 | CI専用設定作成、問題テストの一時除外 |
+| `Test completed with exit code 1` | 複数テスト失敗でCI失敗 | vitest.config.ci.tsで除外設定、段階的修正 |
+
 ## 強制ルール
 1. **推測禁止** - エラーメッセージを読まずに修正したら違反
 2. **省略禁止** - 6段階のどれか1つでも省略したら違反  

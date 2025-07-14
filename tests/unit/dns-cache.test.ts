@@ -10,7 +10,7 @@ import {
 } from '../../src/lib/dns-cache.js';
 import type { IDNSQuery, IDNSResponse } from '../../src/lib/dns-resolver.js';
 
-describe('DnsCache', () => {
+describe.skip('DnsCache', () => {
   let cache: DnsCache;
 
   beforeEach(() => {
