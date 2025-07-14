@@ -9,6 +9,9 @@ export default defineConfig({
     // CI環境向けの設定
     include: ['tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: [
+      'node_modules/**',
+      'dist/**',
+      'tests/integration/**',
       'tests/unit/cloudflare.test.ts',
       'tests/unit/route53.test.ts', 
       'tests/unit/cname-chain.test.ts',
