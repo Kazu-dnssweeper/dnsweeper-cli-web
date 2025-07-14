@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import chalk from 'chalk';
-import { Logger } from '../logger.js';
+import { Logger } from '../../../src/lib/logger.js';
 
 // chalkのモック
 vi.mock('chalk', () => ({

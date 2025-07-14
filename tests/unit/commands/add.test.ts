@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createAddCommand } from '../add.js';
+import { createAddCommand } from '../../../src/commands/add.js';
 import { Command } from 'commander';
 
 // モックの設定
-vi.mock('../../lib/logger.js', () => ({
+vi.mock('../../../src/lib/logger.js', () => ({
   Logger: vi.fn().mockImplementation(() => ({
     error: vi.fn(),
     info: vi.fn(),
@@ -17,7 +17,7 @@ describe('add command', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    const { Logger } = vi.mocked(await import('../../lib/logger.js'));
+    const { Logger } = vi.mocked(vi.importActual('../../../src/lib/logger.js') as any);
     mockLogger = new Logger();
   });
 

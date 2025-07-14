@@ -5,7 +5,7 @@ import {
   ProgressTracker,
   processBatch,
   runConcurrentWithRetry
-} from '../concurrent.js';
+} from '../../../src/utils/concurrent.js';
 
 describe('concurrent utilities', () => {
   describe('runConcurrent', () => {

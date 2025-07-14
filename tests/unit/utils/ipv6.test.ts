@@ -10,7 +10,7 @@ import {
   isMulticastIPv6,
   extractIPv6Prefix,
   getIPv6Scope,
-} from '../ipv6.js';
+} from '../../../src/utils/ipv6.js';
 
 describe('IPv6ユーティリティ', () => {
   describe('normalizeIPv6', () => {

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createProgram, main } from '../index.js';
+import { createProgram, main } from '../../src/index.js';
 import { Command } from 'commander';
-import * as commands from '../commands/index.js';
+import * as commands from '../../src/commands/index.js';
 
 // モックの設定
-vi.mock('../commands/index.js', () => ({
+vi.mock('../../src/commands/index.js', () => ({
   createListCommand: vi.fn(() => new Command('list')),
   createAddCommand: vi.fn(() => new Command('add')),
   createDeleteCommand: vi.fn(() => new Command('delete')),

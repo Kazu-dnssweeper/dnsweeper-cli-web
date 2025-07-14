@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createListCommand } from '../list.js';
+import { createListCommand } from '../../../src/commands/list.js';
 import { Command } from 'commander';
 
 // モックの設定
-vi.mock('../../lib/logger.js', () => ({
+vi.mock('../../../src/lib/logger.js', () => ({
   Logger: vi.fn().mockImplementation(() => ({
     error: vi.fn(),
     info: vi.fn(),
@@ -18,7 +18,7 @@ describe('list command', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    const { Logger } = vi.mocked(await import('../../lib/logger.js'));
+    const { Logger } = vi.mocked(vi.importActual('../../../src/lib/logger.js') as any);
     mockLogger = new Logger();
   });
 
