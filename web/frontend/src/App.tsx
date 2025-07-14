@@ -16,6 +16,8 @@ import { APIIntegrations } from './pages/APIIntegrations';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
 import { LoadingSpinner } from './components/UI/LoadingSpinner';
+import { AIPredictiveAnalyticsPage } from './pages/AIPredictiveAnalyticsPage';
+import { OptimizationEnginePage } from './pages/OptimizationEnginePage';
 
 // React Query クライアントの設定
 const queryClient = new QueryClient({
@@ -70,6 +72,8 @@ const AppContent: React.FC = () => {
           <Route path="history" element={<History />} />
           <Route path="reports" element={<Reports />} />
           <Route path="api-integrations" element={<APIIntegrations />} />
+          <Route path="ai-analytics" element={<AIPredictiveAnalyticsPage />} />
+          <Route path="optimization-engine" element={<OptimizationEnginePage />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

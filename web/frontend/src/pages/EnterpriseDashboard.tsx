@@ -1,860 +1,656 @@
 /**
- * エンタープライズ・ダッシュボード
+ * DNSweeper エンタープライズダッシュボード
+ * Active Directory統合・コンプライアンス監視・リアルタイム監査・セキュリティ分析
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card } from '../components/UI/Card';
+import { Button } from '../components/UI/Button';
+import { LoadingSpinner } from '../components/UI/LoadingSpinner';
+import { useEnterpriseAuth } from '../contexts/EnterpriseAuthContext';
 import {
-  Container,
-  Typography,
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
-  Paper,
-  Tabs,
-  Tab,
-  Alert,
-  CircularProgress,
-  LinearProgress,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Badge,
-  Avatar,
-  Tooltip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Divider,
-  Switch,
-  FormControlLabel
-} from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  Business as BusinessIcon,
-  People as PeopleIcon,
-  Security as SecurityIcon,
-  Assessment as AssessmentIcon,
-  Timeline as TimelineIcon,
-  Notifications as NotificationsIcon,
-  Settings as SettingsIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Speed as SpeedIcon,
-  Storage as StorageIcon,
-  Memory as MemoryIcon,
-  NetworkCheck as NetworkCheckIcon,
-  Cloud as CloudIcon,
-  Monitor as MonitorIcon,
-  Lock as LockIcon,
-  Shield as ShieldIcon,
-  Visibility as VisibilityIcon,
-  ExpandMore as ExpandMoreIcon,
-  Refresh as RefreshIcon,
-  Download as DownloadIcon,
-  FilterList as FilterListIcon,
-  DateRange as DateRangeIcon,
-  Group as GroupIcon,
-  Admin as AdminIcon,
-  Dns as DnsIcon,
-  Domain as DomainIcon,
-  Router as RouterIcon,
-  Backup as BackupIcon,
-  Update as UpdateIcon,
-  Analytics as AnalyticsIcon
-} from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ErrorAlert } from '../components/ErrorAlert';
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as ChartTooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+  ComplianceStatus,
+  FrameworkComplianceStatus,
+  ComplianceViolation,
+  AuditEvent,
+  SecurityGroup,
+  OrganizationUnit,
+  EnterpriseUser,
+  GroupPolicy
+} from '../types/enterprise-auth';
 
+/**
+ * ダッシュボードメトリクス
+ */
 interface DashboardMetrics {
-  tenants: {
-    total: number;
-    active: number;
-    suspended: number;
-    inactive: number;
-  };
-  users: {
-    total: number;
-    active: number;
-    mfaEnabled: number;
-    recentLogins: number;
-  };
-  security: {
-    totalEvents: number;
-    highRiskEvents: number;
-    failedAttempts: number;
-    policyViolations: number;
-    averageRiskScore: number;
-  };
-  performance: {
-    avgResponseTime: number;
-    throughput: number;
-    errorRate: number;
-    uptime: number;
-  };
-  resources: {
-    totalDomains: number;
-    totalRecords: number;
-    totalQueries: number;
-    storageUsage: number;
-    computeUsage: number;
-  };
-  jobs: {
-    total: number;
-    running: number;
-    completed: number;
-    failed: number;
-  };
+  totalUsers: number;
+  activeUsers: number;
+  totalGroups: number;
+  totalPolicies: number;
+  activePolicies: number;
+  complianceScore: number;
+  riskScore: number;
+  lastAuditDate: Date;
+  pendingReviews: number;
+  securityAlerts: number;
+  accessRequests: number;
+  recentLogins: number;
 }
 
-interface AlertItem {
+/**
+ * セキュリティアラート
+ */
+interface SecurityAlert {
   id: string;
-  type: 'security' | 'performance' | 'resource' | 'system';
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  type: string;
   title: string;
-  message: string;
+  description: string;
   timestamp: Date;
-  acknowledged: boolean;
-  tenantId?: string;
+  source: string;
+  affected: string[];
+  status: 'open' | 'investigating' | 'resolved';
 }
 
-const EnterpriseDashboard: React.FC = () => {
-  const { user } = useAuth();
+/**
+ * 監査アクティビティ
+ */
+interface AuditActivity {
+  id: string;
+  timestamp: Date;
+  event: AuditEvent;
+  user: {
+    id: string;
+    name: string;
+    department?: string;
+  };
+  resource: string;
+  action: string;
+  result: 'success' | 'failure' | 'warning';
+  riskScore: number;
+  location?: string;
+}
+
+/**
+ * エンタープライズダッシュボードページ
+ */
+export const EnterpriseDashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(0);
-  const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [complianceStatus, setComplianceStatus] = useState<ComplianceStatus | null>(null);
+  const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
+  const [recentAuditActivity, setRecentAuditActivity] = useState<AuditActivity[]>([]);
+  const [organizationUnits, setOrganizationUnits] = useState<OrganizationUnit[]>([]);
+  const [appliedPolicies, setAppliedPolicies] = useState<GroupPolicy[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
+  const [refreshInterval, setRefreshInterval] = useState<number>(30000); // 30秒
 
-  // チャートデータ
-  const [performanceData, setPerformanceData] = useState<any[]>([]);
-  const [securityData, setSecurityData] = useState<any[]>([]);
-  const [resourceData, setResourceData] = useState<any[]>([]);
-  const [tenantData, setTenantData] = useState<any[]>([]);
+  const {
+    user,
+    account,
+    permissions,
+    groupMemberships,
+    hasPermission,
+    getComplianceStatus,
+    logAuditEvent
+  } = useEnterpriseAuth();
 
+  // 初期データ読み込み
   useEffect(() => {
     loadDashboardData();
-    
-    if (autoRefresh) {
-      const interval = setInterval(() => {
-        loadDashboardData();
-      }, 30000); // 30秒間隔
-      setRefreshInterval(interval);
-      
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh, selectedTimeRange]);
+  }, [selectedTimeRange]);
 
-  const loadDashboardData = async () => {
+  // 自動リフレッシュ
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshRealTimeData();
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [refreshInterval]);
+
+  /**
+   * ダッシュボードデータの読み込み
+   */
+  const loadDashboardData = async (): Promise<void> => {
     try {
-      setLoading(true);
-      
-      // 実際の実装では、エンタープライズ・ダッシュボードAPIを呼び出す
-      const mockMetrics: DashboardMetrics = {
-        tenants: {
-          total: 25,
-          active: 22,
-          suspended: 2,
-          inactive: 1
-        },
-        users: {
-          total: 150,
-          active: 142,
-          mfaEnabled: 120,
-          recentLogins: 89
-        },
-        security: {
-          totalEvents: 15420,
-          highRiskEvents: 45,
-          failedAttempts: 123,
-          policyViolations: 8,
-          averageRiskScore: 25.5
-        },
-        performance: {
-          avgResponseTime: 245,
-          throughput: 1250,
-          errorRate: 0.8,
-          uptime: 99.95
-        },
-        resources: {
-          totalDomains: 1250,
-          totalRecords: 8750,
-          totalQueries: 125000,
-          storageUsage: 65.5,
-          computeUsage: 42.3
-        },
-        jobs: {
-          total: 1420,
-          running: 12,
-          completed: 1350,
-          failed: 58
-        }
-      };
+      setIsLoading(true);
 
-      const mockAlerts: AlertItem[] = [
-        {
-          id: 'alert-1',
-          type: 'security',
-          severity: 'critical',
-          title: '異常な認証試行を検出',
-          message: 'tenant-1で5分間に50回の認証失敗が発生しました',
-          timestamp: new Date(Date.now() - 300000),
-          acknowledged: false,
-          tenantId: 'tenant-1'
-        },
-        {
-          id: 'alert-2',
-          type: 'performance',
-          severity: 'high',
-          title: '応答時間の増加',
-          message: '平均応答時間が5秒を超えています',
-          timestamp: new Date(Date.now() - 600000),
-          acknowledged: false
-        },
-        {
-          id: 'alert-3',
-          type: 'resource',
-          severity: 'medium',
-          title: 'ストレージ使用量警告',
-          message: 'tenant-5のストレージ使用量が80%を超えました',
-          timestamp: new Date(Date.now() - 1800000),
-          acknowledged: true,
-          tenantId: 'tenant-5'
-        }
-      ];
+      // 並列でデータを取得
+      const [
+        metricsData,
+        complianceData,
+        alertsData,
+        auditData,
+        ouData,
+        policiesData
+      ] = await Promise.all([
+        fetchDashboardMetrics(),
+        getComplianceStatus(),
+        fetchSecurityAlerts(),
+        fetchRecentAuditActivity(),
+        fetchOrganizationUnits(),
+        fetchAppliedPolicies()
+      ]);
 
-      // チャートデータの生成
-      const mockPerformanceData = Array.from({ length: 24 }, (_, i) => ({
-        time: `${i}:00`,
-        responseTime: Math.floor(Math.random() * 200) + 200,
-        throughput: Math.floor(Math.random() * 500) + 1000,
-        errorRate: Math.random() * 2
-      }));
+      setMetrics(metricsData);
+      setComplianceStatus(complianceData);
+      setSecurityAlerts(alertsData);
+      setRecentAuditActivity(auditData);
+      setOrganizationUnits(ouData);
+      setAppliedPolicies(policiesData);
 
-      const mockSecurityData = Array.from({ length: 7 }, (_, i) => ({
-        day: ['日', '月', '火', '水', '木', '金', '土'][i],
-        events: Math.floor(Math.random() * 1000) + 500,
-        highRisk: Math.floor(Math.random() * 50) + 10,
-        failed: Math.floor(Math.random() * 100) + 20
-      }));
+      // ダッシュボード表示を監査ログに記録
+      await logAuditEvent('resource_access', {
+        resource: 'enterprise_dashboard',
+        action: 'view',
+        timeRange: selectedTimeRange
+      });
 
-      const mockResourceData = [
-        { name: 'ドメイン', used: 1250, total: 2000 },
-        { name: 'レコード', used: 8750, total: 15000 },
-        { name: 'クエリ', used: 125000, total: 200000 },
-        { name: 'ストレージ', used: 65.5, total: 100 },
-        { name: 'コンピュート', used: 42.3, total: 100 }
-      ];
-
-      const mockTenantData = [
-        { name: 'アクティブ', value: 22, color: '#4caf50' },
-        { name: '停止中', value: 2, color: '#ff9800' },
-        { name: '非アクティブ', value: 1, color: '#f44336' }
-      ];
-
-      setMetrics(mockMetrics);
-      setAlerts(mockAlerts);
-      setPerformanceData(mockPerformanceData);
-      setSecurityData(mockSecurityData);
-      setResourceData(mockResourceData);
-      setTenantData(mockTenantData);
-
-    } catch (err) {
-      setError('ダッシュボードデータの読み込みに失敗しました');
+    } catch (error) {
+      console.error('ダッシュボードデータ読み込みエラー:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const acknowledgeAlert = (alertId: string) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === alertId 
-        ? { ...alert, acknowledged: true }
-        : alert
-    ));
-  };
+  /**
+   * リアルタイムデータの更新
+   */
+  const refreshRealTimeData = async (): Promise<void> => {
+    try {
+      const [metricsData, alertsData, auditData] = await Promise.all([
+        fetchDashboardMetrics(),
+        fetchSecurityAlerts(),
+        fetchRecentAuditActivity()
+      ]);
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'error';
-      case 'high': return 'warning';
-      case 'medium': return 'info';
-      case 'low': return 'success';
-      default: return 'default';
+      setMetrics(metricsData);
+      setSecurityAlerts(alertsData);
+      setRecentAuditActivity(auditData);
+    } catch (error) {
+      console.error('リアルタイムデータ更新エラー:', error);
     }
   };
 
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical': return <ErrorIcon />;
-      case 'high': return <WarningIcon />;
-      case 'medium': return <NotificationsIcon />;
-      case 'low': return <CheckCircleIcon />;
-      default: return <NotificationsIcon />;
+  /**
+   * ダッシュボードメトリクス取得
+   */
+  const fetchDashboardMetrics = async (): Promise<DashboardMetrics> => {
+    const response = await fetch(`/api/enterprise/dashboard/metrics?timeRange=${selectedTimeRange}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('メトリクス取得失敗');
     }
+
+    return response.json();
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'security': return <SecurityIcon />;
-      case 'performance': return <SpeedIcon />;
-      case 'resource': return <StorageIcon />;
-      case 'system': return <SettingsIcon />;
-      default: return <NotificationsIcon />;
+  /**
+   * セキュリティアラート取得
+   */
+  const fetchSecurityAlerts = async (): Promise<SecurityAlert[]> => {
+    const response = await fetch('/api/enterprise/security/alerts?limit=10', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('セキュリティアラート取得失敗');
     }
+
+    const data = await response.json();
+    return data.alerts;
   };
 
-  const renderMetricCard = (title: string, value: number | string, icon: React.ReactNode, color: string, subtitle?: string) => (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" color={color}>
-              {value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {title}
-            </Typography>
-            {subtitle && (
-              <Typography variant="caption" color="text.secondary">
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
-          <Avatar sx={{ bgcolor: `${color}.main` }}>
-            {icon}
-          </Avatar>
-        </Box>
-      </CardContent>
-    </Card>
-  );
+  /**
+   * 最近の監査アクティビティ取得
+   */
+  const fetchRecentAuditActivity = async (): Promise<AuditActivity[]> => {
+    const response = await fetch(`/api/enterprise/audit/recent?timeRange=${selectedTimeRange}&limit=20`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    });
 
-  const renderAlertsList = () => (
-    <Card>
-      <CardHeader
-        title="アラート"
-        action={
-          <Badge badgeContent={alerts.filter(a => !a.acknowledged).length} color="error">
-            <NotificationsIcon />
-          </Badge>
+    if (!response.ok) {
+      throw new Error('監査アクティビティ取得失敗');
+    }
+
+    const data = await response.json();
+    return data.activities;
+  };
+
+  /**
+   * 組織単位取得
+   */
+  const fetchOrganizationUnits = async (): Promise<OrganizationUnit[]> => {
+    const response = await fetch('/api/enterprise/organization/units', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('組織単位取得失敗');
+    }
+
+    const data = await response.json();
+    return data.organizationUnits;
+  };
+
+  /**
+   * 適用ポリシー取得
+   */
+  const fetchAppliedPolicies = async (): Promise<GroupPolicy[]> => {
+    const response = await fetch('/api/enterprise/policies/applied', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('適用ポリシー取得失敗');
+    }
+
+    const data = await response.json();
+    return data.policies;
+  };
+
+  /**
+   * セキュリティアラート解決
+   */
+  const resolveSecurityAlert = async (alertId: string): Promise<void> => {
+    try {
+      const response = await fetch(`/api/enterprise/security/alerts/${alertId}/resolve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
-      />
-      <CardContent>
-        {alerts.length === 0 ? (
-          <Alert severity="success">
-            現在アラートはありません
-          </Alert>
-        ) : (
-          <List>
-            {alerts.slice(0, 5).map((alert) => (
-              <ListItem key={alert.id} sx={{ mb: 1 }}>
-                <ListItemIcon>
-                  <Badge
-                    color={getSeverityColor(alert.severity) as any}
-                    variant="dot"
-                    invisible={alert.acknowledged}
-                  >
-                    {getTypeIcon(alert.type)}
-                  </Badge>
-                </ListItemIcon>
-                <ListItemText
-                  primary={alert.title}
-                  secondary={
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {alert.message}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {alert.timestamp.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  }
-                />
-                {!alert.acknowledged && (
-                  <Button
-                    size="small"
-                    onClick={() => acknowledgeAlert(alert.id)}
-                  >
-                    確認
-                  </Button>
-                )}
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </CardContent>
-    </Card>
-  );
+      });
 
-  const renderPerformanceChart = () => (
-    <Card>
-      <CardHeader title="パフォーマンス監視" />
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={performanceData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis yAxisId="left" />
-            <YAxis yAxisId="right" orientation="right" />
-            <ChartTooltip />
-            <Legend />
-            <Line yAxisId="left" type="monotone" dataKey="responseTime" stroke="#8884d8" name="応答時間 (ms)" />
-            <Line yAxisId="right" type="monotone" dataKey="throughput" stroke="#82ca9d" name="スループット (req/s)" />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
+      if (!response.ok) {
+        throw new Error('アラート解決失敗');
+      }
 
-  const renderSecurityChart = () => (
-    <Card>
-      <CardHeader title="セキュリティ監視" />
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={securityData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <ChartTooltip />
-            <Legend />
-            <Bar dataKey="events" fill="#8884d8" name="総イベント数" />
-            <Bar dataKey="highRisk" fill="#ff8042" name="高リスクイベント" />
-            <Bar dataKey="failed" fill="#ff6b6b" name="認証失敗" />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
+      // アラートリストを更新
+      setSecurityAlerts(prev => 
+        prev.map(alert => 
+          alert.id === alertId 
+            ? { ...alert, status: 'resolved' }
+            : alert
+        )
+      );
 
-  const renderResourceChart = () => (
-    <Card>
-      <CardHeader title="リソース使用状況" />
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={resourceData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <ChartTooltip />
-            <Legend />
-            <Bar dataKey="used" fill="#8884d8" name="使用量" />
-            <Bar dataKey="total" fill="#82ca9d" name="総容量" />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
+      await logAuditEvent('settings_change', {
+        resource: 'security_alert',
+        action: 'resolve',
+        alertId
+      });
 
-  const renderTenantChart = () => (
-    <Card>
-      <CardHeader title="テナント状態分布" />
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={tenantData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, value }) => `${name}: ${value}`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {tenantData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <ChartTooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
+    } catch (error) {
+      console.error('アラート解決エラー:', error);
+    }
+  };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  // 計算されたメトリクス
+  const calculatedMetrics = useMemo(() => {
+    if (!metrics || !complianceStatus) return null;
 
-  if (!metrics) {
-    return <ErrorAlert message="メトリクスデータが利用できません" />;
+    return {
+      healthScore: Math.round((metrics.complianceScore + (100 - metrics.riskScore)) / 2),
+      criticalAlerts: securityAlerts.filter(a => a.severity === 'critical' && a.status === 'open').length,
+      highRiskAudits: recentAuditActivity.filter(a => a.riskScore > 70).length,
+      complianceGap: 100 - metrics.complianceScore
+    };
+  }, [metrics, complianceStatus, securityAlerts, recentAuditActivity]);
+
+  // アラート重要度別カウント
+  const alertsBySeverity = useMemo(() => {
+    return securityAlerts
+      .filter(alert => alert.status === 'open')
+      .reduce((acc, alert) => {
+        acc[alert.severity] = (acc[alert.severity] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+  }, [securityAlerts]);
+
+  // コンプライアンス状況サマリー
+  const complianceSummary = useMemo(() => {
+    if (!complianceStatus) return null;
+
+    const compliantFrameworks = complianceStatus.frameworks.filter(f => f.status === 'compliant').length;
+    const totalFrameworks = complianceStatus.frameworks.length;
+    const compliancePercentage = totalFrameworks > 0 ? (compliantFrameworks / totalFrameworks) * 100 : 100;
+
+    return {
+      compliantFrameworks,
+      totalFrameworks,
+      compliancePercentage,
+      criticalViolations: complianceStatus.violations.filter(v => v.severity === 'critical').length
+    };
+  }, [complianceStatus]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <DashboardIcon color="primary" />
-          エンタープライズ・ダッシュボード
-        </Typography>
-        
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <FormControl size="small">
-            <InputLabel>時間範囲</InputLabel>
-            <Select
-              value={selectedTimeRange}
-              onChange={(e) => setSelectedTimeRange(e.target.value)}
-            >
-              <MenuItem value="1h">1時間</MenuItem>
-              <MenuItem value="24h">24時間</MenuItem>
-              <MenuItem value="7d">7日間</MenuItem>
-              <MenuItem value="30d">30日間</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-              />
-            }
-            label="自動更新"
-          />
-          
-          <Button
-            variant="outlined"
-            onClick={loadDashboardData}
-            startIcon={<RefreshIcon />}
+    <div className="p-6 space-y-6">
+      {/* ヘッダー */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">エンタープライズダッシュボード</h1>
+          <p className="text-gray-600 mt-1">
+            {account?.name} - {user?.department || '全体管理'}
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          {/* 時間範囲選択 */}
+          <select
+            value={selectedTimeRange}
+            onChange={(e) => setSelectedTimeRange(e.target.value as '24h' | '7d' | '30d')}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
           >
+            <option value="24h">過去24時間</option>
+            <option value="7d">過去7日間</option>
+            <option value="30d">過去30日間</option>
+          </select>
+
+          {/* リフレッシュボタン */}
+          <Button onClick={loadDashboardData} variant="outline">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
             更新
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
-        エンタープライズ環境の包括的監視・管理ダッシュボード
-      </Typography>
+      {/* メトリクス概要 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">システム健全性</p>
+              <p className="text-3xl font-bold text-green-600">
+                {calculatedMetrics?.healthScore || 0}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </Card>
 
-      {/* エラー表示 */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 4 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">アクティブユーザー</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {metrics?.activeUsers || 0}
+              </p>
+              <p className="text-xs text-gray-500">
+                / {metrics?.totalUsers || 0} 総ユーザー
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            </div>
+          </div>
+        </Card>
 
-      {/* 主要メトリクス */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={2}>
-          {renderMetricCard('総テナント数', metrics.tenants.total, <BusinessIcon />, 'primary')}
-        </Grid>
-        <Grid item xs={12} md={2}>
-          {renderMetricCard('アクティブユーザー', metrics.users.active, <PeopleIcon />, 'success')}
-        </Grid>
-        <Grid item xs={12} md={2}>
-          {renderMetricCard('高リスクイベント', metrics.security.highRiskEvents, <SecurityIcon />, 'error')}
-        </Grid>
-        <Grid item xs={12} md={2}>
-          {renderMetricCard('稼働率', `${metrics.performance.uptime}%`, <MonitorIcon />, 'info')}
-        </Grid>
-        <Grid item xs={12} md={2}>
-          {renderMetricCard('実行中ジョブ', metrics.jobs.running, <AssessmentIcon />, 'warning')}
-        </Grid>
-        <Grid item xs={12} md={2}>
-          {renderMetricCard('総ドメイン数', metrics.resources.totalDomains, <DomainIcon />, 'primary')}
-        </Grid>
-      </Grid>
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">コンプライアンス</p>
+              <p className="text-3xl font-bold text-purple-600">
+                {Math.round(complianceSummary?.compliancePercentage || 0)}%
+              </p>
+              <p className="text-xs text-gray-500">
+                {complianceSummary?.compliantFrameworks || 0} / {complianceSummary?.totalFrameworks || 0} フレームワーク
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+          </div>
+        </Card>
 
-      {/* サブメトリクス */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <SecurityIcon sx={{ mr: 1 }} />
-                セキュリティ概況
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  平均リスクスコア
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={metrics.security.averageRiskScore}
-                  color={metrics.security.averageRiskScore > 50 ? 'error' : 'success'}
-                  sx={{ mt: 1 }}
-                />
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {metrics.security.averageRiskScore}
-                </Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  認証失敗数
-                </Typography>
-                <Typography variant="h6" color="error">
-                  {metrics.security.failedAttempts}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  ポリシー違反
-                </Typography>
-                <Typography variant="h6" color="warning.main">
-                  {metrics.security.policyViolations}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">セキュリティアラート</p>
+              <p className="text-3xl font-bold text-red-600">
+                {calculatedMetrics?.criticalAlerts || 0}
+              </p>
+              <p className="text-xs text-gray-500">
+                クリティカル / {securityAlerts.filter(a => a.status === 'open').length} 総アラート
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.732 19.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+          </div>
+        </Card>
+      </div>
 
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <SpeedIcon sx={{ mr: 1 }} />
-                パフォーマンス
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  平均応答時間
-                </Typography>
-                <Typography variant="h6" color="primary">
-                  {metrics.performance.avgResponseTime}ms
-                </Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  スループット
-                </Typography>
-                <Typography variant="h6" color="success.main">
-                  {metrics.performance.throughput} req/s
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  エラー率
-                </Typography>
-                <Typography variant="h6" color={metrics.performance.errorRate > 1 ? 'error' : 'success'}>
-                  {metrics.performance.errorRate}%
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* メインコンテンツ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* セキュリティアラート */}
+        <Card className="lg:col-span-2">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">セキュリティアラート</h3>
+              {hasPermission('integrations', 'manage') && (
+                <Button variant="outline" size="sm">
+                  すべて表示
+                </Button>
+              )}
+            </div>
 
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <StorageIcon sx={{ mr: 1 }} />
-                リソース使用量
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  ストレージ使用率
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={metrics.resources.storageUsage}
-                  color={metrics.resources.storageUsage > 80 ? 'error' : 'primary'}
-                  sx={{ mt: 1 }}
-                />
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {metrics.resources.storageUsage}%
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  コンピュート使用率
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={metrics.resources.computeUsage}
-                  color={metrics.resources.computeUsage > 80 ? 'error' : 'primary'}
-                  sx={{ mt: 1 }}
-                />
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {metrics.resources.computeUsage}%
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+            <div className="space-y-4">
+              {securityAlerts.slice(0, 5).map((alert) => (
+                <div key={alert.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                  <div className={`w-3 h-3 rounded-full ${
+                    alert.severity === 'critical' ? 'bg-red-500' :
+                    alert.severity === 'high' ? 'bg-orange-500' :
+                    alert.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                  }`} />
+                  
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{alert.title}</h4>
+                    <p className="text-sm text-gray-600">{alert.description}</p>
+                    <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                      <span>{alert.source}</span>
+                      <span>{new Date(alert.timestamp).toLocaleString('ja-JP')}</span>
+                      <span>{alert.affected.length} 件影響</span>
+                    </div>
+                  </div>
 
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <PeopleIcon sx={{ mr: 1 }} />
-                ユーザー統計
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  MFA有効率
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={(metrics.users.mfaEnabled / metrics.users.total) * 100}
-                  color="success"
-                  sx={{ mt: 1 }}
-                />
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {Math.round((metrics.users.mfaEnabled / metrics.users.total) * 100)}%
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  最近のログイン
-                </Typography>
-                <Typography variant="h6" color="info.main">
-                  {metrics.users.recentLogins}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+                  {alert.status === 'open' && hasPermission('integrations', 'manage') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => resolveSecurityAlert(alert.id)}
+                    >
+                      解決
+                    </Button>
+                  )}
+                </div>
+              ))}
 
-      {/* チャートとアラート */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={8}>
-          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-            <Tab icon={<TimelineIcon />} label="パフォーマンス" />
-            <Tab icon={<SecurityIcon />} label="セキュリティ" />
-            <Tab icon={<StorageIcon />} label="リソース" />
-            <Tab icon={<BusinessIcon />} label="テナント" />
-          </Tabs>
-          
-          <Box sx={{ mt: 2 }}>
-            {activeTab === 0 && renderPerformanceChart()}
-            {activeTab === 1 && renderSecurityChart()}
-            {activeTab === 2 && renderResourceChart()}
-            {activeTab === 3 && renderTenantChart()}
-          </Box>
-        </Grid>
+              {securityAlerts.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  現在、セキュリティアラートはありません
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
 
-        <Grid item xs={12} md={4}>
-          {renderAlertsList()}
-        </Grid>
-      </Grid>
+        {/* コンプライアンス状況 */}
+        <Card>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">コンプライアンス状況</h3>
+            
+            {complianceStatus && (
+              <div className="space-y-4">
+                {complianceStatus.frameworks.map((framework) => (
+                  <div key={framework.framework} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">
+                        {framework.framework.toUpperCase()}
+                      </span>
+                      <span className={`text-sm font-medium ${
+                        framework.status === 'compliant' ? 'text-green-600' :
+                        framework.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {Math.round(framework.score)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          framework.status === 'compliant' ? 'bg-green-500' :
+                          framework.status === 'partial' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${framework.score}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
 
-      {/* 詳細統計 */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="ジョブ実行統計" />
-            <CardContent>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>ステータス</TableCell>
-                      <TableCell align="right">件数</TableCell>
-                      <TableCell align="right">割合</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>
-                        <Chip label="完了" color="success" size="small" />
-                      </TableCell>
-                      <TableCell align="right">{metrics.jobs.completed}</TableCell>
-                      <TableCell align="right">
-                        {Math.round((metrics.jobs.completed / metrics.jobs.total) * 100)}%
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <Chip label="実行中" color="primary" size="small" />
-                      </TableCell>
-                      <TableCell align="right">{metrics.jobs.running}</TableCell>
-                      <TableCell align="right">
-                        {Math.round((metrics.jobs.running / metrics.jobs.total) * 100)}%
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <Chip label="失敗" color="error" size="small" />
-                      </TableCell>
-                      <TableCell align="right">{metrics.jobs.failed}</TableCell>
-                      <TableCell align="right">
-                        {Math.round((metrics.jobs.failed / metrics.jobs.total) * 100)}%
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+                {complianceStatus.violations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      要対応違反 ({complianceStatus.violations.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {complianceStatus.violations.slice(0, 3).map((violation) => (
+                        <div key={violation.id} className="text-xs text-red-600">
+                          • {violation.description}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
 
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="システム稼働状況" />
-            <CardContent>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">DNS解決サービス</Typography>
-                  <Chip label="稼働中" color="success" size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">セキュリティ監視</Typography>
-                  <Chip label="稼働中" color="success" size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">AI最適化エンジン</Typography>
-                  <Chip label="稼働中" color="success" size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">バックアップシステム</Typography>
-                  <Chip label="稼働中" color="success" size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">オーケストレーション</Typography>
-                  <Chip label="稼働中" color="success" size="small" />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Container>
+      {/* 監査アクティビティ */}
+      <Card>
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">最近の監査アクティビティ</h3>
+            {hasPermission('history', 'read') && (
+              <Button variant="outline" size="sm">
+                詳細ログ
+              </Button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    時刻
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ユーザー
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    イベント
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    リソース
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    結果
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    リスク
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {recentAuditActivity.slice(0, 10).map((activity) => (
+                  <tr key={activity.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(activity.timestamp).toLocaleString('ja-JP')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{activity.user.name}</div>
+                      {activity.user.department && (
+                        <div className="text-xs text-gray-500">{activity.user.department}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {activity.event}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {activity.resource}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        activity.result === 'success' ? 'bg-green-100 text-green-800' :
+                        activity.result === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {activity.result}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                          <div 
+                            className={`h-2 rounded-full ${
+                              activity.riskScore > 70 ? 'bg-red-500' :
+                              activity.riskScore > 40 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${activity.riskScore}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-600">{activity.riskScore}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {recentAuditActivity.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              監査アクティビティがありません
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 };
 
