@@ -34,10 +34,11 @@ jobs:
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-    - name: CodeQLセットアップ
-      uses: github/codeql-action/init@v3
-      with:
-        languages: javascript, typescript
+    # CodeQLはdefault setupで処理されるため、手動設定を無効化
+    # - name: CodeQLセットアップ
+    #   uses: github/codeql-action/init@v3
+    #   with:
+    #     languages: javascript, typescript
 
-    - name: CodeQL分析実行
-      uses: github/codeql-action/analyze@v3
+    # - name: CodeQL分析実行
+    #   uses: github/codeql-action/analyze@v3
