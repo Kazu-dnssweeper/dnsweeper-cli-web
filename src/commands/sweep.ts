@@ -48,7 +48,7 @@ type DomainSource = {
  */
 export function createSweepCommand(): Command {
   const sweep = new Command('sweep')
-    .alias('scan')
+    .alias('sw')
     .description('複数ドメインの一括DNS解決とスキャン')
     .argument('[domains...]', 'スキャンするドメインのリスト')
     .option('-f, --file <file>', 'ドメインリストファイル（1行1ドメイン）')
