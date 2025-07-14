@@ -5,7 +5,7 @@ export class DnsSweeperError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly details?: Record<string, any>
+    public readonly details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'DnsSweeperError';
@@ -35,7 +35,7 @@ export class DnsSweeperError extends Error {
  * DNS解決関連のエラー
  */
 export class DnsResolutionError extends DnsSweeperError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'DNS_RESOLUTION_ERROR', details);
     this.name = 'DnsResolutionError';
   }
@@ -45,7 +45,7 @@ export class DnsResolutionError extends DnsSweeperError {
  * CSV処理関連のエラー
  */
 export class CsvProcessingError extends DnsSweeperError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'CSV_PROCESSING_ERROR', details);
     this.name = 'CsvProcessingError';
   }
@@ -55,7 +55,7 @@ export class CsvProcessingError extends DnsSweeperError {
  * 設定関連のエラー
  */
 export class ConfigurationError extends DnsSweeperError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'CONFIGURATION_ERROR', details);
     this.name = 'ConfigurationError';
   }
@@ -65,7 +65,7 @@ export class ConfigurationError extends DnsSweeperError {
  * 検証エラー
  */
 export class ValidationError extends DnsSweeperError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'VALIDATION_ERROR', details);
     this.name = 'ValidationError';
   }
@@ -78,7 +78,7 @@ export class ApiError extends DnsSweeperError {
   constructor(
     message: string,
     public readonly statusCode?: number,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(message, 'API_ERROR', details);
     this.name = 'ApiError';
@@ -89,7 +89,7 @@ export class ApiError extends DnsSweeperError {
  * ファイル操作関連のエラー
  */
 export class FileOperationError extends DnsSweeperError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'FILE_OPERATION_ERROR', details);
     this.name = 'FileOperationError';
   }
@@ -99,7 +99,7 @@ export class FileOperationError extends DnsSweeperError {
  * タイムアウトエラー
  */
 export class TimeoutError extends DnsSweeperError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, 'TIMEOUT_ERROR', details);
     this.name = 'TimeoutError';
   }
@@ -115,7 +115,7 @@ export class ErrorHandler {
   static wrap(
     error: unknown,
     context: string,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ): DnsSweeperError {
     if (error instanceof DnsSweeperError) {
       // 既存のDnsSweeperErrorの場合は詳細を追加

@@ -219,7 +219,7 @@ function validateOptions(options: ILookupOptions): void {
  * DNS解決結果をIDNSRecord形式に変換
  */
 function convertToIDNSRecords(
-  lookupResult: any,
+  lookupResult: { records: unknown[] },
   domain: string,
   recordType: DNSRecordType
 ): IDNSRecord[] {
@@ -229,7 +229,7 @@ function convertToIDNSRecords(
 
   const now = new Date();
 
-  return lookupResult.records.map((record: any, index: number): IDNSRecord => {
+  return lookupResult.records.map((record: unknown, index: number): IDNSRecord => {
     let value: string;
     let priority: number | undefined;
     let weight: number | undefined;
@@ -415,7 +415,7 @@ async function outputResults(
   logger: Logger
 ): Promise<void> {
   const formatter = createFormatter({
-    format: format as any,
+    format: format as OutputFormat,
     colors: options.colors !== false,
     verbose: options.verbose || false,
     compact: format === 'json' && !options.verbose,

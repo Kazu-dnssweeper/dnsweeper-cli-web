@@ -40,7 +40,7 @@ export interface LogEntry {
   level: LogLevel;
   levelName: string;
   message: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   context?: string;
   correlationId?: string;
   duration?: number;
@@ -246,7 +246,7 @@ export class FileTransport extends LogTransport {
  */
 export class StructuredLogger {
   private transports: LogTransport[] = [];
-  private defaultMeta: Record<string, any> = {};
+  private defaultMeta: Record<string, unknown> = {};
   private contextStack: string[] = [];
 
   constructor(transports: LogTransport[] = []) {
@@ -263,7 +263,7 @@ export class StructuredLogger {
   /**
    * デフォルトメタデータを設定
    */
-  setDefaultMeta(meta: Record<string, any>): void {
+  setDefaultMeta(meta: Record<string, unknown>): void {
     this.defaultMeta = { ...this.defaultMeta, ...meta };
   }
 
@@ -296,7 +296,7 @@ export class StructuredLogger {
   log(
     level: LogLevel,
     message: string,
-    meta?: Record<string, any>,
+    meta?: Record<string, unknown>,
     options?: {
       context?: string;
       correlationId?: string;
@@ -341,49 +341,49 @@ export class StructuredLogger {
   /**
    * エラーログ
    */
-  error(message: string, meta?: Record<string, any>, error?: Error): void {
+  error(message: string, meta?: Record<string, unknown>, error?: Error): void {
     this.log(LogLevel.ERROR, message, meta, { error });
   }
 
   /**
    * 警告ログ
    */
-  warn(message: string, meta?: Record<string, any>): void {
+  warn(message: string, meta?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, message, meta);
   }
 
   /**
    * 情報ログ
    */
-  info(message: string, meta?: Record<string, any>): void {
+  info(message: string, meta?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, message, meta);
   }
 
   /**
    * HTTPログ
    */
-  http(message: string, meta?: Record<string, any>): void {
+  http(message: string, meta?: Record<string, unknown>): void {
     this.log(LogLevel.HTTP, message, meta);
   }
 
   /**
    * 詳細ログ
    */
-  verbose(message: string, meta?: Record<string, any>): void {
+  verbose(message: string, meta?: Record<string, unknown>): void {
     this.log(LogLevel.VERBOSE, message, meta);
   }
 
   /**
    * デバッグログ
    */
-  debug(message: string, meta?: Record<string, any>): void {
+  debug(message: string, meta?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, message, meta);
   }
 
   /**
    * 詳細デバッグログ
    */
-  silly(message: string, meta?: Record<string, any>): void {
+  silly(message: string, meta?: Record<string, unknown>): void {
     this.log(LogLevel.SILLY, message, meta);
   }
 
@@ -429,7 +429,7 @@ export class StructuredLogger {
   /**
    * 子ロガーを作成
    */
-  child(meta: Record<string, any>, context?: string): StructuredLogger {
+  child(meta: Record<string, unknown>, context?: string): StructuredLogger {
     const childLogger = new StructuredLogger(this.transports);
     childLogger.setDefaultMeta({ ...this.defaultMeta, ...meta });
 
@@ -478,7 +478,7 @@ export function createLogger(
     level?: LogLevel | string;
     console?: boolean;
     file?: string;
-    meta?: Record<string, any>;
+    meta?: Record<string, unknown>;
   } = {}
 ): StructuredLogger {
   const level =
@@ -556,7 +556,7 @@ export function logMethod(
   includeResult: boolean = false
 ) {
   return function (
-    target: any,
+    target: unknown,
     propertyName: string,
     descriptor: PropertyDescriptor
   ) {
@@ -565,12 +565,12 @@ export function logMethod(
     }
     const method = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       const logger = getLogger();
       const className = target.constructor.name;
       const methodName = `${className}.${propertyName}`;
 
-      const meta: Record<string, any> = {};
+      const meta: Record<string, unknown> = {};
       if (includeArgs) {
         meta.args = args;
       }

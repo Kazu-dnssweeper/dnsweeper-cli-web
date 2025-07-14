@@ -50,33 +50,33 @@ export class Logger {
     }
   }
 
-  info(message: string, meta?: Record<string, any>): void {
+  info(message: string, meta?: Record<string, unknown>): void {
     if (!this.quiet) {
       console.log(colorize.info('ℹ'), message);
     }
     this.structuredLogger.info(message, meta);
   }
 
-  success(message: string, meta?: Record<string, any>): void {
+  success(message: string, meta?: Record<string, unknown>): void {
     if (!this.quiet) {
       console.log(colorize.success('✓'), message);
     }
     this.structuredLogger.info(`SUCCESS: ${message}`, meta);
   }
 
-  error(message: string, error?: Error, meta?: Record<string, any>): void {
+  error(message: string, error?: Error, meta?: Record<string, unknown>): void {
     console.error(colorize.error('✗'), message);
     this.structuredLogger.error(message, meta, error);
   }
 
-  warn(message: string, meta?: Record<string, any>): void {
+  warn(message: string, meta?: Record<string, unknown>): void {
     if (!this.quiet) {
       console.warn(colorize.warning('⚠'), message);
     }
     this.structuredLogger.warn(message, meta);
   }
 
-  debug(message: string, meta?: Record<string, any>): void {
+  debug(message: string, meta?: Record<string, unknown>): void {
     if (this.verbose && !this.quiet) {
       console.log(colors.muted('[DEBUG]'), message);
     }
@@ -86,7 +86,7 @@ export class Logger {
   startSpinner(
     text: string,
     type: SpinnerType = 'processing',
-    meta?: Record<string, any>
+    meta?: Record<string, unknown>
   ): void {
     if (!this.quiet) {
       const progress = new ProgressDisplay().start(text, type);
@@ -98,7 +98,7 @@ export class Logger {
   stopSpinner(
     success: boolean = true,
     text?: string,
-    meta?: Record<string, any>
+    meta?: Record<string, unknown>
   ): void {
     if (this.spinner) {
       if (success) {
@@ -118,7 +118,7 @@ export class Logger {
     }
   }
 
-  table(data: unknown[], meta?: Record<string, any>): void {
+  table(data: unknown[], meta?: Record<string, unknown>): void {
     if (!this.quiet) {
       console.table(data);
     }
@@ -128,7 +128,7 @@ export class Logger {
     });
   }
 
-  json(data: unknown, meta?: Record<string, any>): void {
+  json(data: unknown, meta?: Record<string, unknown>): void {
     console.log(JSON.stringify(data, null, 2));
     this.structuredLogger.info('JSON_OUTPUT', { ...meta, jsonData: data });
   }
@@ -143,7 +143,7 @@ export class Logger {
     url: string,
     statusCode?: number,
     duration?: number,
-    meta?: Record<string, any>
+    meta?: Record<string, unknown>
   ): void {
     const message = `${method} ${url}${statusCode ? ` ${statusCode}` : ''}${duration ? ` ${duration}ms` : ''}`;
 
@@ -167,7 +167,7 @@ export class Logger {
   async profile<T>(
     label: string,
     fn: () => Promise<T> | T,
-    meta?: Record<string, any>
+    meta?: Record<string, unknown>
   ): Promise<T> {
     const start = Date.now();
     this.debug(`Starting: ${label}`, meta);
@@ -194,7 +194,7 @@ export class Logger {
   /**
    * タイマー開始
    */
-  startTimer(label: string, meta?: Record<string, any>): () => void {
+  startTimer(label: string, meta?: Record<string, unknown>): () => void {
     const start = Date.now();
     this.debug(`Timer started: ${label}`, meta);
 
@@ -210,7 +210,7 @@ export class Logger {
   /**
    * 子ロガーを作成
    */
-  child(meta: Record<string, any>, context?: string): Logger {
+  child(meta: Record<string, unknown>, context?: string): Logger {
     const childLogger = new Logger({
       verbose: this.verbose,
       quiet: this.quiet,
@@ -256,7 +256,7 @@ export class Logger {
   /**
    * 重要なイベントをログ（常に出力）
    */
-  critical(message: string, meta?: Record<string, any>, error?: Error): void {
+  critical(message: string, meta?: Record<string, unknown>, error?: Error): void {
     console.error(chalk.red.bold('🚨 CRITICAL'), message);
     this.structuredLogger.error(`CRITICAL: ${message}`, meta, error);
   }
@@ -264,7 +264,7 @@ export class Logger {
   /**
    * セキュリティ関連のログ
    */
-  security(message: string, meta?: Record<string, any>): void {
+  security(message: string, meta?: Record<string, unknown>): void {
     if (!this.quiet) {
       console.log(chalk.magenta('🔒 SECURITY'), message);
     }
@@ -281,7 +281,7 @@ export class Logger {
     message: string,
     duration: number,
     threshold: number = 1000,
-    meta?: Record<string, any>
+    meta?: Record<string, unknown>
   ): void {
     const isWarning = duration > threshold;
     const color = isWarning ? chalk.yellow : chalk.green;
@@ -308,7 +308,7 @@ export class Logger {
   /**
    * ビジネスロジック関連のログ
    */
-  business(message: string, meta?: Record<string, any>): void {
+  business(message: string, meta?: Record<string, unknown>): void {
     if (!this.quiet) {
       console.log(chalk.blue('📊 BUSINESS'), message);
     }

@@ -61,7 +61,7 @@ interface TableColumn {
   header: string;
   width: number;
   align: 'left' | 'center' | 'right';
-  format?: (value: any) => string;
+  format?: (value: unknown) => string;
 }
 
 /**
