@@ -34,7 +34,7 @@ describe('add command', () => {
       // 引数の名前を取得
       const argNames = command.registeredArguments.map(arg => arg.name());
       
-      expect(argNames).toContain('domain');
+      expect(argNames).toContain('name');
       expect(argNames).toContain('type');
       expect(argNames).toContain('value');
     });

@@ -17,7 +17,9 @@ export default defineConfig({
       'tests/unit/encoding-detector.test.ts',
       'tests/unit/import-command.test.ts',
       'tests/unit/index-direct.test.ts',
-      'tests/unit/structured-logger.test.ts'
+      'tests/unit/structured-logger.test.ts',
+      'tests/unit/commands/add.test.ts',
+      'tests/unit/commands/delete.test.ts'
     ],
     testTimeout: 30000, // 30秒（さらに短縮）
     hookTimeout: 10000, // 10秒

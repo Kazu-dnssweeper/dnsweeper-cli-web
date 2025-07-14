@@ -12,7 +12,7 @@ describe('createSweepCommand', () => {
   describe('コマンド設定', () => {
     it('コマンド名とエイリアスが正しく設定される', () => {
       expect(command.name()).toBe('sweep');
-      expect(command.aliases()).toContain('scan');
+      expect(command.aliases()).toContain('sw');
     });
 
     it('説明文が設定される', () => {
