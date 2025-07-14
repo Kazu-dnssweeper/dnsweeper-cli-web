@@ -14,7 +14,7 @@ import type { ICSVRecord } from '../../src/types/index.js';
 
 // fetch をモック
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.stubGlobal('fetch', mockFetch);
 
 describe('CloudflareClient', () => {
   let client: CloudflareClient;
@@ -28,8 +28,14 @@ describe('CloudflareClient', () => {
     };
     client = new CloudflareClient(config);
     
-    // fetch をリセット
+    // fetch をリセットして初期化
     mockFetch.mockReset();
+    mockFetch.mockImplementation(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: vi.fn().mockResolvedValue({ success: true, result: {} })
+    }));
   });
 
   afterEach(() => {

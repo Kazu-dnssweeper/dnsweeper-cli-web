@@ -179,14 +179,28 @@ export class CloudflareClient {
   convertCSVToCloudflareRecords(
     csvRecords: ICSVRecord[]
   ): CloudflareDNSRecord[] {
-    return csvRecords.map(csvRecord => ({
-      name: csvRecord.domain,
-      type: csvRecord.type,
-      content: csvRecord.value,
-      ttl: csvRecord.ttl || 1, // CloudflareのTTL 1 = automatic
-      priority: csvRecord.priority,
-      proxied: false, // デフォルトはプロキシ無効
-    }));
+    return csvRecords.map(csvRecord => {
+      let content = csvRecord.value;
+      
+      // MXレコードの場合、priorityをcontentに含める
+      if (csvRecord.type === 'MX' && csvRecord.priority !== undefined) {
+        content = `${csvRecord.priority} ${csvRecord.value}`;
+      }
+      
+      // SRVレコードの場合、priority/weight/portをcontentに含める
+      if (csvRecord.type === 'SRV' && csvRecord.priority !== undefined && csvRecord.weight !== undefined && csvRecord.port !== undefined) {
+        content = `${csvRecord.priority} ${csvRecord.weight} ${csvRecord.port} ${csvRecord.value}`;
+      }
+      
+      return {
+        name: csvRecord.domain,
+        type: csvRecord.type,
+        content,
+        ttl: csvRecord.ttl || 1, // CloudflareのTTL 1 = automatic
+        priority: csvRecord.priority,
+        proxied: false, // デフォルトはプロキシ無効
+      };
+    });
   }
 
   /**
@@ -195,15 +209,46 @@ export class CloudflareClient {
   convertCloudflareToCSVRecords(
     cfRecords: CloudflareDNSRecord[]
   ): ICSVRecord[] {
-    return cfRecords.map(cfRecord => ({
-      domain: cfRecord.name,
-      type: cfRecord.type,
-      value: cfRecord.content,
-      ttl: cfRecord.ttl === 1 ? 0 : cfRecord.ttl || 300,
-      priority: cfRecord.priority,
-      weight: undefined,
-      port: undefined,
-    }));
+    return cfRecords.map(cfRecord => {
+      let value = cfRecord.content;
+      let priority = cfRecord.priority;
+      
+      // MXレコードの場合、contentから優先度を抽出
+      if (cfRecord.type === 'MX') {
+        const match = cfRecord.content.match(/^(\d+)\s+(.+)$/);
+        if (match) {
+          priority = parseInt(match[1], 10);
+          value = match[2];
+        }
+      }
+      
+      // SRVレコードの場合、contentからweight/port/target情報を抽出
+      if (cfRecord.type === 'SRV') {
+        const match = cfRecord.content.match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/);
+        if (match) {
+          priority = parseInt(match[1], 10);
+          return {
+            domain: cfRecord.name,
+            type: cfRecord.type,
+            value: match[4], // target
+            ttl: cfRecord.proxied ? 1 : (cfRecord.ttl || 300),
+            priority,
+            weight: parseInt(match[2], 10),
+            port: parseInt(match[3], 10),
+          };
+        }
+      }
+      
+      return {
+        domain: cfRecord.name,
+        type: cfRecord.type,
+        value,
+        ttl: cfRecord.proxied ? 1 : (cfRecord.ttl || 300),
+        priority,
+        weight: undefined,
+        port: undefined,
+      };
+    });
   }
 
   /**
@@ -234,5 +279,58 @@ export class CloudflareClient {
       file: zoneFile,
     });
     return response.result;
+  }
+
+  /**
+   * CSVレコードをインポート
+   */
+  async importRecords(
+    zoneId: string,
+    records: ICSVRecord[]
+  ): Promise<{ success: boolean; created: number; failed: number; errors: any[] }> {
+    const results = {
+      success: true,
+      created: 0,
+      failed: 0,
+      errors: [] as any[]
+    };
+
+    const cloudflareRecords = this.convertCSVToCloudflareRecords(records, zoneId);
+
+    for (const record of cloudflareRecords) {
+      try {
+        await this.createDNSRecord(zoneId, record);
+        results.created++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push(error);
+        results.success = false;
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * レコードをエクスポート
+   */
+  async exportRecords(
+    zoneId: string,
+    options?: { type?: string; name?: string }
+  ): Promise<{ success: boolean; records: ICSVRecord[] }> {
+    try {
+      const records = await this.listDNSRecords(zoneId, options);
+      const csvRecords = this.convertCloudflareToCSVRecords(records.data || []);
+      
+      return {
+        success: true,
+        records: csvRecords
+      };
+    } catch (error) {
+      return {
+        success: false,
+        records: []
+      };
+    }
   }
 }

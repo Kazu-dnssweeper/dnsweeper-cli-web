@@ -10,6 +10,9 @@ vi.mock('../../src/commands/index.js', () => ({
   createDeleteCommand: vi.fn(() => new Command('delete')),
   createImportCommand: vi.fn(() => new Command('import')),
   createAnalyzeCommand: vi.fn(() => new Command('analyze')),
+  createLookupCommand: vi.fn(() => new Command('lookup')),
+  createSweepCommand: vi.fn(() => new Command('sweep')),
+  createValidateCommand: vi.fn(() => new Command('validate')),
 }));
 
 vi.mock('../lib/logger.js', () => ({

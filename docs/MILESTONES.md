@@ -42,7 +42,7 @@
 - [x] .npmignore 設定（不要ファイル除外） ✅ **2025年7月14日完了**
 - [x] LICENSE ファイル作成（MIT）
 - [x] SECURITY.md セキュリティポリシー作成 ✅ **2025年7月14日完了**
-- [ ] CODE_OF_CONDUCT.md 作成
+- [x] CODE_OF_CONDUCT.md 作成 ✅ **2025年7月14日完了**
 
 ### **基本CLI構造実装（7月第4週）**
 - [x] Commander.js v11.x 導入・設定
@@ -164,17 +164,17 @@
 - [x] analyze コマンド引数解析実装
 - [x] analyze コマンドオプション実装
 - [x] analyze コマンド実行ロジック
-- [ ] `dnsweeper lookup <domain>` コマンド設計
-- [ ] lookup コマンド複数ドメイン対応
-- [ ] lookup コマンドレコードタイプ指定
-- [ ] lookup コマンド出力フォーマット選択
-- [ ] `dnsweeper sweep <domains...>` コマンド設計
-- [ ] sweep コマンド一括処理実装
-- [ ] sweep コマンド並列処理対応
-- [ ] sweep コマンド結果集約機能
-- [ ] `dnsweeper validate <csvfile>` コマンド実装
-- [ ] validate コマンドCSV検証機能
-- [ ] validate コマンドスキーマ検証
+- [x] `dnsweeper lookup <domain>` コマンド設計 ✅ **実装済み**
+- [x] lookup コマンド複数ドメイン対応 ✅ **実装済み**
+- [x] lookup コマンドレコードタイプ指定 ✅ **実装済み**
+- [x] lookup コマンド出力フォーマット選択 ✅ **実装済み**
+- [x] `dnsweeper sweep <domains...>` コマンド設計 ✅ **実装済み**
+- [x] sweep コマンド一括処理実装 ✅ **実装済み**
+- [x] sweep コマンド並列処理対応 ✅ **実装済み**
+- [x] sweep コマンド結果集約機能 ✅ **実装済み**
+- [x] `dnsweeper validate <csvfile>` コマンド実装 ✅ **実装済み**
+- [x] validate コマンドCSV検証機能 ✅ **実装済み**
+- [x] validate コマンドスキーマ検証 ✅ **実装済み**
 - [x] ファイル存在チェック実装
 - [ ] ファイル読み取り権限チェック
 - [ ] ファイルサイズ制限チェック
@@ -187,18 +187,18 @@
 - [ ] 中断・再開機能実装
 
 ### **出力機能実装（9月第1週）**
-- [ ] 出力フォーマット基盤設計
-- [ ] OutputFormatterクラス実装
-- [ ] JSON出力形式実装
-- [ ] JSON Pretty Print対応
+- [x] 出力フォーマット基盤設計 ✅ **実装済み**
+- [x] OutputFormatterクラス実装 ✅ **実装済み**
+- [x] JSON出力形式実装 ✅ **実装済み**
+- [x] JSON Pretty Print対応 ✅ **実装済み**
 - [ ] JSON Schema定義
-- [ ] CSV出力形式実装
+- [x] CSV出力形式実装 ✅ **実装済み**
 - [ ] CSV文字エンコーディング選択
 - [ ] CSV区切り文字設定
 - [ ] CSVヘッダー行カスタマイズ
-- [ ] テーブル出力形式実装
-- [ ] テーブル列幅自動調整
-- [ ] テーブル色分け実装
+- [x] テーブル出力形式実装 ✅ **実装済み**
+- [x] テーブル列幅自動調整 ✅ **実装済み**
+- [x] テーブル色分け実装 ✅ **実装済み**
 - [ ] テーブルソート機能
 - [ ] HTML出力形式実装
 - [ ] HTMLテンプレート設計

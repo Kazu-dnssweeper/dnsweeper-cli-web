@@ -1,5 +1,16 @@
 # DNSweeper プロジェクト自動タスク実行システム
 
+## 🚨 最優先ルール - 必ず最初に読め 🚨
+**何か聞かれたら、答える前に必ず以下を実行：**
+1. **既存機能を調査** - 「できない」と言う前に必ず確認
+   - `.claude/` フォルダの内容を確認
+   - 既存のコマンド、設定、機能を調査
+   - プロジェクトの実装を確認
+2. **ドキュメントを確認** - CLAUDE.md、README、その他のドキュメントを読む
+3. **実際に試す** - 推測で答えず、実際に確認する
+
+**調査せずに「できない」と言うことは禁止**
+
 ## 🇯🇵 言語ルール
 **重要**: すべての応答、ドキュメント、コメント、コミットメッセージは**日本語**で記述すること。
 - 技術用語（TypeScript、DNS、APIなど）は英語可
@@ -136,6 +147,8 @@ cat /home/hikit/dnsweeper/CLAUDE.md | grep -A 50 "6段階強制実行プロト�
 | `Logger is not a constructor` | vi.importActual重複 | モックをグローバル定義に変更 |
 | `Cannot read property '_actions'` | Commander内部API使用 | parseAsyncを使用 |
 | `uv_cwd: ENOENT` | 作業ディレクトリ削除 | execSyncにcwd指定、process.chdir('/tmp') |
+| `Cannot read properties of undefined (reading 'json')` | fetchモック未初期化 | beforeEachでmockFetch実装を設定 |
+| `No "createLookupCommand" export is defined` | モック不完全 | 必要なコマンドをすべてモックに追加 |
 
 ### 改行コードエラー
 | エラーパターン | 原因 | 解決方法 |
