@@ -83,9 +83,8 @@ describe('createDeleteCommand', () => {
       quiet: false,
     };
 
-    // Execute the action
-    const action = command._actions[0]!.fn;
-    await action('test-id-123', options);
+    // Execute the action - parse with arguments
+    await command.parseAsync(['test-id-123', '--force'], { from: 'user' });
 
     expect(MockedInquirer.prompt).not.toHaveBeenCalled();
     expect(mockLogger.startSpinner).toHaveBeenCalledWith('Deleting DNS record test-id-123...');
@@ -114,9 +113,8 @@ describe('createDeleteCommand', () => {
       quiet: false,
     };
 
-    // Execute the action
-    const action = command._actions[0]!.fn;
-    await action('test-id-456', options);
+    // Execute the action - parse with arguments
+    await command.parseAsync(['test-id-456'], { from: 'user' });
 
     expect(MockedInquirer.prompt).toHaveBeenCalledWith([
       {
@@ -151,9 +149,8 @@ describe('createDeleteCommand', () => {
       quiet: false,
     };
 
-    // Execute the action
-    const action = command._actions[0]!.fn;
-    await action('test-id-789', options);
+    // Execute the action - parse with arguments
+    await command.parseAsync(['test-id-789'], { from: 'user' });
 
     expect(mockLogger.info).toHaveBeenCalledWith('Deletion cancelled');
     expect(mockLogger.startSpinner).not.toHaveBeenCalled();
@@ -182,10 +179,8 @@ describe('createDeleteCommand', () => {
     };
 
     // Execute the action and expect it to exit
-    const action = command._actions[0]!.fn;
-
     await expect(async () => {
-      await action('test-id-error', options);
+      await command.parseAsync(['test-id-error'], { from: 'user' });
     }).rejects.toThrow('process.exit called');
 
     expect(mockLogger.error).toHaveBeenCalledWith('Prompt error');

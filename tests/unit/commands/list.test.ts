@@ -3,23 +3,21 @@ import { createListCommand } from '../../../src/commands/list.js';
 import { Command } from 'commander';
 
 // モックの設定
+const mockLogger = {
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  success: vi.fn(),
+  table: vi.fn(),
+};
+
 vi.mock('../../../src/lib/logger.js', () => ({
-  Logger: vi.fn().mockImplementation(() => ({
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    success: vi.fn(),
-    table: vi.fn(),
-  })),
+  Logger: vi.fn().mockImplementation(() => mockLogger),
 }));
 
 describe('list command', () => {
-  let mockLogger: any;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    const { Logger } = vi.mocked(vi.importActual('../../../src/lib/logger.js') as any);
-    mockLogger = new Logger();
   });
 
   describe('createListCommand', () => {

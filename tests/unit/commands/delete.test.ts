@@ -3,22 +3,20 @@ import { createDeleteCommand } from '../../../src/commands/delete.js';
 import { Command } from 'commander';
 
 // モックの設定
+const mockLogger = {
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  success: vi.fn(),
+};
+
 vi.mock('../../../src/lib/logger.js', () => ({
-  Logger: vi.fn().mockImplementation(() => ({
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    success: vi.fn(),
-  })),
+  Logger: vi.fn().mockImplementation(() => mockLogger),
 }));
 
 describe('delete command', () => {
-  let mockLogger: any;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    const { Logger } = vi.mocked(vi.importActual('../../../src/lib/logger.js') as any);
-    mockLogger = new Logger();
   });
 
   describe('createDeleteCommand', () => {
