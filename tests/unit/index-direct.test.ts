@@ -1,19 +1,24 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Command } from 'commander';
-import { createProgram, main } from './index.js';
+import { createProgram, main } from '../../src/index.js';
 
 // Mock dependencies
 vi.mock('fs', () => ({
   readFileSync: vi.fn().mockReturnValue('{"version": "1.0.0", "description": "Test description"}'),
 }));
 
-vi.mock('./commands/index.js', () => ({
+vi.mock('../../src/commands/index.js', () => ({
   createListCommand: vi.fn(() => new Command('list')),
   createAddCommand: vi.fn(() => new Command('add')),
   createDeleteCommand: vi.fn(() => new Command('delete')),
+  createImportCommand: vi.fn(() => new Command('import')),
+  createAnalyzeCommand: vi.fn(() => new Command('analyze')),
+  createLookupCommand: vi.fn(() => new Command('lookup')),
+  createSweepCommand: vi.fn(() => new Command('sweep')),
+  createValidateCommand: vi.fn(() => new Command('validate')),
 }));
 
-vi.mock('./lib/logger.js', () => ({
+vi.mock('../../src/lib/logger.js', () => ({
   Logger: vi.fn().mockImplementation(() => ({
     error: vi.fn(),
     info: vi.fn(),
@@ -53,6 +58,11 @@ describe('CLI main entry point', () => {
       expect(commandNames).toContain('list');
       expect(commandNames).toContain('add');
       expect(commandNames).toContain('delete');
+      expect(commandNames).toContain('import');
+      expect(commandNames).toContain('analyze');
+      expect(commandNames).toContain('lookup');
+      expect(commandNames).toContain('sweep');
+      expect(commandNames).toContain('validate');
     });
   });
 
@@ -83,7 +93,7 @@ describe('CLI main entry point', () => {
       });
 
       // Mock createProgram to return a program that throws
-      vi.doMock('./index.js', () => ({
+      vi.doMock('../../src/index.js', () => ({
         createProgram: vi.fn(() => ({
           parseAsync: vi.fn().mockRejectedValue(new Error('Test error')),
         })),
@@ -101,7 +111,7 @@ describe('CLI main entry point', () => {
         parseAsync: vi.fn().mockResolvedValue(undefined),
       };
 
-      vi.doMock('./index.js', () => ({
+      vi.doMock('../../src/index.js', () => ({
         createProgram: vi.fn(() => mockProgram),
         main,
       }));

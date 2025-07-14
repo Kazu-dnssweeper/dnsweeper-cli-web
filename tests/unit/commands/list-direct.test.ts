@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createListCommand } from './list.js';
+import { createListCommand } from '../../../src/commands/list.js';
 
 // Mock DNSResolver
-vi.mock('../lib/dns-resolver.js', () => ({
+vi.mock('../../../src/lib/dns-resolver.js', () => ({
   DNSResolver: vi.fn().mockImplementation(() => ({
     lookupMultiple: vi.fn().mockResolvedValue([
       {

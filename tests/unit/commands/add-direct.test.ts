@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createAddCommand } from './add.js';
-import type { IAddOptions } from '../types/index.js';
-import { Logger } from '../lib/logger.js';
+import { createAddCommand } from '../../../src/commands/add.js';
+import type { IAddOptions } from '../../../src/types/index.js';
+import { Logger } from '../../../src/lib/logger.js';
 
 // Mock Logger
-vi.mock('../lib/logger.js', () => ({
+vi.mock('../../../src/lib/logger.js', () => ({
   Logger: vi.fn().mockImplementation(() => ({
     startSpinner: vi.fn(),
     stopSpinner: vi.fn(),

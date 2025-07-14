@@ -40,7 +40,7 @@ describe('CloudflareClient', () => {
     it('APIトークンで初期化', () => {
       const tokenClient = new CloudflareClient({
         apiToken: 'test-token'
-      });
+      } as any);
       
       expect(tokenClient).toBeDefined();
     });
@@ -49,7 +49,7 @@ describe('CloudflareClient', () => {
       const keyClient = new CloudflareClient({
         email: 'test@example.com',
         apiKey: 'test-key'
-      });
+      } as any);
       
       expect(keyClient).toBeDefined();
     });
@@ -57,7 +57,7 @@ describe('CloudflareClient', () => {
     it('無効な設定でエラー', () => {
       expect(() => {
         new CloudflareClient({});
-      }).toThrow('API token or email/apiKey is required');
+      }).toThrow('Cloudflare認証情報が不正です。APIトークンまたはEmail+APIキーを指定してください');
     });
   });
 
@@ -86,8 +86,8 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+        json: vi.fn().mockResolvedValue(mockResponse)
+      } as any);
 
       const result = await client.listZones();
       
@@ -100,12 +100,12 @@ describe('CloudflareClient', () => {
     it('名前フィルターを適用', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: [],
           result_info: { page: 1, per_page: 20, total_pages: 1, count: 0, total_count: 0 }
         })
-      });
+      } as any);
 
       await client.listZones({ name: 'test.com' });
       
@@ -118,12 +118,12 @@ describe('CloudflareClient', () => {
     it('ステータスフィルターを適用', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: [],
           result_info: { page: 1, per_page: 20, total_pages: 1, count: 0, total_count: 0 }
         })
-      });
+      } as any);
 
       await client.listZones({ status: 'active' });
       
@@ -144,8 +144,8 @@ describe('CloudflareClient', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
-        json: () => Promise.resolve(errorResponse)
-      });
+        json: vi.fn().mockResolvedValue(errorResponse)
+      } as any);
 
       const result = await client.listZones();
       
@@ -179,8 +179,8 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+        json: vi.fn().mockResolvedValue(mockResponse)
+      } as any);
 
       const result = await client.getZone('zone-1');
       
@@ -193,11 +193,11 @@ describe('CloudflareClient', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: false,
           errors: [{ code: 1001, message: 'Zone not found' }]
         })
-      });
+      } as any);
 
       const result = await client.getZone('non-existent');
       
@@ -235,8 +235,8 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+        json: vi.fn().mockResolvedValue(mockResponse)
+      } as any);
 
       const result = await client.listDNSRecords('zone-1');
       
@@ -250,18 +250,18 @@ describe('CloudflareClient', () => {
     it('フィルターオプションを適用', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: [],
           result_info: { page: 1, per_page: 20, total_pages: 1, count: 0, total_count: 0 }
         })
-      });
+      } as any);
 
       await client.listDNSRecords('zone-1', {
         type: 'A',
         name: 'www.example.com',
         content: '192.0.2.1'
-      });
+      } as any);
       
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('type=A'),
@@ -302,8 +302,8 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+        json: vi.fn().mockResolvedValue(mockResponse)
+      } as any);
 
       const result = await client.createDNSRecord('zone-1', newRecord);
       
@@ -322,11 +322,11 @@ describe('CloudflareClient', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: false,
           errors: [{ code: 1004, message: 'Invalid record data' }]
         })
-      });
+      } as any);
 
       const result = await client.createDNSRecord('zone-1', invalidRecord);
       
@@ -360,8 +360,8 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+        json: vi.fn().mockResolvedValue(mockResponse)
+      } as any);
 
       const result = await client.updateDNSRecord('zone-1', 'record-1', updateData);
       
@@ -380,8 +380,8 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+        json: vi.fn().mockResolvedValue(mockResponse)
+      } as any);
 
       const result = await client.deleteDNSRecord('zone-1', 'record-1');
       
@@ -393,11 +393,11 @@ describe('CloudflareClient', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: false,
           errors: [{ code: 81044, message: 'Record not found' }]
         })
-      });
+      } as any);
 
       const result = await client.deleteDNSRecord('zone-1', 'non-existent');
       
@@ -585,7 +585,7 @@ describe('CloudflareClient', () => {
       // 各レコード作成のモック
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: {
             id: 'new-record',
@@ -600,7 +600,7 @@ describe('CloudflareClient', () => {
             modified_on: '2023-01-01T00:00:00Z'
           }
         })
-      });
+      } as any);
 
       const result = await client.importRecords('zone-1', csvRecords);
       
@@ -628,7 +628,7 @@ describe('CloudflareClient', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({
+          json: vi.fn().mockResolvedValue({
             success: true,
             result: { id: 'success-record' }
           })
@@ -636,11 +636,11 @@ describe('CloudflareClient', () => {
         .mockResolvedValueOnce({
           ok: false,
           status: 400,
-          json: () => Promise.resolve({
+          json: vi.fn().mockResolvedValue({
             success: false,
             errors: [{ code: 1004, message: 'Invalid IP' }]
           })
-        });
+        } as any);
 
       const result = await client.importRecords('zone-1', csvRecords);
       
@@ -676,12 +676,12 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: mockDNSRecords,
           result_info: { page: 1, per_page: 20, total_pages: 1, count: 1, total_count: 1 }
         })
-      });
+      } as any);
 
       const result = await client.exportRecords('zone-1');
       
@@ -695,12 +695,12 @@ describe('CloudflareClient', () => {
     it('フィルターオプション付きエクスポート', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: [],
           result_info: { page: 1, per_page: 20, total_pages: 1, count: 0, total_count: 0 }
         })
-      });
+      } as any);
 
       await client.exportRecords('zone-1', { type: 'A' });
       
@@ -715,16 +715,16 @@ describe('CloudflareClient', () => {
     it('APIトークン認証ヘッダーを設定', async () => {
       const tokenClient = new CloudflareClient({
         apiToken: 'test-token'
-      });
+      } as any);
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: [],
           result_info: { page: 1, per_page: 20, total_pages: 1, count: 0, total_count: 0 }
         })
-      });
+      } as any);
 
       await tokenClient.listZones();
       
@@ -742,16 +742,16 @@ describe('CloudflareClient', () => {
       const keyClient = new CloudflareClient({
         email: 'test@example.com',
         apiKey: 'test-key'
-      });
+      } as any);
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: [],
           result_info: { page: 1, per_page: 20, total_pages: 1, count: 0, total_count: 0 }
         })
-      });
+      } as any);
 
       await keyClient.listZones();
       
@@ -771,8 +771,8 @@ describe('CloudflareClient', () => {
     it('JSON解析エラーを処理', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.reject(new Error('Invalid JSON'))
-      });
+        json: vi.fn().mockRejectedValue(new Error('Invalid JSON'))
+      } as any);
 
       const result = await client.listZones();
       
@@ -797,11 +797,11 @@ describe('CloudflareClient', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 429,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: false,
           errors: [{ code: 10013, message: 'Rate limit exceeded' }]
         })
-      });
+      } as any);
 
       const result = await client.listZones();
       
@@ -821,11 +821,11 @@ describe('CloudflareClient', () => {
 
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
+        json: vi.fn().mockResolvedValue({
           success: true,
           result: { id: 'test-record' }
         })
-      });
+      } as any);
 
       const start = Date.now();
       const result = await client.importRecords('zone-1', largeRecordSet);

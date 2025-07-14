@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createDeleteCommand } from './delete.js';
-import type { IDeleteOptions } from '../types/index.js';
+import { createDeleteCommand } from '../../../src/commands/delete.js';
+import type { IDeleteOptions } from '../../../src/types/index.js';
 import inquirer from 'inquirer';
-import { Logger } from '../lib/logger.js';
+import { Logger } from '../../../src/lib/logger.js';
 
 // Mock inquirer
 vi.mock('inquirer', () => ({
@@ -12,7 +12,7 @@ vi.mock('inquirer', () => ({
 }));
 
 // Mock Logger
-vi.mock('../lib/logger.js', () => ({
+vi.mock('../../../src/lib/logger.js', () => ({
   Logger: vi.fn().mockImplementation(() => ({
     startSpinner: vi.fn(),
     stopSpinner: vi.fn(),
