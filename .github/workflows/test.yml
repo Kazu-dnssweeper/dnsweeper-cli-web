@@ -34,10 +34,10 @@ jobs:
     - name: TypeScriptビルド
       run: npm run build
 
-    # Lintとテストを一時的にスキップ（ESLint設定問題のため）
-    # - name: リント実行
-    #   run: npm run lint
+    - name: リント実行
+      run: npm run lint
 
+    # テストは後で有効化（まずはリントを確認）
     # - name: テスト実行
     #   run: npm test
 
