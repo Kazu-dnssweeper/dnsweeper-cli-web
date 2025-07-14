@@ -295,7 +295,7 @@ export class CloudflareClient {
       errors: [] as any[]
     };
 
-    const cloudflareRecords = this.convertCSVToCloudflareRecords(records, zoneId);
+    const cloudflareRecords = this.convertCSVToCloudflareRecords(records);
 
     for (const record of cloudflareRecords) {
       try {
@@ -319,8 +319,8 @@ export class CloudflareClient {
     options?: { type?: string; name?: string }
   ): Promise<{ success: boolean; records: ICSVRecord[] }> {
     try {
-      const records = await this.listDNSRecords(zoneId, options);
-      const csvRecords = this.convertCloudflareToCSVRecords(records.data || []);
+      const records = await this.listDNSRecords(zoneId);
+      const csvRecords = this.convertCloudflareToCSVRecords(records);
       
       return {
         success: true,
