@@ -5,10 +5,10 @@
 
 import { EventEmitter } from 'events';
 
-import { Logger } from './logger.js';
-import { RegionalComplianceAssessor } from './regional-compliance-assessor.js';
-import { RegionalComplianceReporter } from './regional-compliance-reporter.js';
-import { RegionalComplianceDataManager } from './regional-compliance-data-manager.js';
+import type { Logger } from './logger.js';
+import type { RegionalComplianceAssessor } from './regional-compliance-assessor.js';
+import type { RegionalComplianceDataManager } from './regional-compliance-data-manager.js';
+import type { RegionalComplianceReporter } from './regional-compliance-reporter.js';
 
 export class RegionalComplianceEventManager extends EventEmitter {
   private logger: Logger;

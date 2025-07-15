@@ -586,8 +586,8 @@ async function exportThreatData(
   const threatDatabase = analyzer.getThreatDatabase();
   const exportData = {
     exportTime: new Date().toISOString(),
-    totalDomains: threatDatabase.size,
-    threats: Object.fromEntries(threatDatabase.entries()),
+    totalDomains: threatDatabase.length,
+    threats: threatDatabase,
     statistics: analyzer.getThreatStatistics(),
   };
 

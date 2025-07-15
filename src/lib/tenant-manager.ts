@@ -249,7 +249,10 @@ export class TenantManager extends EventEmitter {
     this.billingInfo.set(tenant.id, billing);
   }
 
-  private getPlanPricing(plan: Tenant['plan']): { price: number; interval: 'month' } {
+  private getPlanPricing(plan: Tenant['plan']): {
+    price: number;
+    interval: 'month';
+  } {
     switch (plan) {
       case 'free':
         return { price: 0, interval: 'month' as const };

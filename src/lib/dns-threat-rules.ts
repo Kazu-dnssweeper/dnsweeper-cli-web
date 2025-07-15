@@ -7,10 +7,7 @@ import { EventEmitter } from 'events';
 
 import { Logger } from './logger.js';
 
-import type {
-  SecurityThreat,
-  SecurityConfig,
-} from './security-types.js';
+import type { SecurityThreat, SecurityConfig } from './security-types.js';
 import type { IDNSRecord as DNSRecord } from '../types/index.js';
 
 export interface ThreatRule {
@@ -33,7 +30,15 @@ export interface ThreatRule {
 
 export interface ThreatCondition {
   field: 'domain' | 'record_type' | 'record_value' | 'ttl' | 'ip_address';
-  operator: 'equals' | 'contains' | 'matches' | 'startswith' | 'endswith' | 'gt' | 'lt' | 'in';
+  operator:
+    | 'equals'
+    | 'contains'
+    | 'matches'
+    | 'startswith'
+    | 'endswith'
+    | 'gt'
+    | 'lt'
+    | 'in';
   value: string | number | string[];
   caseSensitive?: boolean;
 }
@@ -62,7 +67,7 @@ export class DNSThreatRules extends EventEmitter {
     this.logger = logger || new Logger({ verbose: false });
     this.rules = new Map();
     this.config = config || this.getDefaultConfig();
-    
+
     this.loadDefaultRules();
   }
 
@@ -173,7 +178,10 @@ export class DNSThreatRules extends EventEmitter {
     records: DNSRecord[]
   ): Promise<RuleEvaluationResult[]> {
     try {
-      this.logger.debug('ルール評価開始', { domain, rulesCount: this.rules.size });
+      this.logger.debug('ルール評価開始', {
+        domain,
+        rulesCount: this.rules.size,
+      });
 
       const enabledRules = this.getEnabledRules();
       const results: RuleEvaluationResult[] = [];
@@ -227,7 +235,8 @@ export class DNSThreatRules extends EventEmitter {
     }
 
     const matched = matchedConditions === totalConditions;
-    const confidence = totalConditions > 0 ? (matchedConditions / totalConditions) : 0;
+    const confidence =
+      totalConditions > 0 ? matchedConditions / totalConditions : 0;
 
     const result: RuleEvaluationResult = {
       ruleId: rule.id,
@@ -254,27 +263,47 @@ export class DNSThreatRules extends EventEmitter {
 
       switch (field) {
         case 'domain':
-          return this.evaluateStringCondition(domain, operator, value as string, caseSensitive);
-        
+          return this.evaluateStringCondition(
+            domain,
+            operator,
+            value as string,
+            caseSensitive
+          );
+
         case 'record_type':
-          return records.some(record => 
-            this.evaluateStringCondition(record.type, operator, value as string, caseSensitive)
+          return records.some(record =>
+            this.evaluateStringCondition(
+              record.type,
+              operator,
+              value as string,
+              caseSensitive
+            )
           );
-        
+
         case 'record_value':
-          return records.some(record => 
-            this.evaluateStringCondition(record.value, operator, value as string, caseSensitive)
+          return records.some(record =>
+            this.evaluateStringCondition(
+              record.value,
+              operator,
+              value as string,
+              caseSensitive
+            )
           );
-        
+
         case 'ttl':
-          return records.some(record => 
+          return records.some(record =>
             this.evaluateNumericCondition(record.ttl, operator, value as number)
           );
-        
+
         case 'ip_address':
           return records.some(record => {
             if (record.type === 'A' || record.type === 'AAAA') {
-              return this.evaluateStringCondition(record.value, operator, value as string, caseSensitive);
+              return this.evaluateStringCondition(
+                record.value,
+                operator,
+                value as string,
+                caseSensitive
+              );
             }
             return false;
           });
@@ -299,37 +328,52 @@ export class DNSThreatRules extends EventEmitter {
     caseSensitive: boolean
   ): boolean {
     const field = caseSensitive ? fieldValue : fieldValue.toLowerCase();
-    
+
     switch (operator) {
       case 'equals':
-        const value = caseSensitive ? conditionValue as string : (conditionValue as string).toLowerCase();
+        const value = caseSensitive
+          ? (conditionValue as string)
+          : (conditionValue as string).toLowerCase();
         return field === value;
-      
+
       case 'contains':
-        const containsValue = caseSensitive ? conditionValue as string : (conditionValue as string).toLowerCase();
+        const containsValue = caseSensitive
+          ? (conditionValue as string)
+          : (conditionValue as string).toLowerCase();
         return field.includes(containsValue);
-      
+
       case 'startswith':
-        const startsValue = caseSensitive ? conditionValue as string : (conditionValue as string).toLowerCase();
+        const startsValue = caseSensitive
+          ? (conditionValue as string)
+          : (conditionValue as string).toLowerCase();
         return field.startsWith(startsValue);
-      
+
       case 'endswith':
-        const endsValue = caseSensitive ? conditionValue as string : (conditionValue as string).toLowerCase();
+        const endsValue = caseSensitive
+          ? (conditionValue as string)
+          : (conditionValue as string).toLowerCase();
         return field.endsWith(endsValue);
-      
+
       case 'matches':
         try {
-          const regex = new RegExp(conditionValue as string, caseSensitive ? '' : 'i');
+          const regex = new RegExp(
+            conditionValue as string,
+            caseSensitive ? '' : 'i'
+          );
           return regex.test(field);
         } catch {
           return false;
         }
-      
+
       case 'in':
-        const arrayValue = Array.isArray(conditionValue) ? conditionValue : [conditionValue];
-        const compareArray = caseSensitive ? arrayValue : arrayValue.map(v => v.toLowerCase());
+        const arrayValue = Array.isArray(conditionValue)
+          ? conditionValue
+          : [conditionValue];
+        const compareArray = caseSensitive
+          ? arrayValue
+          : arrayValue.map(v => v.toLowerCase());
         return compareArray.includes(field);
-      
+
       default:
         return false;
     }
@@ -483,7 +527,8 @@ export class DNSThreatRules extends EventEmitter {
           {
             field: 'domain',
             operator: 'matches',
-            value: '.*(paypal|amazon|google|microsoft|apple).*\\.(tk|ml|ga|cf|click|loan)$',
+            value:
+              '.*(paypal|amazon|google|microsoft|apple).*\\.(tk|ml|ga|cf|click|loan)$',
           },
         ],
         actions: [
@@ -629,7 +674,8 @@ export class DNSThreatRules extends EventEmitter {
 
     allRules.forEach(rule => {
       rulesByType[rule.type] = (rulesByType[rule.type] || 0) + 1;
-      rulesBySeverity[rule.severity] = (rulesBySeverity[rule.severity] || 0) + 1;
+      rulesBySeverity[rule.severity] =
+        (rulesBySeverity[rule.severity] || 0) + 1;
     });
 
     return {

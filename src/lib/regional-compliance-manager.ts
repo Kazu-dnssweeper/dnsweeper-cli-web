@@ -9,11 +9,11 @@ import { EventEmitter } from 'events';
 import { I18nManager } from './i18n-manager.js';
 import { Logger } from './logger.js';
 import { RegionalComplianceAssessor } from './regional-compliance-assessor.js';
-import { RegionalComplianceFrameworks } from './regional-compliance-frameworks.js';
-import { RegionalComplianceReporter } from './regional-compliance-reporter.js';
+import { RegionalComplianceAutomation } from './regional-compliance-automation.js';
 import { RegionalComplianceDataManager } from './regional-compliance-data-manager.js';
 import { RegionalComplianceEventManager } from './regional-compliance-event-manager.js';
-import { RegionalComplianceAutomation } from './regional-compliance-automation.js';
+import { RegionalComplianceFrameworks } from './regional-compliance-frameworks.js';
+import { RegionalComplianceReporter } from './regional-compliance-reporter.js';
 
 import type {
   RegionalComplianceManagerOptions,
@@ -50,7 +50,7 @@ export class RegionalComplianceManager extends EventEmitter {
 
     this.logger = logger || new Logger({ logLevel: 'info' });
     this.i18nManager = i18nManager || new I18nManager();
-    
+
     // デフォルトオプションの設定
     this.options = {
       enableAutomaticAssessment: false,
@@ -102,7 +102,10 @@ export class RegionalComplianceManager extends EventEmitter {
     this.setupEventForwarding();
 
     // 自動化システムの開始
-    if (this.options.enableAutomaticAssessment || this.options.enableReporting) {
+    if (
+      this.options.enableAutomaticAssessment ||
+      this.options.enableReporting
+    ) {
       this.automation.start();
     }
 
@@ -117,17 +120,37 @@ export class RegionalComplianceManager extends EventEmitter {
    */
   private setupEventForwarding(): void {
     // すべてのイベントを親クラスに転送
-    this.eventManager.on('assessment-completed', data => this.emit('assessment-completed', data));
-    this.eventManager.on('action-updated', data => this.emit('action-updated', data));
-    this.eventManager.on('report-generated', data => this.emit('report-generated', data));
-    this.eventManager.on('data-processing-record-added', data => this.emit('data-processing-record-added', data));
-    this.eventManager.on('incident-recorded', data => this.emit('incident-recorded', data));
-    this.eventManager.on('critical-incident', data => this.emit('critical-incident', data));
-    
-    this.automation.on('automation-started', () => this.emit('automation-started'));
-    this.automation.on('automation-stopped', () => this.emit('automation-stopped'));
-    this.automation.on('scheduled-assessment-completed', data => this.emit('scheduled-assessment-completed', data));
-    this.automation.on('scheduled-report-generated', data => this.emit('scheduled-report-generated', data));
+    this.eventManager.on('assessment-completed', data =>
+      this.emit('assessment-completed', data)
+    );
+    this.eventManager.on('action-updated', data =>
+      this.emit('action-updated', data)
+    );
+    this.eventManager.on('report-generated', data =>
+      this.emit('report-generated', data)
+    );
+    this.eventManager.on('data-processing-record-added', data =>
+      this.emit('data-processing-record-added', data)
+    );
+    this.eventManager.on('incident-recorded', data =>
+      this.emit('incident-recorded', data)
+    );
+    this.eventManager.on('critical-incident', data =>
+      this.emit('critical-incident', data)
+    );
+
+    this.automation.on('automation-started', () =>
+      this.emit('automation-started')
+    );
+    this.automation.on('automation-stopped', () =>
+      this.emit('automation-stopped')
+    );
+    this.automation.on('scheduled-assessment-completed', data =>
+      this.emit('scheduled-assessment-completed', data)
+    );
+    this.automation.on('scheduled-report-generated', data =>
+      this.emit('scheduled-report-generated', data)
+    );
   }
 
   // ===== フレームワーク管理 =====
@@ -158,7 +181,10 @@ export class RegionalComplianceManager extends EventEmitter {
     return this.assessor.runComplianceAssessment(framework);
   }
 
-  async updateAction(actionId: string, updates: Partial<ComplianceAction>): Promise<void> {
+  async updateAction(
+    actionId: string,
+    updates: Partial<ComplianceAction>
+  ): Promise<void> {
     return this.assessor.updateAction(actionId, updates);
   }
 
@@ -166,12 +192,19 @@ export class RegionalComplianceManager extends EventEmitter {
 
   async generateReport(
     type: 'daily' | 'weekly' | 'monthly' | 'yearly',
-    options?: { includeMetrics?: boolean; includeRecommendations?: boolean; format?: 'summary' | 'detailed' }
+    options?: {
+      includeMetrics?: boolean;
+      includeRecommendations?: boolean;
+      format?: 'summary' | 'detailed';
+    }
   ): Promise<ComplianceReport> {
     return this.reporter.generateComplianceReport(type, options);
   }
 
-  async exportReport(reportId: string, format: 'pdf' | 'xlsx' | 'csv'): Promise<Buffer> {
+  async exportReport(
+    reportId: string,
+    format: 'pdf' | 'xlsx' | 'csv'
+  ): Promise<Buffer> {
     return this.reporter.exportReport(reportId, format);
   }
 
@@ -201,7 +234,10 @@ export class RegionalComplianceManager extends EventEmitter {
     return this.dataManager.getAllIncidents();
   }
 
-  updateIncident(incidentId: string, updates: Partial<ComplianceIncident>): boolean {
+  updateIncident(
+    incidentId: string,
+    updates: Partial<ComplianceIncident>
+  ): boolean {
     return this.dataManager.updateIncident(incidentId, updates);
   }
 
@@ -223,7 +259,9 @@ export class RegionalComplianceManager extends EventEmitter {
     return this.automation.runManualAssessment(frameworkId);
   }
 
-  async runManualReporting(type: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<void> {
+  async runManualReporting(
+    type: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  ): Promise<void> {
     return this.automation.runManualReporting(type);
   }
 
@@ -235,7 +273,9 @@ export class RegionalComplianceManager extends EventEmitter {
     this.automation.stop();
   }
 
-  updateAutomationOptions(options: Parameters<typeof this.automation.updateOptions>[0]): void {
+  updateAutomationOptions(
+    options: Parameters<typeof this.automation.updateOptions>[0]
+  ): void {
     this.automation.updateOptions(options);
   }
 
@@ -264,7 +304,11 @@ export class RegionalComplianceManager extends EventEmitter {
 
   getComplianceOverview(): {
     overallScore: number;
-    frameworkScores: Array<{ frameworkId: string; score: number; riskLevel: string }>;
+    frameworkScores: Array<{
+      frameworkId: string;
+      score: number;
+      riskLevel: string;
+    }>;
     criticalGaps: number;
     overdueActions: number;
     recentIncidents: number;
@@ -275,9 +319,12 @@ export class RegionalComplianceManager extends EventEmitter {
       frameworkScores: [],
       criticalGaps: 0,
       overdueActions: 0,
-      recentIncidents: this.dataManager.getAllIncidents().filter(
-        incident => incident.detectedAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      ).length,
+      recentIncidents: this.dataManager
+        .getAllIncidents()
+        .filter(
+          incident =>
+            incident.detectedAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        ).length,
     };
   }
 
@@ -298,7 +345,7 @@ export class RegionalComplianceManager extends EventEmitter {
       this.automation.stop();
       this.eventManager.removeAllEventListeners();
       this.removeAllListeners();
-      
+
       this.logger.info('地域別コンプライアンス管理システム終了');
     } catch (error) {
       this.logger.error('終了処理エラー', error as Error);
@@ -319,13 +366,18 @@ export class RegionalComplianceManager extends EventEmitter {
       assessor: { status: 'healthy', lastCheck: new Date() },
       reporter: { status: 'healthy', lastCheck: new Date() },
       dataManager: { status: 'healthy', lastCheck: new Date() },
-      automation: { status: this.automation.getStatus().isRunning ? 'healthy' : 'degraded', lastCheck: new Date() },
+      automation: {
+        status: this.automation.getStatus().isRunning ? 'healthy' : 'degraded',
+        lastCheck: new Date(),
+      },
     };
 
-    const overallStatus = Object.values(components).some(c => c.status === 'unhealthy') 
-      ? 'unhealthy' 
-      : Object.values(components).some(c => c.status === 'degraded') 
-        ? 'degraded' 
+    const overallStatus = Object.values(components).some(
+      c => c.status === 'unhealthy'
+    )
+      ? 'unhealthy'
+      : Object.values(components).some(c => c.status === 'degraded')
+        ? 'degraded'
         : 'healthy';
 
     return {

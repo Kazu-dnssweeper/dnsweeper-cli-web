@@ -22,6 +22,8 @@ export interface SecurityThreat {
   timestamp: number;
   title: string;
   description: string;
+  detectedAt?: string;
+  references?: string[];
   indicators: {
     technicalIndicators: string[];
     behavioralIndicators: string[];
@@ -151,6 +153,7 @@ export interface SecurityConfig {
     enabledChannels: string[];
     severityThreshold: string;
     rateLimiting: boolean;
+    cooldownPeriod?: number;
   };
   mitigation: {
     autoBlocking: boolean;

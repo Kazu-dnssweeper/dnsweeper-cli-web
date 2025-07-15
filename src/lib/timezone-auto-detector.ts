@@ -8,9 +8,7 @@ import { EventEmitter } from 'events';
 import { Logger } from './logger.js';
 import { TimezoneUtilities } from './timezone-utilities.js';
 
-import type {
-  TimezoneInfo,
-} from './timezone-types.js';
+import type { TimezoneInfo } from './timezone-types.js';
 
 export interface AutoDetectionResult {
   timezone: string;
@@ -64,7 +62,9 @@ export class TimezoneAutoDetector extends EventEmitter {
           highestConfidence = result.confidence;
         }
       } catch (error) {
-        this.logger.warn('検出メソッドでエラーが発生しました', { error: error as Error });
+        this.logger.warn('検出メソッドでエラーが発生しました', {
+          error: error as Error,
+        });
       }
     }
 
@@ -106,7 +106,7 @@ export class TimezoneAutoDetector extends EventEmitter {
       }
 
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      
+
       if (timezone && this.utilities.isValidTimezone(timezone)) {
         return {
           timezone,
@@ -118,7 +118,9 @@ export class TimezoneAutoDetector extends EventEmitter {
 
       return null;
     } catch (error) {
-      this.logger.warn('ブラウザからのタイムゾーン検出エラー', { error: error as Error });
+      this.logger.warn('ブラウザからのタイムゾーン検出エラー', {
+        error: error as Error,
+      });
       return null;
     }
   }
@@ -153,7 +155,9 @@ export class TimezoneAutoDetector extends EventEmitter {
 
       return null;
     } catch (error) {
-      this.logger.warn('システムからのタイムゾーン検出エラー', { error: error as Error });
+      this.logger.warn('システムからのタイムゾーン検出エラー', {
+        error: error as Error,
+      });
       return null;
     }
   }
@@ -173,14 +177,35 @@ export class TimezoneAutoDetector extends EventEmitter {
         timezone: string;
         city: string;
       }> = [
-        { latitude: 35.6762, longitude: 139.6503, timezone: 'Asia/Tokyo', city: 'Tokyo' },
-        { latitude: 40.7128, longitude: -74.0060, timezone: 'America/New_York', city: 'New York' },
-        { latitude: 51.5074, longitude: -0.1278, timezone: 'Europe/London', city: 'London' },
-        { latitude: 37.7749, longitude: -122.4194, timezone: 'America/Los_Angeles', city: 'San Francisco' },
+        {
+          latitude: 35.6762,
+          longitude: 139.6503,
+          timezone: 'Asia/Tokyo',
+          city: 'Tokyo',
+        },
+        {
+          latitude: 40.7128,
+          longitude: -74.006,
+          timezone: 'America/New_York',
+          city: 'New York',
+        },
+        {
+          latitude: 51.5074,
+          longitude: -0.1278,
+          timezone: 'Europe/London',
+          city: 'London',
+        },
+        {
+          latitude: 37.7749,
+          longitude: -122.4194,
+          timezone: 'America/Los_Angeles',
+          city: 'San Francisco',
+        },
       ];
 
       // ランダムに位置を選択（実際の実装では実際の位置情報を使用）
-      const randomPosition = mockPositions[Math.floor(Math.random() * mockPositions.length)];
+      const randomPosition =
+        mockPositions[Math.floor(Math.random() * mockPositions.length)];
 
       return {
         timezone: randomPosition.timezone,
@@ -189,7 +214,9 @@ export class TimezoneAutoDetector extends EventEmitter {
         timestamp: new Date(),
       };
     } catch (error) {
-      this.logger.warn('地理的位置からのタイムゾーン検出エラー', { error: error as Error });
+      this.logger.warn('地理的位置からのタイムゾーン検出エラー', {
+        error: error as Error,
+      });
       return null;
     }
   }
@@ -213,7 +240,8 @@ export class TimezoneAutoDetector extends EventEmitter {
       ];
 
       // ランダムにタイムゾーンを選択（実際の実装では実際のIP検索を行う）
-      const randomTimezone = commonTimezones[Math.floor(Math.random() * commonTimezones.length)];
+      const randomTimezone =
+        commonTimezones[Math.floor(Math.random() * commonTimezones.length)];
 
       return {
         timezone: randomTimezone,
@@ -222,7 +250,9 @@ export class TimezoneAutoDetector extends EventEmitter {
         timestamp: new Date(),
       };
     } catch (error) {
-      this.logger.warn('IPアドレスからのタイムゾーン検出エラー', { error: error as Error });
+      this.logger.warn('IPアドレスからのタイムゾーン検出エラー', {
+        error: error as Error,
+      });
       return null;
     }
   }
@@ -253,7 +283,8 @@ export class TimezoneAutoDetector extends EventEmitter {
   /**
    * 自動更新の開始
    */
-  startAutoUpdate(intervalMs: number = 60 * 60 * 1000): void { // デフォルト1時間
+  startAutoUpdate(intervalMs: number = 60 * 60 * 1000): void {
+    // デフォルト1時間
     if (this.updateInterval) {
       this.logger.warn('自動更新は既に開始されています');
       return;
@@ -300,7 +331,7 @@ export class TimezoneAutoDetector extends EventEmitter {
    * 最新の検出結果の取得
    */
   getLatestDetection(): AutoDetectionResult | null {
-    return this.detectionHistory.length > 0 
+    return this.detectionHistory.length > 0
       ? this.detectionHistory[this.detectionHistory.length - 1]
       : null;
   }
@@ -320,7 +351,7 @@ export class TimezoneAutoDetector extends EventEmitter {
     };
   } {
     const history = this.detectionHistory;
-    
+
     if (history.length === 0) {
       return {
         totalDetections: 0,
@@ -331,7 +362,8 @@ export class TimezoneAutoDetector extends EventEmitter {
       };
     }
 
-    const averageConfidence = history.reduce((sum, r) => sum + r.confidence, 0) / history.length;
+    const averageConfidence =
+      history.reduce((sum, r) => sum + r.confidence, 0) / history.length;
 
     const sourceDistribution: Record<string, number> = {};
     const timezoneCount: Record<string, number> = {};
@@ -339,11 +371,13 @@ export class TimezoneAutoDetector extends EventEmitter {
 
     history.forEach(result => {
       // ソース分布
-      sourceDistribution[result.source] = (sourceDistribution[result.source] || 0) + 1;
-      
+      sourceDistribution[result.source] =
+        (sourceDistribution[result.source] || 0) + 1;
+
       // タイムゾーン頻度
-      timezoneCount[result.timezone] = (timezoneCount[result.timezone] || 0) + 1;
-      
+      timezoneCount[result.timezone] =
+        (timezoneCount[result.timezone] || 0) + 1;
+
       // 信頼度分布
       if (result.confidence >= 0.8) {
         confidenceDistribution.high++;

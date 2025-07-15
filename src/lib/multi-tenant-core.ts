@@ -7,10 +7,7 @@ import { EventEmitter } from 'events';
 
 import { Logger } from './logger.js';
 
-import type {
-  Tenant,
-  TenantUser,
-} from './multi-tenant-types.js';
+import type { Tenant, TenantUser } from './multi-tenant-types.js';
 
 export class MultiTenantCore extends EventEmitter {
   private logger: Logger;
@@ -28,7 +25,9 @@ export class MultiTenantCore extends EventEmitter {
   /**
    * テナントの作成
    */
-  async createTenant(tenantData: Omit<Tenant, 'id' | 'createdAt' | 'updatedAt'>): Promise<Tenant> {
+  async createTenant(
+    tenantData: Omit<Tenant, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<Tenant> {
     const tenantId = this.generateTenantId();
     const now = new Date();
 
@@ -62,7 +61,10 @@ export class MultiTenantCore extends EventEmitter {
   /**
    * テナントの更新
    */
-  async updateTenant(tenantId: string, updates: Partial<Tenant>): Promise<Tenant | null> {
+  async updateTenant(
+    tenantId: string,
+    updates: Partial<Tenant>
+  ): Promise<Tenant | null> {
     const tenant = this.tenants.get(tenantId);
     if (!tenant) {
       return null;
@@ -131,10 +133,16 @@ export class MultiTenantCore extends EventEmitter {
     status?: string;
   }): Tenant[] {
     return Array.from(this.tenants.values()).filter(tenant => {
-      if (query.name && !tenant.name.toLowerCase().includes(query.name.toLowerCase())) {
+      if (
+        query.name &&
+        !tenant.name.toLowerCase().includes(query.name.toLowerCase())
+      ) {
         return false;
       }
-      if (query.domain && !tenant.domain.toLowerCase().includes(query.domain.toLowerCase())) {
+      if (
+        query.domain &&
+        !tenant.domain.toLowerCase().includes(query.domain.toLowerCase())
+      ) {
         return false;
       }
       if (query.plan && tenant.plan !== query.plan) {
@@ -152,7 +160,9 @@ export class MultiTenantCore extends EventEmitter {
   /**
    * ユーザーの作成
    */
-  async createUser(userData: Omit<TenantUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<TenantUser | null> {
+  async createUser(
+    userData: Omit<TenantUser, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<TenantUser | null> {
     // テナントの存在確認
     if (!this.tenants.has(userData.tenantId)) {
       this.logger.warn('存在しないテナントにユーザーを作成しようとしました', {
@@ -172,7 +182,7 @@ export class MultiTenantCore extends EventEmitter {
     };
 
     this.users.set(userId, user);
-    
+
     // テナント-ユーザー関連を記録
     const tenantUsers = this.usersByTenant.get(userData.tenantId) || new Set();
     tenantUsers.add(userId);
@@ -199,7 +209,10 @@ export class MultiTenantCore extends EventEmitter {
   /**
    * ユーザーの更新
    */
-  async updateUser(userId: string, updates: Partial<TenantUser>): Promise<TenantUser | null> {
+  async updateUser(
+    userId: string,
+    updates: Partial<TenantUser>
+  ): Promise<TenantUser | null> {
     const user = this.users.get(userId);
     if (!user) {
       return null;
@@ -275,7 +288,10 @@ export class MultiTenantCore extends EventEmitter {
       if (query.tenantId && user.tenantId !== query.tenantId) {
         return false;
       }
-      if (query.email && !user.email.toLowerCase().includes(query.email.toLowerCase())) {
+      if (
+        query.email &&
+        !user.email.toLowerCase().includes(query.email.toLowerCase())
+      ) {
         return false;
       }
       if (query.role && user.role !== query.role) {
@@ -299,7 +315,10 @@ export class MultiTenantCore extends EventEmitter {
       return false;
     }
 
-    return user.permissions.includes(permission) || this.getRolePermissions(user.role).includes(permission);
+    return (
+      user.permissions.includes(permission) ||
+      this.getRolePermissions(user.role).includes(permission)
+    );
   }
 
   /**
@@ -318,17 +337,8 @@ export class MultiTenantCore extends EventEmitter {
         'billing:read',
         'audit:read',
       ],
-      editor: [
-        'tenant:read',
-        'user:read',
-        'resource:read',
-        'resource:write',
-      ],
-      viewer: [
-        'tenant:read',
-        'user:read',
-        'resource:read',
-      ],
+      editor: ['tenant:read', 'user:read', 'resource:read', 'resource:write'],
+      viewer: ['tenant:read', 'user:read', 'resource:read'],
     };
 
     return rolePermissions[role] || [];

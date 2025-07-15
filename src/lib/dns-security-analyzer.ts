@@ -6,13 +6,13 @@
 
 import { EventEmitter } from 'events';
 
+import { DNSAlgorithmicAnalyzer } from './dns-algorithmic-analyzer.js';
+import { DNSSecurityStatistics } from './dns-security-statistics.js';
+import { DNSThreatRules } from './dns-threat-rules.js';
 import { Logger } from './logger.js';
 import { NetworkAnalyzer } from './network-analysis.js';
 import { ReputationService } from './reputation-service.js';
 import { ThreatDetectors } from './threat-detectors.js';
-import { DNSAlgorithmicAnalyzer } from './dns-algorithmic-analyzer.js';
-import { DNSSecurityStatistics } from './dns-security-statistics.js';
-import { DNSThreatRules } from './dns-threat-rules.js';
 
 import type {
   SecurityThreat,
@@ -182,7 +182,8 @@ export class DNSSecurityAnalyzer extends EventEmitter {
       this.logger.info('DNS脅威検出分析が完了しました', {
         threatsFound: uniqueThreats.length,
         analysisTime,
-        criticalThreats: uniqueThreats.filter(t => t.severity === 'critical').length,
+        criticalThreats: uniqueThreats.filter(t => t.severity === 'critical')
+          .length,
       });
 
       // 脅威の記録と通知
@@ -211,21 +212,31 @@ export class DNSSecurityAnalyzer extends EventEmitter {
     );
 
     // 1. 脅威検出エンジンによる分析
-    const detectorThreats = await this.runThreatDetectors(domain, domainRecords);
+    const detectorThreats = await this.runThreatDetectors(
+      domain,
+      domainRecords
+    );
     threats.push(...detectorThreats);
 
     // 2. ルールエンジンによる分析
-    const ruleResults = await this.ruleEngine.evaluateRules(domain, domainRecords);
+    const ruleResults = await this.ruleEngine.evaluateRules(
+      domain,
+      domainRecords
+    );
     const ruleThreats = this.convertRuleResultsToThreats(ruleResults, domain);
     threats.push(...ruleThreats);
 
     // 3. アルゴリズム分析の統合
     try {
-      const algorithmicAnalysis = await this.algorithmicAnalyzer.performAlgorithmicAnalysis(domain);
-      const algorithmicThreats = this.convertAlgorithmicAnalysisToThreats(algorithmicAnalysis);
+      const algorithmicAnalysis =
+        await this.algorithmicAnalyzer.performAlgorithmicAnalysis(domain);
+      const algorithmicThreats =
+        this.convertAlgorithmicAnalysisToThreats(algorithmicAnalysis);
       threats.push(...algorithmicThreats);
     } catch (error) {
-      this.logger.warn('アルゴリズム分析でエラーが発生しました', { error: error as Error });
+      this.logger.warn('アルゴリズム分析でエラーが発生しました', {
+        error: error as Error,
+      });
     }
 
     return threats;
@@ -234,7 +245,10 @@ export class DNSSecurityAnalyzer extends EventEmitter {
   /**
    * 脅威検出エンジンの実行
    */
-  private async runThreatDetectors(domain: string, records: DNSRecord[]): Promise<SecurityThreat[]> {
+  private async runThreatDetectors(
+    domain: string,
+    records: DNSRecord[]
+  ): Promise<SecurityThreat[]> {
     const threats: SecurityThreat[] = [];
     const enabledAnalyzers = this.config.threatDetection.enabledAnalyzers;
     const analyzers: Promise<SecurityThreat[]>[] = [];
@@ -258,7 +272,9 @@ export class DNSSecurityAnalyzer extends EventEmitter {
       analyzers.push(this.threatDetectors.detectDNSHijacking(domain, records));
     }
     if (enabledAnalyzers.includes('cache_poisoning')) {
-      analyzers.push(this.threatDetectors.detectCachePoisoning(domain, records));
+      analyzers.push(
+        this.threatDetectors.detectCachePoisoning(domain, records)
+      );
     }
 
     try {
@@ -274,7 +290,9 @@ export class DNSSecurityAnalyzer extends EventEmitter {
   /**
    * 脅威の重複排除とソート
    */
-  private deduplicateAndSortThreats(threats: SecurityThreat[]): SecurityThreat[] {
+  private deduplicateAndSortThreats(
+    threats: SecurityThreat[]
+  ): SecurityThreat[] {
     // IDによる重複排除
     const uniqueThreats = threats.filter(
       (threat, index, self) => index === self.findIndex(t => t.id === threat.id)
@@ -283,9 +301,10 @@ export class DNSSecurityAnalyzer extends EventEmitter {
     // 優先度順でソート
     const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
     return uniqueThreats.sort((a, b) => {
-      const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
+      const severityDiff =
+        severityOrder[b.severity] - severityOrder[a.severity];
       if (severityDiff !== 0) return severityDiff;
-      
+
       // 信頼度順
       return b.confidence - a.confidence;
     });
@@ -343,7 +362,9 @@ export class DNSSecurityAnalyzer extends EventEmitter {
   /**
    * アルゴリズム分析から脅威への変換
    */
-  private convertAlgorithmicAnalysisToThreats(analysis: AlgorithmicAnalysis): SecurityThreat[] {
+  private convertAlgorithmicAnalysisToThreats(
+    analysis: AlgorithmicAnalysis
+  ): SecurityThreat[] {
     const threats: SecurityThreat[] = [];
 
     // 高エントロピースコアによるDGA検出
@@ -396,7 +417,9 @@ export class DNSSecurityAnalyzer extends EventEmitter {
           algorithmicAnalysis: analysis,
         },
         indicators: {
-          technicalIndicators: [`Randomness Score: ${analysis.randomnessScore || 0}%`],
+          technicalIndicators: [
+            `Randomness Score: ${analysis.randomnessScore || 0}%`,
+          ],
           behavioralIndicators: [],
           reputationIndicators: [],
         },
@@ -450,7 +473,7 @@ export class DNSSecurityAnalyzer extends EventEmitter {
    */
   private emitThreatAlert(threat: SecurityThreat): void {
     this.emit('threat-detected', threat);
-    
+
     if (threat.severity === 'critical' || threat.severity === 'high') {
       this.emit('high-priority-threat', threat);
     }
@@ -458,19 +481,29 @@ export class DNSSecurityAnalyzer extends EventEmitter {
 
   // ===== 統計とレポート =====
 
-  getThreatStatistics(timeframe?: { start: Date; end: Date }): ThreatStatistics {
+  getThreatStatistics(timeframe?: {
+    start: Date;
+    end: Date;
+  }): ThreatStatistics {
     return this.statistics.getThreatStatistics(timeframe);
   }
 
-  getDomainThreatStatistics(domain: string): ReturnType<typeof this.statistics.getDomainThreatStatistics> {
+  getDomainThreatStatistics(
+    domain: string
+  ): ReturnType<typeof this.statistics.getDomainThreatStatistics> {
     return this.statistics.getDomainThreatStatistics(domain);
   }
 
-  getThreatTrends(days?: number): ReturnType<typeof this.statistics.getThreatTrends> {
+  getThreatTrends(
+    days?: number
+  ): ReturnType<typeof this.statistics.getThreatTrends> {
     return this.statistics.getThreatTrends(days);
   }
 
-  generateSecurityReport(timeframe?: { start: Date; end: Date }): ReturnType<typeof this.statistics.generateSecurityReport> {
+  generateSecurityReport(timeframe?: {
+    start: Date;
+    end: Date;
+  }): ReturnType<typeof this.statistics.generateSecurityReport> {
     return this.statistics.generateSecurityReport(timeframe);
   }
 
@@ -494,16 +527,21 @@ export class DNSSecurityAnalyzer extends EventEmitter {
 
   // ===== 分析機能 =====
 
-  async performAlgorithmicAnalysis(domain: string): Promise<AlgorithmicAnalysis> {
+  async performAlgorithmicAnalysis(
+    domain: string
+  ): Promise<AlgorithmicAnalysis> {
     return this.algorithmicAnalyzer.performAlgorithmicAnalysis(domain);
   }
 
-  async performNetworkAnalysis(domain: string, records: DNSRecord[]): Promise<NetworkAnalysis> {
+  async performNetworkAnalysis(
+    domain: string,
+    records: DNSRecord[]
+  ): Promise<NetworkAnalysis> {
     return this.networkAnalyzer.performNetworkAnalysis(domain);
   }
 
   async getReputationData(domain: string): Promise<ReputationData> {
-    return this.reputationService.checkReputation(domain);
+    return this.reputationService.getReputationData(domain);
   }
 
   // ===== 設定管理 =====
@@ -548,7 +586,7 @@ export class DNSSecurityAnalyzer extends EventEmitter {
   }
 
   // ===== コマンド互換性メソッド =====
-  
+
   startRealTimeMonitoring(intervalMs: number = 60000): void {
     this.startMonitoring();
   }
@@ -604,8 +642,8 @@ export class DNSSecurityAnalyzer extends EventEmitter {
     components: Record<string, { status: string; lastCheck: Date }>;
     statistics: {
       totalThreats: number;
-      databaseSize: ReturnType<typeof this.statistics.getDatabaseSize>;
-      ruleStatistics: ReturnType<typeof this.ruleEngine.getRuleStatistics>;
+      databaseSize: number;
+      ruleStatistics: any;
     };
   } {
     const dbSize = this.statistics.getDatabaseSize();

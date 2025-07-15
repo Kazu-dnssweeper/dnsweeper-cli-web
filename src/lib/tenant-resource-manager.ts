@@ -30,10 +30,15 @@ export class TenantResourceManager extends EventEmitter {
   ): Promise<TenantResource> {
     // リソース数制限のチェック（必要に応じて実装）
     const existingResources = this.getResourcesByTenant(options.tenantId);
-    const resourcesByType = existingResources.filter(r => r.type === options.type);
+    const resourcesByType = existingResources.filter(
+      r => r.type === options.type
+    );
 
     // DNS レコード数制限のチェック
-    if (options.type === 'dns-record' && resourcesByType.length >= tenant.settings.maxDNSRecords) {
+    if (
+      options.type === 'dns-record' &&
+      resourcesByType.length >= tenant.settings.maxDNSRecords
+    ) {
       throw new Error('DNS レコード数の上限に達しています');
     }
 
@@ -158,7 +163,10 @@ export class TenantResourceManager extends EventEmitter {
   /**
    * タイプ別リソース一覧を取得
    */
-  getResourcesByType(tenantId: string, type: TenantResource['type']): TenantResource[] {
+  getResourcesByType(
+    tenantId: string,
+    type: TenantResource['type']
+  ): TenantResource[] {
     const tenantResources = this.getResourcesByTenant(tenantId);
     return tenantResources.filter(r => r.type === type);
   }
@@ -215,17 +223,20 @@ export class TenantResourceManager extends EventEmitter {
       priority?: number;
     }
   ): Promise<TenantResource> {
-    return this.createResource({
-      tenantId,
-      type: 'dns-record',
-      name: recordData.name,
-      configuration: {
-        recordType: recordData.type,
-        value: recordData.value,
-        ttl: recordData.ttl || 300,
-        priority: recordData.priority,
+    return this.createResource(
+      {
+        tenantId,
+        type: 'dns-record',
+        name: recordData.name,
+        configuration: {
+          recordType: recordData.type,
+          value: recordData.value,
+          ttl: recordData.ttl || 300,
+          priority: recordData.priority,
+        },
       },
-    }, {} as Tenant); // 簡略化のため、実際の実装では適切なテナント情報を渡す
+      {} as Tenant
+    ); // 簡略化のため、実際の実装では適切なテナント情報を渡す
   }
 
   /**
@@ -239,23 +250,26 @@ export class TenantResourceManager extends EventEmitter {
       contact?: string;
     }
   ): Promise<TenantResource> {
-    return this.createResource({
-      tenantId,
-      type: 'dns-zone',
-      name: zoneData.domain,
-      configuration: {
-        domain: zoneData.domain,
-        nameservers: zoneData.nameservers,
-        contact: zoneData.contact,
-        soaRecord: {
-          serial: Date.now(),
-          refresh: 3600,
-          retry: 1800,
-          expire: 604800,
-          minimum: 300,
+    return this.createResource(
+      {
+        tenantId,
+        type: 'dns-zone',
+        name: zoneData.domain,
+        configuration: {
+          domain: zoneData.domain,
+          nameservers: zoneData.nameservers,
+          contact: zoneData.contact,
+          soaRecord: {
+            serial: Date.now(),
+            refresh: 3600,
+            retry: 1800,
+            expire: 604800,
+            minimum: 300,
+          },
         },
       },
-    }, {} as Tenant);
+      {} as Tenant
+    );
   }
 
   /**
@@ -271,19 +285,22 @@ export class TenantResourceManager extends EventEmitter {
   ): Promise<TenantResource> {
     const apiKey = this.generateAPIKey();
 
-    return this.createResource({
-      tenantId,
-      type: 'api-key',
-      name: keyData.name,
-      configuration: {
-        key: apiKey,
-        permissions: keyData.permissions,
-        expiresAt: keyData.expiresAt,
-        createdAt: new Date(),
-        lastUsed: null,
-        requestCount: 0,
+    return this.createResource(
+      {
+        tenantId,
+        type: 'api-key',
+        name: keyData.name,
+        configuration: {
+          key: apiKey,
+          permissions: keyData.permissions,
+          expiresAt: keyData.expiresAt,
+          createdAt: new Date(),
+          lastUsed: null,
+          requestCount: 0,
+        },
       },
-    }, {} as Tenant);
+      {} as Tenant
+    );
   }
 
   private generateAPIKey(): string {
@@ -301,7 +318,7 @@ export class TenantResourceManager extends EventEmitter {
     resourcesByStatus: Record<TenantResource['status'], number>;
     averageResourceAge: number;
   } {
-    const resources = tenantId 
+    const resources = tenantId
       ? this.getResourcesByTenant(tenantId)
       : Array.from(this.resources.values()).flat();
 
@@ -309,7 +326,7 @@ export class TenantResourceManager extends EventEmitter {
       'dns-zone': 0,
       'dns-record': 0,
       'api-key': 0,
-      'webhook': 0,
+      webhook: 0,
       'custom-domain': 0,
     };
 
@@ -325,14 +342,15 @@ export class TenantResourceManager extends EventEmitter {
     for (const resource of resources) {
       resourcesByType[resource.type]++;
       resourcesByStatus[resource.status]++;
-      
+
       const age = Date.now() - resource.createdAt.getTime();
       totalAge += age;
     }
 
-    const averageResourceAge = resources.length > 0 
-      ? totalAge / resources.length / (1000 * 60 * 60 * 24) // days
-      : 0;
+    const averageResourceAge =
+      resources.length > 0
+        ? totalAge / resources.length / (1000 * 60 * 60 * 24) // days
+        : 0;
 
     return {
       totalResources: resources.length,
@@ -347,7 +365,7 @@ export class TenantResourceManager extends EventEmitter {
    */
   async deleteAllTenantResources(tenantId: string): Promise<void> {
     const resources = this.getResourcesByTenant(tenantId);
-    
+
     for (const resource of resources) {
       this.emit('resource:deleted', { resourceId: resource.id, resource });
     }
@@ -359,7 +377,10 @@ export class TenantResourceManager extends EventEmitter {
       resourceCount: resources.length,
     });
 
-    this.emit('tenant:resources-deleted', { tenantId, resourceCount: resources.length });
+    this.emit('tenant:resources-deleted', {
+      tenantId,
+      resourceCount: resources.length,
+    });
   }
 
   /**
@@ -401,7 +422,7 @@ export class TenantResourceManager extends EventEmitter {
 
     if (query.name) {
       const searchTerm = query.name.toLowerCase();
-      resources = resources.filter(r => 
+      resources = resources.filter(r =>
         r.name.toLowerCase().includes(searchTerm)
       );
     }

@@ -10,9 +10,9 @@ import { BusinessHoursManager } from './business-hours.js';
 import { DateFormatter } from './date-formatter.js';
 import { I18nManager } from './i18n-manager.js';
 import { Logger } from './logger.js';
+import { TimezoneAutoDetector } from './timezone-auto-detector.js';
 import { TimezoneDetector } from './timezone-detector.js';
 import { TimezoneUtilities } from './timezone-utilities.js';
-import { TimezoneAutoDetector } from './timezone-auto-detector.js';
 
 import type {
   DateTimeLocalizerOptions,
@@ -73,7 +73,10 @@ export class TimezoneLocalizer extends EventEmitter {
 
     // 機能モジュールの初期化
     this.timezoneDetector = new TimezoneDetector(this.logger);
-    this.dateFormatter = new DateFormatter(this.logger, this.options.fallbackTimezone);
+    this.dateFormatter = new DateFormatter(
+      this.logger,
+      this.options.fallbackTimezone
+    );
     this.businessHoursManager = new BusinessHoursManager(this.logger);
     this.utilities = new TimezoneUtilities(this.logger);
     this.autoDetector = new TimezoneAutoDetector(this.logger);
@@ -109,7 +112,7 @@ export class TimezoneLocalizer extends EventEmitter {
     // 自動検出器のイベント転送
     this.autoDetector.on('timezone-detected', data => {
       this.emit('auto-timezone-detected', data);
-      
+
       // 信頼度が高い場合は自動的に適用
       if (data.confidence >= 0.8) {
         this.setTimezone(data.timezone);
@@ -134,7 +137,9 @@ export class TimezoneLocalizer extends EventEmitter {
       // 自動更新の開始
       this.autoDetector.startAutoUpdate(this.options.autoUpdateInterval);
     } catch (error) {
-      this.logger.warn('自動検出の初期化に失敗しました', { error: error as Error });
+      this.logger.warn('自動検出の初期化に失敗しました', {
+        error: error as Error,
+      });
     }
   }
 
@@ -145,16 +150,24 @@ export class TimezoneLocalizer extends EventEmitter {
    */
   setTimezone(timezone: string): void {
     const normalizedTimezone = this.utilities.normalizeTimezoneName(timezone);
-    
-    if (this.options.strictValidation && !this.utilities.isValidTimezone(normalizedTimezone)) {
+
+    if (
+      this.options.strictValidation &&
+      !this.utilities.isValidTimezone(normalizedTimezone)
+    ) {
       throw new Error(`無効なタイムゾーン: ${timezone}`);
     }
 
     const oldTimezone = this.currentTimezone;
     this.currentTimezone = normalizedTimezone;
 
-    this.logger.info(`タイムゾーン変更: ${oldTimezone} → ${normalizedTimezone}`);
-    this.emit('timezone-changed', { from: oldTimezone, to: normalizedTimezone });
+    this.logger.info(
+      `タイムゾーン変更: ${oldTimezone} → ${normalizedTimezone}`
+    );
+    this.emit('timezone-changed', {
+      from: oldTimezone,
+      to: normalizedTimezone,
+    });
   }
 
   /**
@@ -281,13 +294,19 @@ export class TimezoneLocalizer extends EventEmitter {
    * 現在のタイムゾーンでの時刻を取得
    */
   getCurrentTime(): Date {
-    return this.utilities.convertTimezone(new Date(), 'UTC', this.currentTimezone);
+    return this.utilities.convertTimezone(
+      new Date(),
+      'UTC',
+      this.currentTimezone
+    );
   }
 
   /**
    * 複数タイムゾーンでの現在時刻を取得
    */
-  getCurrentTimeInTimezones(timezones: string[]): ReturnType<typeof this.utilities.getCurrentTimeInTimezones> {
+  getCurrentTimeInTimezones(
+    timezones: string[]
+  ): ReturnType<typeof this.utilities.getCurrentTimeInTimezones> {
     return this.utilities.getCurrentTimeInTimezones(timezones);
   }
 
@@ -351,21 +370,27 @@ export class TimezoneLocalizer extends EventEmitter {
   /**
    * 手動タイムゾーン検出
    */
-  async detectTimezone(): Promise<ReturnType<typeof this.autoDetector.detectTimezone>> {
+  async detectTimezone(): Promise<
+    ReturnType<typeof this.autoDetector.detectTimezone>
+  > {
     return this.autoDetector.detectTimezone();
   }
 
   /**
    * 検出履歴の取得
    */
-  getDetectionHistory(): ReturnType<typeof this.autoDetector.getDetectionHistory> {
+  getDetectionHistory(): ReturnType<
+    typeof this.autoDetector.getDetectionHistory
+  > {
     return this.autoDetector.getDetectionHistory();
   }
 
   /**
    * 検出統計の取得
    */
-  getDetectionStatistics(): ReturnType<typeof this.autoDetector.getDetectionStatistics> {
+  getDetectionStatistics(): ReturnType<
+    typeof this.autoDetector.getDetectionStatistics
+  > {
     return this.autoDetector.getDetectionStatistics();
   }
 
@@ -376,7 +401,7 @@ export class TimezoneLocalizer extends EventEmitter {
    */
   updateOptions(newOptions: Partial<DateTimeLocalizerOptions>): void {
     this.options = { ...this.options, ...newOptions };
-    
+
     // 自動検出設定の更新
     if (newOptions.enableAutoDetection !== undefined) {
       if (newOptions.enableAutoDetection && !this.autoDetector) {
@@ -441,7 +466,7 @@ export class TimezoneLocalizer extends EventEmitter {
     };
   } {
     const now = new Date();
-    
+
     return {
       status: 'healthy',
       components: {

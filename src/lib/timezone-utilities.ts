@@ -5,9 +5,7 @@
 
 import { Logger } from './logger.js';
 
-import type {
-  TimezoneInfo,
-} from './timezone-types.js';
+import type { TimezoneInfo } from './timezone-types.js';
 
 export class TimezoneUtilities {
   private logger: Logger;
@@ -21,7 +19,11 @@ export class TimezoneUtilities {
   /**
    * タイムゾーン間の時差を計算
    */
-  getTimezoneOffset(fromTimezone: string, toTimezone: string, date: Date = new Date()): number {
+  getTimezoneOffset(
+    fromTimezone: string,
+    toTimezone: string,
+    date: Date = new Date()
+  ): number {
     try {
       const fromOffset = this.getTimezoneOffsetMinutes(fromTimezone, date);
       const toOffset = this.getTimezoneOffsetMinutes(toTimezone, date);
@@ -38,11 +40,17 @@ export class TimezoneUtilities {
   getTimezoneOffsetMinutes(timezone: string, date: Date = new Date()): number {
     try {
       // DateTimeFormatを使用してタイムゾーンオフセットを計算
-      const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-      const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+      const utcDate = new Date(
+        date.toLocaleString('en-US', { timeZone: 'UTC' })
+      );
+      const tzDate = new Date(
+        date.toLocaleString('en-US', { timeZone: timezone })
+      );
       return (tzDate.getTime() - utcDate.getTime()) / (1000 * 60);
     } catch (error) {
-      this.logger.warn(`タイムゾーン ${timezone} のオフセット取得失敗`, { error: error as Error });
+      this.logger.warn(`タイムゾーン ${timezone} のオフセット取得失敗`, {
+        error: error as Error,
+      });
       return 0;
     }
   }
@@ -54,7 +62,7 @@ export class TimezoneUtilities {
     try {
       const offset = this.getTimezoneOffset(fromTimezone, toTimezone, date);
       const convertedDate = new Date(date.getTime() + offset * 60 * 1000);
-      
+
       this.logger.debug('タイムゾーン変換', {
         original: date.toISOString(),
         from: fromTimezone,
@@ -129,15 +137,15 @@ export class TimezoneUtilities {
   normalizeTimezoneName(timezone: string): string {
     // 一般的なエイリアスを正規名に変換
     const aliases: Record<string, string> = {
-      'EST': 'America/New_York',
-      'PST': 'America/Los_Angeles',
-      'CST': 'America/Chicago',
-      'MST': 'America/Denver',
-      'JST': 'Asia/Tokyo',
-      'GMT': 'UTC',
-      'BST': 'Europe/London',
-      'CET': 'Europe/Paris',
-      'EET': 'Europe/Helsinki',
+      EST: 'America/New_York',
+      PST: 'America/Los_Angeles',
+      CST: 'America/Chicago',
+      MST: 'America/Denver',
+      JST: 'Asia/Tokyo',
+      GMT: 'UTC',
+      BST: 'Europe/London',
+      CET: 'Europe/Paris',
+      EET: 'Europe/Helsinki',
     };
 
     return aliases[timezone.toUpperCase()] || timezone;
@@ -148,7 +156,7 @@ export class TimezoneUtilities {
    */
   getTimezoneInfo(timezone: string): TimezoneInfo | null {
     const normalizedTz = this.normalizeTimezoneName(timezone);
-    
+
     // キャッシュから取得
     if (this.timezoneCache.has(normalizedTz)) {
       return this.timezoneCache.get(normalizedTz)!;
@@ -157,7 +165,7 @@ export class TimezoneUtilities {
     try {
       const now = new Date();
       const offset = this.getTimezoneOffsetMinutes(normalizedTz, now);
-      
+
       // DST（夏時間）の検出
       const winter = new Date(now.getFullYear(), 0, 1);
       const summer = new Date(now.getFullYear(), 6, 1);
@@ -174,18 +182,23 @@ export class TimezoneUtilities {
         utcOffset: this.formatUtcOffset(offset),
         abbreviation: this.getTimezoneAbbreviation(normalizedTz, now),
         supportsDST,
-        isDST: supportsDST && (offset === Math.max(winterOffset, summerOffset)),
+        isDST: supportsDST && offset === Math.max(winterOffset, summerOffset),
       };
 
       // キャッシュに保存（1時間後に期限切れ）
       this.timezoneCache.set(normalizedTz, info);
-      setTimeout(() => {
-        this.timezoneCache.delete(normalizedTz);
-      }, 60 * 60 * 1000);
+      setTimeout(
+        () => {
+          this.timezoneCache.delete(normalizedTz);
+        },
+        60 * 60 * 1000
+      );
 
       return info;
     } catch (error) {
-      this.logger.error(`タイムゾーン情報取得エラー: ${normalizedTz}`, { error: error as Error });
+      this.logger.error(`タイムゾーン情報取得エラー: ${normalizedTz}`, {
+        error: error as Error,
+      });
       return null;
     }
   }
@@ -217,7 +230,7 @@ export class TimezoneUtilities {
         timeZone: timezone,
         timeZoneName: 'short',
       });
-      
+
       const parts = formatter.formatToParts(date);
       const timeZonePart = parts.find(part => part.type === 'timeZoneName');
       return timeZonePart?.value || '';
@@ -236,12 +249,12 @@ export class TimezoneUtilities {
     offset: number;
   }> {
     const now = new Date();
-    
+
     return timezones.map(tz => {
       const normalizedTz = this.normalizeTimezoneName(tz);
       const offset = this.getTimezoneOffsetMinutes(normalizedTz, now);
       const time = new Date(now.getTime() + offset * 60 * 1000);
-      
+
       return {
         timezone: normalizedTz,
         time,
@@ -274,8 +287,13 @@ export class TimezoneUtilities {
     error?: string;
   } {
     try {
-      const expectedOffset = this.getTimezoneOffset(fromTimezone, toTimezone, originalDate);
-      const actualOffset = (convertedDate.getTime() - originalDate.getTime()) / (1000 * 60);
+      const expectedOffset = this.getTimezoneOffset(
+        fromTimezone,
+        toTimezone,
+        originalDate
+      );
+      const actualOffset =
+        (convertedDate.getTime() - originalDate.getTime()) / (1000 * 60);
       const isValid = Math.abs(expectedOffset - actualOffset) < 1; // 1分の誤差まで許容
 
       return {
@@ -299,7 +317,7 @@ export class TimezoneUtilities {
   findOptimalMeetingTime(
     timezones: string[],
     businessHoursStart: number = 9, // 9 AM
-    businessHoursEnd: number = 17,   // 5 PM
+    businessHoursEnd: number = 17, // 5 PM
     durationMinutes: number = 60
   ): Array<{
     utcTime: Date;
@@ -323,9 +341,13 @@ export class TimezoneUtilities {
     const searchEnd = new Date(searchStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     // 30分間隔でチェック
-    for (let time = searchStart.getTime(); time <= searchEnd.getTime(); time += 30 * 60 * 1000) {
+    for (
+      let time = searchStart.getTime();
+      time <= searchEnd.getTime();
+      time += 30 * 60 * 1000
+    ) {
       const utcTime = new Date(time);
-      
+
       const timezoneDetails = timezones.map(tz => {
         const localTime = utcTime.toLocaleString('en-US', {
           timeZone: tz,
@@ -333,9 +355,10 @@ export class TimezoneUtilities {
           hour: '2-digit',
           minute: '2-digit',
         });
-        
+
         const localHour = parseInt(localTime.split(':')[0]);
-        const isBusinessHours = localHour >= businessHoursStart && localHour < businessHoursEnd;
+        const isBusinessHours =
+          localHour >= businessHoursStart && localHour < businessHoursEnd;
 
         return {
           timezone: tz,
@@ -345,8 +368,10 @@ export class TimezoneUtilities {
       });
 
       // すべてのタイムゾーンで営業時間内かチェック
-      const allInBusinessHours = timezoneDetails.every(detail => detail.isBusinessHours);
-      
+      const allInBusinessHours = timezoneDetails.every(
+        detail => detail.isBusinessHours
+      );
+
       if (allInBusinessHours) {
         results.push({
           utcTime,
@@ -373,7 +398,7 @@ export class TimezoneUtilities {
   } {
     const size = this.timezoneCache.size;
     const timezones = Array.from(this.timezoneCache.keys());
-    
+
     // 簡易的なメモリ使用量の推定
     const avgEntrySize = 500; // バイト per entry
     const memoryBytes = size * avgEntrySize;
@@ -399,11 +424,11 @@ export class TimezoneUtilities {
    */
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 

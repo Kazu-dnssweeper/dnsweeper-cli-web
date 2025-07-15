@@ -2,11 +2,25 @@
  * retry.ts のテスト
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { retry, RetryOptions } from '../../../src/utils/retry.js';
+import { withRetry as retry, RetryOptions } from '../../../src/utils/retry.js';
+import { ErrorHandler } from '../../../src/lib/errors.js';
+
+// ErrorHandlerをモック
+vi.mock('../../../src/lib/errors.js', () => ({
+  ErrorHandler: {
+    isRetryable: vi.fn().mockReturnValue(true)
+  }
+}));
 
 describe('retry utility', () => {
+  beforeEach(() => {
+    // 各テスト前にモックをリセット
+    vi.clearAllMocks();
+    // デフォルトでリトライ可能に設定
+    (ErrorHandler.isRetryable as any).mockReturnValue(true);
+  });
   it('should succeed on first try', async () => {
     const successFn = vi.fn().mockResolvedValue('success');
     
@@ -22,7 +36,7 @@ describe('retry utility', () => {
       .mockRejectedValueOnce(new Error('fail 2'))
       .mockResolvedValue('success');
     
-    const result = await retry(failThenSucceedFn, { maxRetries: 3 });
+    const result = await retry(failThenSucceedFn, { maxAttempts: 4 });
     
     expect(result).toBe('success');
     expect(failThenSucceedFn).toHaveBeenCalledTimes(3);
@@ -31,8 +45,8 @@ describe('retry utility', () => {
   it('should fail after max retries', async () => {
     const alwaysFailFn = vi.fn().mockRejectedValue(new Error('always fail'));
     
-    await expect(retry(alwaysFailFn, { maxRetries: 2 })).rejects.toThrow('always fail');
-    expect(alwaysFailFn).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
+    await expect(retry(alwaysFailFn, { maxAttempts: 3 })).rejects.toThrow('always fail');
+    expect(alwaysFailFn).toHaveBeenCalledTimes(3); // 3 attempts total
   });
 
   it('should use custom delay', async () => {
@@ -41,7 +55,7 @@ describe('retry utility', () => {
       .mockResolvedValue('success');
     
     const start = Date.now();
-    await retry(failThenSucceedFn, { maxRetries: 1, delay: 100 });
+    await retry(failThenSucceedFn, { maxAttempts: 2, delay: 100 });
     const elapsed = Date.now() - start;
     
     expect(elapsed).toBeGreaterThan(90); // Account for timing variance
@@ -56,9 +70,9 @@ describe('retry utility', () => {
     
     const start = Date.now();
     await retry(failThenSucceedFn, { 
-      maxRetries: 2, 
+      maxAttempts: 3, 
       delay: 50, 
-      exponentialBackoff: true 
+      backoff: 'exponential' 
     });
     const elapsed = Date.now() - start;
     
@@ -74,14 +88,10 @@ describe('retry utility', () => {
     
     const onRetry = vi.fn();
     
-    await retry(failThenSucceedFn, { maxRetries: 1, onRetry });
+    await retry(failThenSucceedFn, { maxAttempts: 2, onRetry });
     
     expect(onRetry).toHaveBeenCalledTimes(1);
-    expect(onRetry).toHaveBeenCalledWith(
-      expect.any(Error),
-      1,
-      expect.objectContaining({ maxRetries: 1 })
-    );
+    expect(onRetry).toHaveBeenCalledWith(1, expect.any(Error));
   });
 
   it('should handle promise-returning functions', async () => {
@@ -106,8 +116,8 @@ describe('retry utility', () => {
   it('should handle zero max retries', async () => {
     const failFn = vi.fn().mockRejectedValue(new Error('fail'));
     
-    await expect(retry(failFn, { maxRetries: 0 })).rejects.toThrow('fail');
-    expect(failFn).toHaveBeenCalledTimes(1);
+    await expect(retry(failFn, { maxAttempts: 0 })).rejects.toThrow();
+    expect(failFn).toHaveBeenCalledTimes(0); // maxAttempts: 0 means no attempts
   });
 
   it('should handle negative delay', async () => {
@@ -116,7 +126,7 @@ describe('retry utility', () => {
       .mockResolvedValue('success');
     
     const start = Date.now();
-    await retry(failThenSucceedFn, { maxRetries: 1, delay: -100 });
+    await retry(failThenSucceedFn, { maxAttempts: 2, delay: -100 });
     const elapsed = Date.now() - start;
     
     // Should not delay for negative values

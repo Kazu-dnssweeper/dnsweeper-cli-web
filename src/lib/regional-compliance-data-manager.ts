@@ -34,13 +34,16 @@ export class RegionalComplianceDataManager extends EventEmitter {
     try {
       this.dataProcessingRecords.set(record.id, record);
       this.emit('data-processing-record-added', record);
-      
+
       this.logAuditEvent({
         action: 'data-processing-record-added',
         entity: 'data-processing-record',
         entityId: record.id,
         userId: 'system',
-        details: { purpose: record.processingPurpose, dataTypes: record.dataCategories },
+        details: {
+          purpose: record.processingPurpose,
+          dataTypes: record.dataCategories,
+        },
         result: 'success',
       });
 
@@ -97,16 +100,16 @@ export class RegionalComplianceDataManager extends EventEmitter {
     try {
       this.incidents.set(incident.id, incident);
       this.emit('incident-recorded', incident);
-      
+
       this.logAuditEvent({
         action: 'incident-recorded',
         entity: 'incident',
         entityId: incident.id,
         userId: 'system',
-        details: { 
-          type: incident.type, 
+        details: {
+          type: incident.type,
           severity: incident.severity,
-          frameworks: incident.affectedSystems 
+          frameworks: incident.affectedSystems,
         },
         result: 'success',
       });
@@ -139,16 +142,23 @@ export class RegionalComplianceDataManager extends EventEmitter {
   /**
    * インシデントの更新
    */
-  updateIncident(incidentId: string, updates: Partial<ComplianceIncident>): boolean {
+  updateIncident(
+    incidentId: string,
+    updates: Partial<ComplianceIncident>
+  ): boolean {
     try {
       const incident = this.incidents.get(incidentId);
       if (!incident) {
         return false;
       }
 
-      const updatedIncident = { ...incident, ...updates, updatedAt: new Date() };
+      const updatedIncident = {
+        ...incident,
+        ...updates,
+        updatedAt: new Date(),
+      };
       this.incidents.set(incidentId, updatedIncident);
-      
+
       this.emit('incident-updated', { incidentId, updates });
       this.logAuditEvent({
         action: 'incident-updated',
@@ -234,9 +244,9 @@ export class RegionalComplianceDataManager extends EventEmitter {
     incidentsBySeverity: Record<string, number>;
   } {
     const incidentsBySeverity: Record<string, number> = {};
-    
+
     this.getAllIncidents().forEach(incident => {
-      incidentsBySeverity[incident.severity] = 
+      incidentsBySeverity[incident.severity] =
         (incidentsBySeverity[incident.severity] || 0) + 1;
     });
 
@@ -256,7 +266,7 @@ export class RegionalComplianceDataManager extends EventEmitter {
       this.dataProcessingRecords.clear();
       this.incidents.clear();
       this.auditLogs.length = 0;
-      
+
       this.emit('data-cleared');
       this.logger.info('コンプライアンスデータクリア完了');
     } catch (error) {

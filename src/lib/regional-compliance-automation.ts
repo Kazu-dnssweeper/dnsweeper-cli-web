@@ -5,11 +5,10 @@
 
 import { EventEmitter } from 'events';
 
-import { Logger } from './logger.js';
-import { RegionalComplianceAssessor } from './regional-compliance-assessor.js';
-import { RegionalComplianceReporter } from './regional-compliance-reporter.js';
-import { RegionalComplianceDataManager } from './regional-compliance-data-manager.js';
-
+import type { Logger } from './logger.js';
+import type { RegionalComplianceAssessor } from './regional-compliance-assessor.js';
+import type { RegionalComplianceDataManager } from './regional-compliance-data-manager.js';
+import type { RegionalComplianceReporter } from './regional-compliance-reporter.js';
 import type {
   RegionalComplianceManagerOptions,
   ComplianceFramework,
@@ -127,8 +126,9 @@ export class RegionalComplianceAutomation extends EventEmitter {
    */
   private startAutomaticAssessment(): void {
     try {
-      const interval = this.options.automaticAssessmentInterval || 24 * 60 * 60 * 1000;
-      
+      const interval =
+        this.options.automaticAssessmentInterval || 24 * 60 * 60 * 1000;
+
       this.assessmentInterval = setInterval(async () => {
         try {
           await this.performScheduledAssessment();
@@ -137,8 +137,8 @@ export class RegionalComplianceAutomation extends EventEmitter {
         }
       }, interval);
 
-      this.logger.info('自動評価開始', { 
-        intervalHours: interval / (60 * 60 * 1000) 
+      this.logger.info('自動評価開始', {
+        intervalHours: interval / (60 * 60 * 1000),
       });
     } catch (error) {
       this.logger.error('自動評価開始エラー', error as Error);
@@ -151,8 +151,9 @@ export class RegionalComplianceAutomation extends EventEmitter {
    */
   private startAutomaticReporting(): void {
     try {
-      const interval = this.options.automaticReportingInterval || 7 * 24 * 60 * 60 * 1000;
-      
+      const interval =
+        this.options.automaticReportingInterval || 7 * 24 * 60 * 60 * 1000;
+
       this.reportingInterval = setInterval(async () => {
         try {
           await this.performScheduledReporting();
@@ -161,8 +162,8 @@ export class RegionalComplianceAutomation extends EventEmitter {
         }
       }, interval);
 
-      this.logger.info('自動レポート生成開始', { 
-        intervalDays: interval / (24 * 60 * 60 * 1000) 
+      this.logger.info('自動レポート生成開始', {
+        intervalDays: interval / (24 * 60 * 60 * 1000),
       });
     } catch (error) {
       this.logger.error('自動レポート生成開始エラー', error as Error);
@@ -176,15 +177,16 @@ export class RegionalComplianceAutomation extends EventEmitter {
   private async performScheduledAssessment(): Promise<void> {
     try {
       this.logger.info('スケジュール評価開始');
-      
+
       // すべてのフレームワークに対して評価を実行
       // フレームワーク一覧を取得（実際の実装では適切なメソッドを使用）
       const frameworks: any[] = []; // 簡易実装
       const assessmentPromises = frameworks.map(async framework => {
         try {
           // 評価実行（実際の実装では適切なメソッドを使用）
-          const assessment = await this.assessor.runComplianceAssessment(framework);
-          
+          const assessment =
+            await this.assessor.runComplianceAssessment(framework);
+
           this.emit('scheduled-assessment-completed', {
             frameworkId: framework.id,
             assessment,
@@ -192,7 +194,10 @@ export class RegionalComplianceAutomation extends EventEmitter {
 
           return assessment;
         } catch (error) {
-          this.logger.error(`フレームワーク ${framework.id} の評価エラー`, error as Error);
+          this.logger.error(
+            `フレームワーク ${framework.id} の評価エラー`,
+            error as Error
+          );
           return null;
         }
       });
@@ -205,7 +210,7 @@ export class RegionalComplianceAutomation extends EventEmitter {
         entity: 'assessment',
         entityId: `scheduled-${Date.now()}`,
         userId: 'system',
-        details: { 
+        details: {
           frameworksAssessed: frameworks.length,
           successfulAssessments: successful.length,
         },
@@ -228,7 +233,7 @@ export class RegionalComplianceAutomation extends EventEmitter {
   private async performScheduledReporting(): Promise<void> {
     try {
       this.logger.info('スケジュールレポート生成開始');
-      
+
       // 週次レポートを生成
       // レポート生成（実際の実装では適切なメソッドを使用）
       const report = await this.reporter.generateComplianceReport('weekly', {
@@ -244,7 +249,7 @@ export class RegionalComplianceAutomation extends EventEmitter {
         entity: 'report',
         entityId: report.id,
         userId: 'system',
-        details: { 
+        details: {
           type: 'weekly',
           frameworksCovered: report.frameworks?.length || 0,
         },
@@ -267,7 +272,7 @@ export class RegionalComplianceAutomation extends EventEmitter {
   private setupIncidentDetection(): void {
     try {
       // 評価完了時のインシデント検出
-      this.assessor.on('assessment-completed', (data) => {
+      this.assessor.on('assessment-completed', data => {
         if (data.riskLevel === 'high' || data.riskLevel === 'critical') {
           this.dataManager.recordIncident({
             id: `incident-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -281,13 +286,13 @@ export class RegionalComplianceAutomation extends EventEmitter {
             reportedBy: 'compliance-team',
             immediateActions: [],
             affectedData: ['assessment-data'],
-        estimatedImpact: 'High compliance risk detected',
-        remediationPlan: 'Follow-up assessment required',
-        preventiveActions: [],
-        notificationRequired: false,
-        lastUpdated: new Date(),
-        lessons: [],
-        detectedAt: new Date(),
+            estimatedImpact: 'High compliance risk detected',
+            remediationPlan: 'Follow-up assessment required',
+            preventiveActions: [],
+            notificationRequired: false,
+            lastUpdated: new Date(),
+            lessons: [],
+            detectedAt: new Date(),
           });
         }
       });
@@ -305,10 +310,12 @@ export class RegionalComplianceAutomation extends EventEmitter {
   async runManualAssessment(frameworkId: string): Promise<void> {
     try {
       this.logger.info('手動評価開始', { frameworkId });
-      
+
       // フレームワーク取得と評価実行の簡易実装
       const framework = { id: frameworkId }; // 実際の実装では適切にフレームワークを取得
-      const assessment = await this.assessor.runComplianceAssessment(framework as any);
+      const assessment = await this.assessor.runComplianceAssessment(
+        framework as any
+      );
 
       this.emit('manual-assessment-completed', {
         frameworkId,
@@ -324,7 +331,10 @@ export class RegionalComplianceAutomation extends EventEmitter {
         result: 'success',
       });
 
-      this.logger.info('手動評価完了', { frameworkId, assessmentId: assessment.id });
+      this.logger.info('手動評価完了', {
+        frameworkId,
+        assessmentId: assessment.id,
+      });
     } catch (error) {
       this.logger.error('手動評価エラー', error as Error);
       throw error;
@@ -334,10 +344,12 @@ export class RegionalComplianceAutomation extends EventEmitter {
   /**
    * 手動レポート生成の実行
    */
-  async runManualReporting(type: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<void> {
+  async runManualReporting(
+    type: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  ): Promise<void> {
     try {
       this.logger.info('手動レポート生成開始', { type });
-      
+
       const report = await this.reporter.generateComplianceReport(type, {
         includeMetrics: true,
         includeRecommendations: true,
@@ -368,7 +380,7 @@ export class RegionalComplianceAutomation extends EventEmitter {
   updateOptions(newOptions: Partial<AutomationOptions>): void {
     try {
       this.options = { ...this.options, ...newOptions };
-      
+
       // 実行中の場合は再起動
       if (this.isRunning) {
         this.stop();
@@ -399,12 +411,14 @@ export class RegionalComplianceAutomation extends EventEmitter {
 
     // 次回実行予定時刻を計算（簡易実装）
     if (this.isRunning && this.options.enableAutomaticAssessment) {
-      const interval = this.options.automaticAssessmentInterval || 24 * 60 * 60 * 1000;
+      const interval =
+        this.options.automaticAssessmentInterval || 24 * 60 * 60 * 1000;
       (status as any).nextAssessment = new Date(Date.now() + interval);
     }
 
     if (this.isRunning && this.options.enableReporting) {
-      const interval = this.options.automaticReportingInterval || 7 * 24 * 60 * 60 * 1000;
+      const interval =
+        this.options.automaticReportingInterval || 7 * 24 * 60 * 60 * 1000;
       (status as any).nextReport = new Date(Date.now() + interval);
     }
 

@@ -5,9 +5,7 @@
 
 import { Logger } from './logger.js';
 
-import type {
-  AlgorithmicAnalysis,
-} from './security-types.js';
+import type { AlgorithmicAnalysis } from './security-types.js';
 
 export class DNSAlgorithmicAnalyzer {
   private logger: Logger;
@@ -19,7 +17,9 @@ export class DNSAlgorithmicAnalyzer {
   /**
    * アルゴリズム分析の実行
    */
-  async performAlgorithmicAnalysis(domain: string): Promise<AlgorithmicAnalysis> {
+  async performAlgorithmicAnalysis(
+    domain: string
+  ): Promise<AlgorithmicAnalysis> {
     try {
       this.logger.debug('アルゴリズム分析開始', { domain });
 
@@ -117,9 +117,21 @@ export class DNSAlgorithmicAnalyzer {
   private calculateTyposquattingScore(domain: string): number {
     // 人気ドメインのリスト（実際の実装ではより包括的なリストを使用）
     const popularDomains = [
-      'google', 'facebook', 'amazon', 'microsoft', 'apple',
-      'twitter', 'instagram', 'youtube', 'linkedin', 'github',
-      'paypal', 'ebay', 'netflix', 'adobe', 'salesforce',
+      'google',
+      'facebook',
+      'amazon',
+      'microsoft',
+      'apple',
+      'twitter',
+      'instagram',
+      'youtube',
+      'linkedin',
+      'github',
+      'paypal',
+      'ebay',
+      'netflix',
+      'adobe',
+      'salesforce',
     ];
 
     let maxSimilarity = 0;
@@ -163,7 +175,9 @@ export class DNSAlgorithmicAnalyzer {
   /**
    * Nグラム分析
    */
-  private performNgramAnalysis(domain: string): AlgorithmicAnalysis['ngramAnalysis'] {
+  private performNgramAnalysis(
+    domain: string
+  ): AlgorithmicAnalysis['ngramAnalysis'] {
     const chars = domain.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const bigrams = new Map<string, number>();
     const trigrams = new Map<string, number>();
@@ -182,7 +196,7 @@ export class DNSAlgorithmicAnalyzer {
 
     // 疑わしいNグラムの検出
     const suspiciousNgrams: string[] = [];
-    
+
     // 繰り返しパターンの検出
     for (const [ngram, count] of bigrams.entries()) {
       if (count > 2 && ngram[0] === ngram[1]) {
@@ -191,8 +205,14 @@ export class DNSAlgorithmicAnalyzer {
     }
 
     return {
-      bigramScore: (Array.from(bigrams.values()).reduce((a, b) => a + b, 0) / chars.length) * 100,
-      trigramScore: (Array.from(trigrams.values()).reduce((a, b) => a + b, 0) / chars.length) * 100,
+      bigramScore:
+        (Array.from(bigrams.values()).reduce((a, b) => a + b, 0) /
+          chars.length) *
+        100,
+      trigramScore:
+        (Array.from(trigrams.values()).reduce((a, b) => a + b, 0) /
+          chars.length) *
+        100,
       characterFrequency: this.calculateCharacterFrequency(chars),
       suspiciousNgrams,
     };
@@ -201,7 +221,9 @@ export class DNSAlgorithmicAnalyzer {
   /**
    * 語彙分析
    */
-  private performLexicalAnalysis(domain: string): AlgorithmicAnalysis['lexicalAnalysis'] {
+  private performLexicalAnalysis(
+    domain: string
+  ): AlgorithmicAnalysis['lexicalAnalysis'] {
     const chars = domain.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
     return {
@@ -238,12 +260,54 @@ export class DNSAlgorithmicAnalyzer {
   private calculateDictionaryScore(text: string): number {
     // 英語の一般的な単語リスト（実際の実装ではより包括的な辞書を使用）
     const commonWords = [
-      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all',
-      'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day',
-      'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new',
-      'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did',
-      'man', 'end', 'few', 'got', 'let', 'put', 'say', 'she',
-      'too', 'use', 'web', 'app', 'api', 'dev', 'tech', 'data',
+      'the',
+      'and',
+      'for',
+      'are',
+      'but',
+      'not',
+      'you',
+      'all',
+      'can',
+      'had',
+      'her',
+      'was',
+      'one',
+      'our',
+      'out',
+      'day',
+      'get',
+      'has',
+      'him',
+      'his',
+      'how',
+      'its',
+      'may',
+      'new',
+      'now',
+      'old',
+      'see',
+      'two',
+      'way',
+      'who',
+      'boy',
+      'did',
+      'man',
+      'end',
+      'few',
+      'got',
+      'let',
+      'put',
+      'say',
+      'she',
+      'too',
+      'use',
+      'web',
+      'app',
+      'api',
+      'dev',
+      'tech',
+      'data',
     ];
 
     let foundWords = 0;
@@ -270,7 +334,7 @@ export class DNSAlgorithmicAnalyzer {
     // 母音と子音のパターンを分析
     const vowels = 'aeiou';
     const consonants = 'bcdfghjklmnpqrstvwxyz';
-    
+
     let vowelCount = 0;
     let consonantCount = 0;
     let vowelConsonantTransitions = 0;
@@ -302,7 +366,10 @@ export class DNSAlgorithmicAnalyzer {
     const vowelRatioScore = 100 - Math.abs(vowelRatio - idealVowelRatio) * 200;
 
     // 母音子音の遷移数（発音しやすさの指標）
-    const transitionScore = Math.min(100, (vowelConsonantTransitions / text.length) * 200);
+    const transitionScore = Math.min(
+      100,
+      (vowelConsonantTransitions / text.length) * 200
+    );
 
     return Math.round((vowelRatioScore + transitionScore) / 2);
   }
@@ -330,7 +397,7 @@ export class DNSAlgorithmicAnalyzer {
    */
   private findSuspiciousTokens(text: string): string[] {
     const suspiciousTokens: string[] = [];
-    
+
     // 疑わしいパターン
     const suspiciousPatterns = [
       /(.)\1{3,}/g, // 同じ文字が4回以上連続
@@ -370,8 +437,8 @@ export class DNSAlgorithmicAnalyzer {
       for (let j = 1; j <= len2; j++) {
         const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
         matrix[i][j] = Math.min(
-          matrix[i - 1][j] + 1,      // 削除
-          matrix[i][j - 1] + 1,      // 挿入
+          matrix[i - 1][j] + 1, // 削除
+          matrix[i][j - 1] + 1, // 挿入
           matrix[i - 1][j - 1] + cost // 置換
         );
       }
@@ -379,7 +446,7 @@ export class DNSAlgorithmicAnalyzer {
 
     const distance = matrix[len1][len2];
     const maxLen = Math.max(len1, len2);
-    
+
     // 類似度を0-100のスコアに変換
     return Math.round(((maxLen - distance) / maxLen) * 100);
   }

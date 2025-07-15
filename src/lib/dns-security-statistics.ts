@@ -62,14 +62,14 @@ export class DNSSecurityStatistics extends EventEmitter {
     try {
       const cacheKey = this.generateCacheKey(timeframe);
       const cached = this.statisticsCache.get(cacheKey);
-      
+
       if (cached && this.isCacheValid(cached)) {
         return cached;
       }
 
       const statistics = this.calculateStatistics(timeframe);
       this.statisticsCache.set(cacheKey, statistics);
-      
+
       return statistics;
     } catch (error) {
       this.logger.error('統計取得エラー', error as Error);
@@ -88,18 +88,20 @@ export class DNSSecurityStatistics extends EventEmitter {
     firstThreat?: SecurityThreat;
   } {
     const threats = this.threatDatabase.get(domain) || [];
-    
+
     const threatsByType: Record<string, number> = {};
     const threatsBySeverity: Record<string, number> = {};
 
     threats.forEach(threat => {
       threatsByType[threat.type] = (threatsByType[threat.type] || 0) + 1;
-      threatsBySeverity[threat.severity] = (threatsBySeverity[threat.severity] || 0) + 1;
+      threatsBySeverity[threat.severity] =
+        (threatsBySeverity[threat.severity] || 0) + 1;
     });
 
     // 時系列でソート
-    const sortedThreats = threats.sort((a, b) => 
-      new Date(a.detectedAt).getTime() - new Date(b.detectedAt).getTime()
+    const sortedThreats = threats.sort(
+      (a, b) =>
+        new Date(a.detectedAt).getTime() - new Date(b.detectedAt).getTime()
     );
 
     return {
@@ -115,27 +117,40 @@ export class DNSSecurityStatistics extends EventEmitter {
    * 脅威トレンド分析
    */
   getThreatTrends(days: number = 30): {
-    daily: Array<{ date: string; count: number; severity: Record<string, number> }>;
-    types: Array<{ type: string; trend: 'increasing' | 'decreasing' | 'stable'; change: number }>;
+    daily: Array<{
+      date: string;
+      count: number;
+      severity: Record<string, number>;
+    }>;
+    types: Array<{
+      type: string;
+      trend: 'increasing' | 'decreasing' | 'stable';
+      change: number;
+    }>;
     overall: { trend: 'increasing' | 'decreasing' | 'stable'; change: number };
   } {
     const now = new Date();
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    
+
     // 日別統計
-    const daily: Array<{ date: string; count: number; severity: Record<string, number> }> = [];
+    const daily: Array<{
+      date: string;
+      count: number;
+      severity: Record<string, number>;
+    }> = [];
     const typeCount: Record<string, number[]> = {};
 
     for (let i = 0; i < days; i++) {
       const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const dayThreats = this.getThreatsForDate(date);
       const severityCount: Record<string, number> = {};
-      
+
       dayThreats.forEach(threat => {
-        severityCount[threat.severity] = (severityCount[threat.severity] || 0) + 1;
-        
+        severityCount[threat.severity] =
+          (severityCount[threat.severity] || 0) + 1;
+
         // 脅威タイプ別カウント
         if (!typeCount[threat.type]) {
           typeCount[threat.type] = new Array(days).fill(0);
@@ -154,12 +169,13 @@ export class DNSSecurityStatistics extends EventEmitter {
     const types = Object.entries(typeCount).map(([type, counts]) => {
       const firstHalf = counts.slice(0, Math.floor(days / 2));
       const secondHalf = counts.slice(Math.floor(days / 2));
-      
+
       const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-      const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-      
+      const secondAvg =
+        secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+
       const change = ((secondAvg - firstAvg) / (firstAvg || 1)) * 100;
-      
+
       let trend: 'increasing' | 'decreasing' | 'stable';
       if (Math.abs(change) < 10) {
         trend = 'stable';
@@ -176,12 +192,15 @@ export class DNSSecurityStatistics extends EventEmitter {
     const totalCounts = daily.map(d => d.count);
     const firstHalfTotal = totalCounts.slice(0, Math.floor(days / 2));
     const secondHalfTotal = totalCounts.slice(Math.floor(days / 2));
-    
-    const firstTotalAvg = firstHalfTotal.reduce((a, b) => a + b, 0) / firstHalfTotal.length;
-    const secondTotalAvg = secondHalfTotal.reduce((a, b) => a + b, 0) / secondHalfTotal.length;
-    
-    const overallChange = ((secondTotalAvg - firstTotalAvg) / (firstTotalAvg || 1)) * 100;
-    
+
+    const firstTotalAvg =
+      firstHalfTotal.reduce((a, b) => a + b, 0) / firstHalfTotal.length;
+    const secondTotalAvg =
+      secondHalfTotal.reduce((a, b) => a + b, 0) / secondHalfTotal.length;
+
+    const overallChange =
+      ((secondTotalAvg - firstTotalAvg) / (firstTotalAvg || 1)) * 100;
+
     let overallTrend: 'increasing' | 'decreasing' | 'stable';
     if (Math.abs(overallChange) < 10) {
       overallTrend = 'stable';
@@ -217,12 +236,14 @@ export class DNSSecurityStatistics extends EventEmitter {
     }> = [];
 
     this.threatDatabase.forEach((threats, domain) => {
-      const criticalCount = threats.filter(t => t.severity === 'critical').length;
+      const criticalCount = threats.filter(
+        t => t.severity === 'critical'
+      ).length;
       const lastThreat = threats.reduce((latest, threat) => {
         const threatDate = new Date(threat.detectedAt);
         return threatDate > latest ? threatDate : latest;
       }, new Date(0));
-      
+
       const types = [...new Set(threats.map(t => t.type))];
 
       domainStats.push({
@@ -259,8 +280,8 @@ export class DNSSecurityStatistics extends EventEmitter {
       averageThreatsPerDomain: number;
     };
     statistics: ThreatStatistics;
-    topDomains: ReturnType<typeof this.getTopThreatDomains>;
-    trends: ReturnType<typeof this.getThreatTrends>;
+    topDomains: Array<{ domain: string; threatCount: number; types: string[] }>;
+    trends: Array<{ timestamp: number; counts: Record<string, number> }>;
     recommendations: string[];
   } {
     const statistics = this.getThreatStatistics(timeframe);
@@ -270,26 +291,35 @@ export class DNSSecurityStatistics extends EventEmitter {
     const totalThreats = statistics.totalThreats;
     const criticalThreats = statistics.threatsBySeverity.critical || 0;
     const domainsAnalyzed = this.threatDatabase.size;
-    const averageThreatsPerDomain = domainsAnalyzed > 0 ? totalThreats / domainsAnalyzed : 0;
+    const averageThreatsPerDomain =
+      domainsAnalyzed > 0 ? totalThreats / domainsAnalyzed : 0;
 
     // 推奨事項の生成
     const recommendations: string[] = [];
-    
+
     if (criticalThreats > 0) {
-      recommendations.push(`${criticalThreats}件のクリティカル脅威が検出されています。即座に対処を検討してください。`);
+      recommendations.push(
+        `${criticalThreats}件のクリティカル脅威が検出されています。即座に対処を検討してください。`
+      );
     }
-    
+
     if (trends.overall.trend === 'increasing' && trends.overall.change > 20) {
-      recommendations.push(`脅威トレンドが${trends.overall.change}%増加しています。セキュリティ対策の強化を推奨します。`);
+      recommendations.push(
+        `脅威トレンドが${trends.overall.change}%増加しています。セキュリティ対策の強化を推奨します。`
+      );
     }
-    
+
     if (averageThreatsPerDomain > 5) {
-      recommendations.push('ドメインあたりの平均脅威数が高いです。フィルタリング設定の見直しを検討してください。');
+      recommendations.push(
+        'ドメインあたりの平均脅威数が高いです。フィルタリング設定の見直しを検討してください。'
+      );
     }
 
     const malwareCount = statistics.threatsByType.malware || 0;
     if (malwareCount > totalThreats * 0.3) {
-      recommendations.push('マルウェア関連の脅威が多数検出されています。アンチマルウェア対策の強化を推奨します。');
+      recommendations.push(
+        'マルウェア関連の脅威が多数検出されています。アンチマルウェア対策の強化を推奨します。'
+      );
     }
 
     return {
@@ -297,7 +327,8 @@ export class DNSSecurityStatistics extends EventEmitter {
         totalThreats,
         criticalThreats,
         domainsAnalyzed,
-        averageThreatsPerDomain: Math.round(averageThreatsPerDomain * 100) / 100,
+        averageThreatsPerDomain:
+          Math.round(averageThreatsPerDomain * 100) / 100,
       },
       statistics,
       topDomains,
@@ -326,9 +357,11 @@ export class DNSSecurityStatistics extends EventEmitter {
     memoryUsage: string;
   } {
     const totalDomains = this.threatDatabase.size;
-    const totalThreats = Array.from(this.threatDatabase.values())
-      .reduce((sum, threats) => sum + threats.length, 0);
-    
+    const totalThreats = Array.from(this.threatDatabase.values()).reduce(
+      (sum, threats) => sum + threats.length,
+      0
+    );
+
     // 簡易的なメモリ使用量の推定
     const avgThreatSize = 1024; // 1KB per threat (rough estimate)
     const memoryBytes = totalThreats * avgThreatSize;
@@ -343,9 +376,12 @@ export class DNSSecurityStatistics extends EventEmitter {
 
   // プライベートメソッド
 
-  private calculateStatistics(timeframe?: { start: Date; end: Date }): ThreatStatistics {
-    let allThreats: SecurityThreat[] = [];
-    
+  private calculateStatistics(timeframe?: {
+    start: Date;
+    end: Date;
+  }): ThreatStatistics {
+    const allThreats: SecurityThreat[] = [];
+
     // 時間枠でフィルタリング
     this.threatDatabase.forEach(threats => {
       const filteredThreats = timeframe
@@ -354,7 +390,7 @@ export class DNSSecurityStatistics extends EventEmitter {
             return threatDate >= timeframe.start && threatDate <= timeframe.end;
           })
         : threats;
-      
+
       allThreats.push(...filteredThreats);
     });
 
@@ -371,8 +407,10 @@ export class DNSSecurityStatistics extends EventEmitter {
 
     // 脅威タイプ別カウント
     allThreats.forEach(threat => {
-      statistics.threatsByType[threat.type] = (statistics.threatsByType[threat.type] || 0) + 1;
-      statistics.threatsBySeverity[threat.severity] = (statistics.threatsBySeverity[threat.severity] || 0) + 1;
+      statistics.threatsByType[threat.type] =
+        (statistics.threatsByType[threat.type] || 0) + 1;
+      statistics.threatsBySeverity[threat.severity] =
+        (statistics.threatsBySeverity[threat.severity] || 0) + 1;
     });
 
     return statistics;
@@ -381,36 +419,43 @@ export class DNSSecurityStatistics extends EventEmitter {
   private calculateDetectionEfficiency(threats: SecurityThreat[]): number {
     // 検出効率の簡易計算（実際の実装ではより詳細な分析が必要）
     const confirmedThreats = threats.filter(t => t.confidence > 0.8).length;
-    return threats.length > 0 ? Math.round((confirmedThreats / threats.length) * 100) : 0;
+    return threats.length > 0
+      ? Math.round((confirmedThreats / threats.length) * 100)
+      : 0;
   }
 
   private calculateFalsePositiveRate(threats: SecurityThreat[]): number {
     // 偽陽性率の簡易計算
     const lowConfidenceThreats = threats.filter(t => t.confidence < 0.5).length;
-    return threats.length > 0 ? Math.round((lowConfidenceThreats / threats.length) * 100) : 0;
+    return threats.length > 0
+      ? Math.round((lowConfidenceThreats / threats.length) * 100)
+      : 0;
   }
 
   private calculateAverageDetectionTime(threats: SecurityThreat[]): number {
     if (threats.length === 0) return 0;
-    
+
     // 平均検出時間の計算（簡易実装）
     const detectionTimes = threats.map(threat => {
       // 検出時間を推定（実際の実装では実際の時間を使用）
       return Math.random() * 1000; // ミリ秒
     });
 
-    return Math.round(detectionTimes.reduce((sum, time) => sum + time, 0) / detectionTimes.length);
+    return Math.round(
+      detectionTimes.reduce((sum, time) => sum + time, 0) /
+        detectionTimes.length
+    );
   }
 
   private getThreatsForDate(date: Date): SecurityThreat[] {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
     const dayThreats: SecurityThreat[] = [];
-    
+
     this.threatDatabase.forEach(threats => {
       const filteredThreats = threats.filter(threat => {
         const threatDate = new Date(threat.detectedAt);
@@ -435,11 +480,11 @@ export class DNSSecurityStatistics extends EventEmitter {
 
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

@@ -65,7 +65,7 @@ export class TenantBillingManager extends EventEmitter {
     usageUpdates: Partial<TenantQuota['current']>
   ): Promise<TenantQuota> {
     const previousUsage = { ...quota.current };
-    
+
     // 使用量を更新
     Object.assign(quota.current, usageUpdates);
 
@@ -73,15 +73,21 @@ export class TenantBillingManager extends EventEmitter {
     this.checkQuotaLimits(tenantId, quota);
 
     // 使用量変更の記録
-    await this.logAction(tenantId, 'system', 'quota:usage-updated', {
-      type: 'quota',
-      id: tenantId,
-      name: 'usage-update',
-    }, {
-      previousUsage,
-      newUsage: quota.current,
-      changes: usageUpdates,
-    });
+    await this.logAction(
+      tenantId,
+      'system',
+      'quota:usage-updated',
+      {
+        type: 'quota',
+        id: tenantId,
+        name: 'usage-update',
+      },
+      {
+        previousUsage,
+        newUsage: quota.current,
+        changes: usageUpdates,
+      }
+    );
 
     this.emit('usage:updated', { tenantId, quota, changes: usageUpdates });
     return quota;
@@ -99,8 +105,16 @@ export class TenantBillingManager extends EventEmitter {
 
     // 各リソースの使用率をチェック
     const checks = [
-      { name: 'dnsRecords', current: current.dnsRecords, limit: limits.dnsRecords },
-      { name: 'queries', current: current.queriesThisMonth, limit: limits.queriesPerMonth },
+      {
+        name: 'dnsRecords',
+        current: current.dnsRecords,
+        limit: limits.dnsRecords,
+      },
+      {
+        name: 'queries',
+        current: current.queriesThisMonth,
+        limit: limits.queriesPerMonth,
+      },
       { name: 'users', current: current.users, limit: limits.users },
       { name: 'storage', current: current.storage, limit: limits.storage },
     ];
@@ -161,13 +175,15 @@ export class TenantBillingManager extends EventEmitter {
     };
   } {
     const baseCharge = billing.subscription.plan.price;
-    
+
     // 使用量課金の計算（簡略化）
     const usageCharge = this.calculateUsageCharges(billing.usage);
-    
+
     // 超過料金の計算
-    const overageCharge = this.calculateOverageCharges(billing.usage.overages || {});
-    
+    const overageCharge = this.calculateOverageCharges(
+      billing.usage.overages || {}
+    );
+
     const totalCharge = baseCharge + usageCharge + overageCharge;
 
     const report = {
@@ -196,18 +212,26 @@ export class TenantBillingManager extends EventEmitter {
             quantity: 1,
             unitPrice: baseCharge,
           },
-          ...(usageCharge > 0 ? [{
-            description: 'Usage-based charges',
-            amount: usageCharge,
-            quantity: 1,
-            unitPrice: usageCharge,
-          }] : []),
-          ...(overageCharge > 0 ? [{
-            description: 'Overage charges',
-            amount: overageCharge,
-            quantity: 1,
-            unitPrice: overageCharge,
-          }] : []),
+          ...(usageCharge > 0
+            ? [
+                {
+                  description: 'Usage-based charges',
+                  amount: usageCharge,
+                  quantity: 1,
+                  unitPrice: usageCharge,
+                },
+              ]
+            : []),
+          ...(overageCharge > 0
+            ? [
+                {
+                  description: 'Overage charges',
+                  amount: overageCharge,
+                  quantity: 1,
+                  unitPrice: overageCharge,
+                },
+              ]
+            : []),
         ],
       };
 
@@ -222,8 +246,11 @@ export class TenantBillingManager extends EventEmitter {
     let total = 0;
 
     // ストレージ使用量（1GB超過分について$0.10/GB）
-    const storageOverage = Math.max(0, usage.metrics.storage - 1024 * 1024 * 1024);
-    total += (storageOverage / (1024 * 1024 * 1024)) * 0.10;
+    const storageOverage = Math.max(
+      0,
+      usage.metrics.storage - 1024 * 1024 * 1024
+    );
+    total += (storageOverage / (1024 * 1024 * 1024)) * 0.1;
 
     // API呼び出し（10,000回超過分について$0.01/1000回）
     const apiOverage = Math.max(0, usage.metrics.apiCalls - 10000);
@@ -232,7 +259,9 @@ export class TenantBillingManager extends EventEmitter {
     return Math.round(total * 100) / 100; // 小数点以下2桁に丸める
   }
 
-  private calculateOverageCharges(overages: TenantBilling['usage']['overages']): number {
+  private calculateOverageCharges(
+    overages: TenantBilling['usage']['overages']
+  ): number {
     let total = 0;
 
     if (overages.queries) {
@@ -404,7 +433,10 @@ export class TenantBillingManager extends EventEmitter {
   /**
    * 監査ログ統計の取得
    */
-  getAuditStatistics(tenantId: string, period: { start: Date; end: Date }): {
+  getAuditStatistics(
+    tenantId: string,
+    period: { start: Date; end: Date }
+  ): {
     totalActions: number;
     successfulActions: number;
     failedActions: number;
@@ -432,7 +464,8 @@ export class TenantBillingManager extends EventEmitter {
       userActivity[log.userId] = (userActivity[log.userId] || 0) + 1;
 
       // リソース活動カウント
-      resourceActivity[log.resource.type] = (resourceActivity[log.resource.type] || 0) + 1;
+      resourceActivity[log.resource.type] =
+        (resourceActivity[log.resource.type] || 0) + 1;
 
       // 成功/失敗カウント
       if (log.success) {
@@ -471,16 +504,18 @@ export class TenantBillingManager extends EventEmitter {
 
     if (format === 'json') {
       return JSON.stringify(
-        options.includeDetails ? logs : logs.map(log => ({
-          id: log.id,
-          timestamp: log.timestamp,
-          userId: log.userId,
-          action: log.action,
-          resourceType: log.resource.type,
-          resourceId: log.resource.id,
-          success: log.success,
-          errorMessage: log.errorMessage,
-        })),
+        options.includeDetails
+          ? logs
+          : logs.map(log => ({
+              id: log.id,
+              timestamp: log.timestamp,
+              userId: log.userId,
+              action: log.action,
+              resourceType: log.resource.type,
+              resourceId: log.resource.id,
+              success: log.success,
+              errorMessage: log.errorMessage,
+            })),
         null,
         2
       );
@@ -520,7 +555,9 @@ export class TenantBillingManager extends EventEmitter {
    * 課金データのクリーンアップ（古いデータの削除）
    */
   async cleanupOldData(retentionDays: number = 365): Promise<void> {
-    const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    const cutoffDate = new Date(
+      Date.now() - retentionDays * 24 * 60 * 60 * 1000
+    );
 
     for (const [tenantId, logs] of this.auditLogs.entries()) {
       const filteredLogs = logs.filter(log => log.timestamp >= cutoffDate);
