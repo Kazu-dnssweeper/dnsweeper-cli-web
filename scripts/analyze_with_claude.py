@@ -145,15 +145,24 @@ class ClaudeCodeAnalyzer:
         }
     
     def analyze_with_claude(self, analysis_data: Dict[str, Any], options: Dict[str, bool]) -> Dict[str, Any]:
-        """Claude APIで高度な分析を実行"""
+        """Claude APIで高度な分析を実行 - 全ての分析を一度に実行"""
         
-        # 分析タイプに応じたプロンプト生成
-        if options.get('refactor'):
-            return self._analyze_refactoring(analysis_data)
-        elif options.get('test_generation'):
-            return self._analyze_test_generation(analysis_data)
-        else:
-            return self._analyze_architecture(analysis_data)
+        # オプションフラグに関係なく、常に3つの分析を全て実行
+        results = {}
+        
+        # 1. アーキテクチャ分析（Sonnetモデル）
+        print("🏗️  アーキテクチャ分析を実行中...")
+        results['architecture'] = self._analyze_architecture(analysis_data)
+        
+        # 2. リファクタリング提案（Sonnetモデル）
+        print("🔧 リファクタリング提案を生成中...")
+        results['refactoring'] = self._analyze_refactoring(analysis_data)
+        
+        # 3. テスト生成提案（Haikuモデル - コスト削減）
+        print("🧪 テスト生成提案を作成中...")
+        results['test_generation'] = self._analyze_test_generation(analysis_data)
+        
+        return results
     
     def _analyze_architecture(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """アーキテクチャ分析と改善提案"""
@@ -263,38 +272,64 @@ JSON形式で、実装可能なテストケースを含めてください。
             return {'test_plan': response.content[0].text}
     
     def generate_report(self, analysis_result: Dict[str, Any], output_file: str = '.claude/ai-analysis-report.md'):
-        """分析結果をMarkdownレポートとして生成"""
-        report = f"""# 🤖 AI強化コードベース分析レポート
+        """統合分析結果をMarkdownレポートとして生成"""
+        report = f"""# 🤖 AI統合分析レポート - DNSweeper
 
 生成日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-## 📊 分析サマリー
+## 📊 現状分析
 
-### 静的分析結果
-- TypeScriptエラー: {len(self.analysis_data.get('typescript_errors', []))}件
-- ESLint問題: {self.analysis_data['eslint_issues']['total']}件
-- テストカバレッジ: {self.analysis_data['test_coverage']['overall']}%
-- 大きなファイル: {len(self.analysis_data['large_files'])}個
-- any型使用: {self.analysis_data['any_usage']['total_count']}箇所
+### コード品質メトリクス
+- TypeScriptエラー: **{len(self.analysis_data.get('typescript_errors', []))}件** ⚠️
+- ESLint問題: **{self.analysis_data['eslint_issues']['total']}件** (エラー: {self.analysis_data['eslint_issues']['errors']}, 警告: {self.analysis_data['eslint_issues']['warnings']})
+- テストカバレッジ: **{self.analysis_data['test_coverage']['overall']}%** 📉
+- 大きなファイル(600行超): **{len(self.analysis_data['large_files'])}個**
+- any型使用: **{self.analysis_data['any_usage']['total_count']}箇所**
 
-## 🎯 AI分析結果
+## 🏗️ アーキテクチャ分析
 
 """
         
-        # AI分析結果を整形して追加
-        if isinstance(analysis_result, dict):
-            for key, value in analysis_result.items():
-                report += f"### {key.replace('_', ' ').title()}\n\n"
-                if isinstance(value, list):
-                    for item in value:
-                        report += f"- {item}\n"
-                elif isinstance(value, dict):
-                    report += "```json\n"
-                    report += json.dumps(value, indent=2, ensure_ascii=False)
-                    report += "\n```\n"
-                else:
-                    report += f"{value}\n"
-                report += "\n"
+        # アーキテクチャ分析結果
+        if 'architecture' in analysis_result:
+            arch_data = analysis_result['architecture']
+            if isinstance(arch_data, dict):
+                for section, content in arch_data.items():
+                    report += f"### {section.replace('_', ' ').title()}\n"
+                    if isinstance(content, list):
+                        for item in content:
+                            report += f"- {item}\n"
+                    elif isinstance(content, dict):
+                        report += json.dumps(content, indent=2, ensure_ascii=False) + "\n"
+                    else:
+                        report += f"{content}\n"
+                    report += "\n"
+        
+        report += "\n## 🔧 リファクタリング提案\n\n"
+        
+        # リファクタリング提案
+        if 'refactoring' in analysis_result:
+            refactor_data = analysis_result['refactoring']
+            if isinstance(refactor_data, dict):
+                for file, suggestions in refactor_data.items():
+                    if isinstance(suggestions, dict):
+                        report += f"### 📄 {file}\n"
+                        report += json.dumps(suggestions, indent=2, ensure_ascii=False) + "\n\n"
+        
+        report += "\n## 🧪 テスト戦略\n\n"
+        
+        # テスト生成提案
+        if 'test_generation' in analysis_result:
+            test_data = analysis_result['test_generation']
+            if isinstance(test_data, dict):
+                for category, tests in test_data.items():
+                    report += f"### {category.replace('_', ' ').title()}\n"
+                    if isinstance(tests, list):
+                        for test in tests:
+                            report += f"- {test}\n"
+                    elif isinstance(tests, dict):
+                        report += json.dumps(tests, indent=2, ensure_ascii=False) + "\n"
+                    report += "\n"
         
         # レポートを保存
         output_path = Path(output_file)
@@ -305,14 +340,17 @@ JSON形式で、実装可能なテストケースを含めてください。
         return report
     
     def estimate_cost(self, options: Dict[str, bool]) -> float:
-        """API使用コストを概算"""
-        # 概算: 各分析で約10K-20Kトークンを使用すると仮定
-        if options.get('refactor') or options.get('test_generation'):
-            # Haikuモデル使用
-            return 0.25 * 0.02  # $0.25/1M tokens * 20K tokens
-        else:
-            # Sonnetモデル使用
-            return 3.0 * 0.02  # $3/1M tokens * 20K tokens
+        """API使用コストを概算 - 3つの分析を全て実行"""
+        # 統合分析のコスト（常に3つ全て実行）
+        # - アーキテクチャ分析: Sonnet 20Kトークン
+        # - リファクタリング提案: Sonnet 20Kトークン  
+        # - テスト生成: Haiku 20Kトークン
+        
+        sonnet_cost = 3.0 * 0.04  # $3/1M tokens * 40K tokens (2分析)
+        haiku_cost = 0.25 * 0.02  # $0.25/1M tokens * 20K tokens (1分析)
+        
+        total_cost = sonnet_cost + haiku_cost
+        return total_cost  # 約$0.125
 
 def main():
     import argparse
