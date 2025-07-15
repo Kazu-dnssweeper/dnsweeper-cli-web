@@ -89,11 +89,11 @@ export class PDFExporter {
         currentPage = this.createPage(template);
       }
 
-      currentPage.content.push(sectionContent);
+      (currentPage as any)?.content?.push(sectionContent);
     }
 
-    if (currentPage.content.length > 0) {
-      pdf.pages.push(currentPage);
+    if ((currentPage as any)?.content?.length > 0) {
+      (pdf as any)?.pages?.push(currentPage);
     }
 
     return pdf;
