@@ -5,10 +5,11 @@
 import { EventEmitter } from 'events';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { 
-  TranslationEntry, 
+
+import type {
+  TranslationEntry,
   TranslationNamespace,
-  TranslationReport 
+  TranslationReport,
 } from '../core/types.js';
 
 export class TranslationManager extends EventEmitter {
@@ -32,32 +33,37 @@ export class TranslationManager extends EventEmitter {
         namespace: 'common',
         description: '共通UI要素',
         keys: ['button.ok', 'button.cancel', 'button.save', 'button.delete'],
-        priority: 'high'
+        priority: 'high',
       },
       {
         namespace: 'dns',
         description: 'DNS関連用語',
-        keys: ['record.type.a', 'record.type.aaaa', 'record.type.cname', 'record.type.mx'],
-        priority: 'high'
+        keys: [
+          'record.type.a',
+          'record.type.aaaa',
+          'record.type.cname',
+          'record.type.mx',
+        ],
+        priority: 'high',
       },
       {
         namespace: 'errors',
         description: 'エラーメッセージ',
         keys: ['network.timeout', 'auth.failed', 'validation.required'],
-        priority: 'high'
+        priority: 'high',
       },
       {
         namespace: 'dashboard',
         description: 'ダッシュボード',
         keys: ['title', 'stats.total', 'stats.active'],
-        priority: 'medium'
+        priority: 'medium',
       },
       {
         namespace: 'settings',
         description: '設定画面',
         keys: ['language.label', 'region.label', 'theme.label'],
-        priority: 'medium'
-      }
+        priority: 'medium',
+      },
     ];
 
     for (const ns of namespaces) {
@@ -69,9 +75,9 @@ export class TranslationManager extends EventEmitter {
    * 翻訳の追加
    */
   addTranslation(
-    language: string, 
-    key: string, 
-    namespace: string, 
+    language: string,
+    key: string,
+    namespace: string,
     value: string,
     options?: {
       context?: string;
@@ -95,7 +101,7 @@ export class TranslationManager extends EventEmitter {
       interpolations: options?.interpolations,
       lastUpdated: new Date(),
       translator: options?.translator,
-      approved: options?.approved ?? false
+      approved: options?.approved ?? false,
     };
 
     const fullKey = `${namespace}.${key}`;
@@ -107,7 +113,7 @@ export class TranslationManager extends EventEmitter {
     this.emit('translation:added', {
       language,
       key: fullKey,
-      entry
+      entry,
     });
   }
 
@@ -115,8 +121,8 @@ export class TranslationManager extends EventEmitter {
    * 翻訳の取得
    */
   getTranslation(
-    language: string, 
-    key: string, 
+    language: string,
+    key: string,
     fallbackLanguage?: string
   ): TranslationEntry | undefined {
     const langTranslations = this.translations.get(language);
@@ -202,7 +208,11 @@ export class TranslationManager extends EventEmitter {
         return 'other'; // 不変
       case 'ru':
         if (count % 10 === 1 && count % 100 !== 11) return 'one';
-        if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'few';
+        if (
+          [2, 3, 4].includes(count % 10) &&
+          ![12, 13, 14].includes(count % 100)
+        )
+          return 'few';
         return 'other';
       default:
         return count === 1 ? 'one' : 'other';
@@ -212,7 +222,10 @@ export class TranslationManager extends EventEmitter {
   /**
    * パラメータ補間
    */
-  private interpolate(text: string, params: Record<string, string | number>): string {
+  private interpolate(
+    text: string,
+    params: Record<string, string | number>
+  ): string {
     return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
       return params[key]?.toString() || match;
     });
@@ -237,7 +250,9 @@ export class TranslationManager extends EventEmitter {
       case 'json':
         const translations = JSON.parse(content);
         for (const [namespace, entries] of Object.entries(translations)) {
-          for (const [key, value] of Object.entries(entries as Record<string, string>)) {
+          for (const [key, value] of Object.entries(
+            entries as Record<string, string>
+          )) {
             this.addTranslation(language, key, namespace, value);
             imported++;
           }
@@ -249,7 +264,7 @@ export class TranslationManager extends EventEmitter {
     this.emit('translations:imported', {
       language,
       count: imported,
-      format
+      format,
     });
 
     return imported;
@@ -301,7 +316,7 @@ export class TranslationManager extends EventEmitter {
     this.emit('translations:exported', {
       language,
       filePath,
-      format
+      format,
     });
   }
 
@@ -314,7 +329,7 @@ export class TranslationManager extends EventEmitter {
       totalLanguages: enabledLanguages.length,
       enabledLanguages: enabledLanguages.length,
       overallCompleteness: 0,
-      namespaces: []
+      namespaces: [],
     };
 
     let totalCompleteness = 0;
@@ -324,40 +339,39 @@ export class TranslationManager extends EventEmitter {
       const nsReport = {
         namespace: nsName,
         completeness: 0,
-        languages: [] as Array<{ code: string; completeness: number }>
+        languages: [] as Array<{ code: string; completeness: number }>,
       };
 
       let nsCompleteness = 0;
 
       for (const language of enabledLanguages) {
         const langTranslations = this.translations.get(language);
-        const translatedKeys = nsKeys.filter(key => 
-          langTranslations && langTranslations.has(key)
+        const translatedKeys = nsKeys.filter(
+          key => langTranslations && langTranslations.has(key)
         );
 
-        const completeness = nsKeys.length > 0 
-          ? (translatedKeys.length / nsKeys.length) * 100 
-          : 0;
+        const completeness =
+          nsKeys.length > 0 ? (translatedKeys.length / nsKeys.length) * 100 : 0;
 
         nsReport.languages.push({
           code: language,
-          completeness
+          completeness,
         });
 
         nsCompleteness += completeness;
       }
 
-      nsReport.completeness = enabledLanguages.length > 0 
-        ? nsCompleteness / enabledLanguages.length 
-        : 0;
-      
+      nsReport.completeness =
+        enabledLanguages.length > 0
+          ? nsCompleteness / enabledLanguages.length
+          : 0;
+
       report.namespaces.push(nsReport);
       totalCompleteness += nsReport.completeness;
     }
 
-    report.overallCompleteness = this.namespaces.size > 0 
-      ? totalCompleteness / this.namespaces.size 
-      : 0;
+    report.overallCompleteness =
+      this.namespaces.size > 0 ? totalCompleteness / this.namespaces.size : 0;
 
     return report;
   }
@@ -396,7 +410,7 @@ export class TranslationManager extends EventEmitter {
     return {
       totalTranslations,
       cacheSize: this.translationCache.size,
-      cacheHitRate
+      cacheHitRate,
     };
   }
 }

@@ -1,6 +1,6 @@
 /**
  * 地域別コンプライアンス管理システム
- * 
+ *
  * グローバル展開に対応した地域別コンプライアンス要件管理
  * - GDPR (EU)
  * - CCPA (California)
@@ -12,10 +12,11 @@
  */
 
 import { EventEmitter } from 'events';
-import { Logger } from './logger.js';
-import { I18nManager } from './i18n-manager.js';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+
+import { I18nManager } from './i18n-manager.js';
+import { Logger } from './logger.js';
 
 export interface ComplianceFramework {
   id: string;
@@ -34,7 +35,14 @@ export interface ComplianceFramework {
 export interface ComplianceRequirement {
   id: string;
   frameworkId: string;
-  category: 'data-protection' | 'data-localization' | 'audit-logging' | 'encryption' | 'consent' | 'notification' | 'access-rights';
+  category:
+    | 'data-protection'
+    | 'data-localization'
+    | 'audit-logging'
+    | 'encryption'
+    | 'consent'
+    | 'notification'
+    | 'access-rights';
   title: string;
   description: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
@@ -52,7 +60,13 @@ export interface ComplianceRequirement {
 
 export interface TechnicalControl {
   id: string;
-  type: 'encryption' | 'access-control' | 'audit-logging' | 'data-masking' | 'backup' | 'monitoring';
+  type:
+    | 'encryption'
+    | 'access-control'
+    | 'audit-logging'
+    | 'data-masking'
+    | 'backup'
+    | 'monitoring';
   name: string;
   description: string;
   implementation: string;
@@ -64,7 +78,13 @@ export interface TechnicalControl {
 
 export interface BusinessControl {
   id: string;
-  type: 'policy' | 'training' | 'process' | 'contract' | 'assessment' | 'incident-response';
+  type:
+    | 'policy'
+    | 'training'
+    | 'process'
+    | 'contract'
+    | 'assessment'
+    | 'incident-response';
   name: string;
   description: string;
   implementation: string;
@@ -226,7 +246,7 @@ export class RegionalComplianceManager extends EventEmitter {
       alertThresholds: {
         complianceScore: 80,
         criticalGaps: 5,
-        overdueActions: 10
+        overdueActions: 10,
       },
       enableReporting: true,
       reportingInterval: 604800000, // 7日
@@ -235,7 +255,7 @@ export class RegionalComplianceManager extends EventEmitter {
       enableCertificationManagement: true,
       auditLogPath: './audit-logs',
       dataPath: './compliance-data',
-      ...options
+      ...options,
     };
 
     this.frameworks = new Map();
@@ -280,12 +300,16 @@ export class RegionalComplianceManager extends EventEmitter {
             severity: 'critical',
             isCompliant: false,
             compliancePercentage: 0,
-            evidenceRequired: ['プライバシーポリシー', 'データ処理記録', '同意管理記録'],
+            evidenceRequired: [
+              'プライバシーポリシー',
+              'データ処理記録',
+              '同意管理記録',
+            ],
             implementationSteps: [
               'データ処理の法的根拠を明確化',
               'プライバシーポリシーの策定',
               '同意管理システムの実装',
-              'データ処理記録の作成'
+              'データ処理記録の作成',
             ],
             technicalControls: [
               {
@@ -297,8 +321,8 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000) // 30日後
-              }
+                nextVerification: new Date(Date.now() + 2592000000), // 30日後
+              },
             ],
             businessControls: [
               {
@@ -310,12 +334,12 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastReview: new Date(),
-                nextReview: new Date(Date.now() + 31536000000) // 1年後
-              }
+                nextReview: new Date(Date.now() + 31536000000), // 1年後
+              },
             ],
             riskLevel: 'high',
             lastAssessment: new Date(),
-            nextAssessment: new Date(Date.now() + 7776000000) // 90日後
+            nextAssessment: new Date(Date.now() + 7776000000), // 90日後
           },
           {
             id: 'gdpr-art-17',
@@ -326,12 +350,16 @@ export class RegionalComplianceManager extends EventEmitter {
             severity: 'high',
             isCompliant: false,
             compliancePercentage: 0,
-            evidenceRequired: ['削除手順書', '削除実行記録', '削除確認システム'],
+            evidenceRequired: [
+              '削除手順書',
+              '削除実行記録',
+              '削除確認システム',
+            ],
             implementationSteps: [
               '削除要求受付システムの構築',
               '削除手順の標準化',
               '削除実行システムの開発',
-              '削除確認プロセスの実装'
+              '削除確認プロセスの実装',
             ],
             technicalControls: [
               {
@@ -343,8 +371,8 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000)
-              }
+                nextVerification: new Date(Date.now() + 2592000000),
+              },
             ],
             businessControls: [
               {
@@ -356,12 +384,12 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastReview: new Date(),
-                nextReview: new Date(Date.now() + 15552000000) // 6ヶ月後
-              }
+                nextReview: new Date(Date.now() + 15552000000), // 6ヶ月後
+              },
             ],
             riskLevel: 'medium',
             lastAssessment: new Date(),
-            nextAssessment: new Date(Date.now() + 7776000000)
+            nextAssessment: new Date(Date.now() + 7776000000),
           },
           {
             id: 'gdpr-art-25',
@@ -372,12 +400,16 @@ export class RegionalComplianceManager extends EventEmitter {
             severity: 'high',
             isCompliant: false,
             compliancePercentage: 0,
-            evidenceRequired: ['設計文書', 'セキュリティアセスメント', '実装仕様書'],
+            evidenceRequired: [
+              '設計文書',
+              'セキュリティアセスメント',
+              '実装仕様書',
+            ],
             implementationSteps: [
               'プライバシーバイデザインの原則策定',
               'システム設計プロセスの見直し',
               'セキュリティアセスメントの実施',
-              'データ保護機能の実装'
+              'データ保護機能の実装',
             ],
             technicalControls: [
               {
@@ -389,8 +421,8 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000)
-              }
+                nextVerification: new Date(Date.now() + 2592000000),
+              },
             ],
             businessControls: [
               {
@@ -402,12 +434,12 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastReview: new Date(),
-                nextReview: new Date(Date.now() + 15552000000)
-              }
+                nextReview: new Date(Date.now() + 15552000000),
+              },
             ],
             riskLevel: 'medium',
             lastAssessment: new Date(),
-            nextAssessment: new Date(Date.now() + 7776000000)
+            nextAssessment: new Date(Date.now() + 7776000000),
           },
           {
             id: 'gdpr-art-32',
@@ -418,12 +450,16 @@ export class RegionalComplianceManager extends EventEmitter {
             severity: 'critical',
             isCompliant: false,
             compliancePercentage: 0,
-            evidenceRequired: ['暗号化実装記録', 'セキュリティ監査報告', 'インシデント対応記録'],
+            evidenceRequired: [
+              '暗号化実装記録',
+              'セキュリティ監査報告',
+              'インシデント対応記録',
+            ],
             implementationSteps: [
               '暗号化標準の策定',
               'セキュリティ監視の実装',
               'インシデント対応体制の構築',
-              'セキュリティ監査の実施'
+              'セキュリティ監査の実施',
             ],
             technicalControls: [
               {
@@ -435,7 +471,7 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000)
+                nextVerification: new Date(Date.now() + 2592000000),
               },
               {
                 id: 'gdpr-art-32-monitoring',
@@ -446,8 +482,8 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000)
-              }
+                nextVerification: new Date(Date.now() + 2592000000),
+              },
             ],
             businessControls: [
               {
@@ -459,12 +495,12 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastReview: new Date(),
-                nextReview: new Date(Date.now() + 15552000000)
-              }
+                nextReview: new Date(Date.now() + 15552000000),
+              },
             ],
             riskLevel: 'high',
             lastAssessment: new Date(),
-            nextAssessment: new Date(Date.now() + 7776000000)
+            nextAssessment: new Date(Date.now() + 7776000000),
           },
           {
             id: 'gdpr-art-33',
@@ -480,7 +516,7 @@ export class RegionalComplianceManager extends EventEmitter {
               '通知手順の策定',
               '通知システムの構築',
               '通知テンプレートの作成',
-              '通知訓練の実施'
+              '通知訓練の実施',
             ],
             technicalControls: [
               {
@@ -492,8 +528,8 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000)
-              }
+                nextVerification: new Date(Date.now() + 2592000000),
+              },
             ],
             businessControls: [
               {
@@ -505,13 +541,13 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastReview: new Date(),
-                nextReview: new Date(Date.now() + 15552000000)
-              }
+                nextReview: new Date(Date.now() + 15552000000),
+              },
             ],
             riskLevel: 'high',
             lastAssessment: new Date(),
-            nextAssessment: new Date(Date.now() + 7776000000)
-          }
+            nextAssessment: new Date(Date.now() + 7776000000),
+          },
         ],
         penalties: [
           {
@@ -520,13 +556,13 @@ export class RegionalComplianceManager extends EventEmitter {
             amount: 20000000,
             currency: 'EUR',
             maxAmount: 0, // 年間売上高の4%
-            conditions: ['重大な違反', '故意または過失による違反']
+            conditions: ['重大な違反', '故意または過失による違反'],
           },
           {
             type: 'operational',
             description: '処理活動の制限または停止',
-            conditions: ['継続的な違反', '是正措置の不履行']
-          }
+            conditions: ['継続的な違反', '是正措置の不履行'],
+          },
         ],
         exemptions: [
           {
@@ -534,9 +570,9 @@ export class RegionalComplianceManager extends EventEmitter {
             title: '家庭用例外',
             description: '個人的または家庭内活動における処理',
             conditions: ['純粋に個人的な活動', '家庭内での活動'],
-            applicableRequirements: ['gdpr-art-5', 'gdpr-art-17']
-          }
-        ]
+            applicableRequirements: ['gdpr-art-5', 'gdpr-art-17'],
+          },
+        ],
       },
       {
         id: 'ccpa',
@@ -557,12 +593,16 @@ export class RegionalComplianceManager extends EventEmitter {
             severity: 'high',
             isCompliant: false,
             compliancePercentage: 0,
-            evidenceRequired: ['プライバシーポリシー', '情報収集通知', '開示記録'],
+            evidenceRequired: [
+              'プライバシーポリシー',
+              '情報収集通知',
+              '開示記録',
+            ],
             implementationSteps: [
               'プライバシーポリシーの更新',
               '情報収集通知の実装',
               '開示手順の策定',
-              '消費者向けポータルの構築'
+              '消費者向けポータルの構築',
             ],
             technicalControls: [
               {
@@ -574,8 +614,8 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000)
-              }
+                nextVerification: new Date(Date.now() + 2592000000),
+              },
             ],
             businessControls: [
               {
@@ -587,12 +627,12 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastReview: new Date(),
-                nextReview: new Date(Date.now() + 31536000000)
-              }
+                nextReview: new Date(Date.now() + 31536000000),
+              },
             ],
             riskLevel: 'medium',
             lastAssessment: new Date(),
-            nextAssessment: new Date(Date.now() + 7776000000)
+            nextAssessment: new Date(Date.now() + 7776000000),
           },
           {
             id: 'ccpa-1798-105',
@@ -603,12 +643,16 @@ export class RegionalComplianceManager extends EventEmitter {
             severity: 'high',
             isCompliant: false,
             compliancePercentage: 0,
-            evidenceRequired: ['削除手順書', '削除実行記録', '削除確認システム'],
+            evidenceRequired: [
+              '削除手順書',
+              '削除実行記録',
+              '削除確認システム',
+            ],
             implementationSteps: [
               '削除要求受付システムの構築',
               '削除手順の標準化',
               '削除実行システムの開発',
-              '削除確認プロセスの実装'
+              '削除確認プロセスの実装',
             ],
             technicalControls: [
               {
@@ -620,8 +664,8 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastVerified: new Date(),
-                nextVerification: new Date(Date.now() + 2592000000)
-              }
+                nextVerification: new Date(Date.now() + 2592000000),
+              },
             ],
             businessControls: [
               {
@@ -633,13 +677,13 @@ export class RegionalComplianceManager extends EventEmitter {
                 isImplemented: false,
                 effectiveness: 0,
                 lastReview: new Date(),
-                nextReview: new Date(Date.now() + 15552000000)
-              }
+                nextReview: new Date(Date.now() + 15552000000),
+              },
             ],
             riskLevel: 'medium',
             lastAssessment: new Date(),
-            nextAssessment: new Date(Date.now() + 7776000000)
-          }
+            nextAssessment: new Date(Date.now() + 7776000000),
+          },
         ],
         penalties: [
           {
@@ -647,15 +691,15 @@ export class RegionalComplianceManager extends EventEmitter {
             description: '消費者1人当たり最大7,500ドル（故意違反）',
             amount: 7500,
             currency: 'USD',
-            conditions: ['故意違反', '是正措置の不履行']
+            conditions: ['故意違反', '是正措置の不履行'],
           },
           {
             type: 'monetary',
             description: '消費者1人当たり最大2,500ドル（過失違反）',
             amount: 2500,
             currency: 'USD',
-            conditions: ['過失違反']
-          }
+            conditions: ['過失違反'],
+          },
         ],
         exemptions: [
           {
@@ -664,10 +708,10 @@ export class RegionalComplianceManager extends EventEmitter {
             description: '従業員の個人情報処理',
             conditions: ['雇用関係における処理', '人事管理目的'],
             validUntil: new Date('2023-01-01'),
-            applicableRequirements: ['ccpa-1798-100']
-          }
-        ]
-      }
+            applicableRequirements: ['ccpa-1798-100'],
+          },
+        ],
+      },
     ];
 
     frameworks.forEach(framework => {
@@ -681,7 +725,7 @@ export class RegionalComplianceManager extends EventEmitter {
   private loadComplianceData(): void {
     try {
       const dataPath = this.options.dataPath!;
-      
+
       // 既存のデータファイルがある場合は読み込み
       if (existsSync(join(dataPath, 'assessments.json'))) {
         const assessmentsData = JSON.parse(
@@ -730,14 +774,20 @@ export class RegionalComplianceManager extends EventEmitter {
     try {
       for (const framework of this.frameworks.values()) {
         const assessmentId = `auto-${framework.id}-${Date.now()}`;
-        const assessment = await this.assessFramework(framework.id, assessmentId);
-        
-        if (assessment.overallScore < this.options.alertThresholds!.complianceScore) {
+        const assessment = await this.assessFramework(
+          framework.id,
+          assessmentId
+        );
+
+        if (
+          assessment.overallScore <
+          this.options.alertThresholds!.complianceScore
+        ) {
           this.emit('compliance-alert', {
             type: 'low-compliance-score',
             framework: framework.id,
             score: assessment.overallScore,
-            threshold: this.options.alertThresholds!.complianceScore
+            threshold: this.options.alertThresholds!.complianceScore,
           });
         }
       }
@@ -753,12 +803,15 @@ export class RegionalComplianceManager extends EventEmitter {
     try {
       for (const framework of this.frameworks.values()) {
         const reportId = `auto-report-${framework.id}-${Date.now()}`;
-        const report = await this.generateComplianceReport(framework.id, reportId);
-        
+        const report = await this.generateComplianceReport(
+          framework.id,
+          reportId
+        );
+
         this.emit('report-generated', {
           reportId: report.id,
           framework: framework.id,
-          compliance: report.overallCompliance
+          compliance: report.overallCompliance,
         });
       }
     } catch (error) {
@@ -771,7 +824,10 @@ export class RegionalComplianceManager extends EventEmitter {
   /**
    * フレームワークのアセスメント
    */
-  async assessFramework(frameworkId: string, assessmentId?: string): Promise<ComplianceAssessment> {
+  async assessFramework(
+    frameworkId: string,
+    assessmentId?: string
+  ): Promise<ComplianceAssessment> {
     const framework = this.frameworks.get(frameworkId);
     if (!framework) {
       throw new Error(`フレームワークが見つかりません: ${frameworkId}`);
@@ -789,9 +845,12 @@ export class RegionalComplianceManager extends EventEmitter {
     }
 
     const overallScore = totalScore / framework.requirements.length;
-    
+
     // アクションプランの生成
-    const actionPlan = await this.generateActionPlan(framework, requirementResults);
+    const actionPlan = await this.generateActionPlan(
+      framework,
+      requirementResults
+    );
 
     const assessment: ComplianceAssessment = {
       id,
@@ -803,22 +862,28 @@ export class RegionalComplianceManager extends EventEmitter {
       requirementResults,
       actionPlan,
       nextAssessment: new Date(Date.now() + 7776000000), // 90日後
-      certificationStatus: overallScore >= 80 ? 'certified' : 'pending'
+      certificationStatus: overallScore >= 80 ? 'certified' : 'pending',
     };
 
     this.assessments.set(id, assessment);
     this.saveAssessmentData();
 
-    this.emit('assessment-completed', { assessmentId: id, score: overallScore });
+    this.emit('assessment-completed', {
+      assessmentId: id,
+      score: overallScore,
+    });
     return assessment;
   }
 
   /**
    * 要件のアセスメント
    */
-  private async assessRequirement(requirement: ComplianceRequirement): Promise<any> {
+  private async assessRequirement(
+    requirement: ComplianceRequirement
+  ): Promise<any> {
     let score = 0;
-    let status: 'compliant' | 'non-compliant' | 'partially-compliant' = 'non-compliant';
+    let status: 'compliant' | 'non-compliant' | 'partially-compliant' =
+      'non-compliant';
     const evidence: string[] = [];
     const gaps: string[] = [];
     const recommendations: string[] = [];
@@ -828,7 +893,9 @@ export class RegionalComplianceManager extends EventEmitter {
     for (const control of requirement.technicalControls) {
       if (control.isImplemented) {
         technicalControlScore += control.effectiveness;
-        evidence.push(`${control.name}: 実装済み（効果: ${control.effectiveness}%）`);
+        evidence.push(
+          `${control.name}: 実装済み（効果: ${control.effectiveness}%）`
+        );
       } else {
         gaps.push(`${control.name}: 未実装`);
         recommendations.push(`${control.name}の実装を推奨`);
@@ -840,7 +907,9 @@ export class RegionalComplianceManager extends EventEmitter {
     for (const control of requirement.businessControls) {
       if (control.isImplemented) {
         businessControlScore += control.effectiveness;
-        evidence.push(`${control.name}: 実装済み（効果: ${control.effectiveness}%）`);
+        evidence.push(
+          `${control.name}: 実装済み（効果: ${control.effectiveness}%）`
+        );
       } else {
         gaps.push(`${control.name}: 未実装`);
         recommendations.push(`${control.name}の実装を推奨`);
@@ -848,7 +917,9 @@ export class RegionalComplianceManager extends EventEmitter {
     }
 
     // 総合スコアの計算
-    const totalControls = requirement.technicalControls.length + requirement.businessControls.length;
+    const totalControls =
+      requirement.technicalControls.length +
+      requirement.businessControls.length;
     if (totalControls > 0) {
       score = (technicalControlScore + businessControlScore) / totalControls;
     }
@@ -872,7 +943,7 @@ export class RegionalComplianceManager extends EventEmitter {
       status,
       evidence,
       gaps,
-      recommendations
+      recommendations,
     };
   }
 
@@ -888,7 +959,7 @@ export class RegionalComplianceManager extends EventEmitter {
 
     for (const requirement of framework.requirements) {
       const result = requirementResults[requirement.id];
-      
+
       if (result.status !== 'compliant') {
         // 各ギャップに対するアクション
         for (const gap of result.gaps) {
@@ -896,19 +967,27 @@ export class RegionalComplianceManager extends EventEmitter {
             id: `action-${framework.id}-${actionCounter++}`,
             title: `${requirement.title}: ${gap}の解決`,
             description: `${requirement.description}の要件を満たすため、${gap}を解決する`,
-            priority: requirement.severity === 'critical' ? 'critical' : 
-                     requirement.severity === 'high' ? 'high' : 
-                     requirement.severity === 'medium' ? 'medium' : 'low',
+            priority:
+              requirement.severity === 'critical'
+                ? 'critical'
+                : requirement.severity === 'high'
+                  ? 'high'
+                  : requirement.severity === 'medium'
+                    ? 'medium'
+                    : 'low',
             category: requirement.category,
             assignedTo: 'System Administrator',
-            dueDate: new Date(Date.now() + (requirement.severity === 'critical' ? 604800000 : 2592000000)), // 1週間 or 30日
+            dueDate: new Date(
+              Date.now() +
+                (requirement.severity === 'critical' ? 604800000 : 2592000000)
+            ), // 1週間 or 30日
             status: 'pending',
             dependencies: [],
             progress: 0,
             cost: this.estimateActionCost(requirement, gap),
-            effort: this.estimateActionEffort(requirement, gap)
+            effort: this.estimateActionEffort(requirement, gap),
           };
-          
+
           actions.push(action);
           this.actions.set(action.id, action);
         }
@@ -921,37 +1000,62 @@ export class RegionalComplianceManager extends EventEmitter {
   /**
    * アクションのコスト見積もり
    */
-  private estimateActionCost(requirement: ComplianceRequirement, gap: string): number {
+  private estimateActionCost(
+    requirement: ComplianceRequirement,
+    gap: string
+  ): number {
     // 簡単な見積もりロジック
-    const baseCost = requirement.severity === 'critical' ? 50000 : 
-                    requirement.severity === 'high' ? 25000 : 
-                    requirement.severity === 'medium' ? 10000 : 5000;
-    
-    const multiplier = gap.includes('システム') ? 2 : 
-                      gap.includes('プロセス') ? 1.5 : 1;
-    
+    const baseCost =
+      requirement.severity === 'critical'
+        ? 50000
+        : requirement.severity === 'high'
+          ? 25000
+          : requirement.severity === 'medium'
+            ? 10000
+            : 5000;
+
+    const multiplier = gap.includes('システム')
+      ? 2
+      : gap.includes('プロセス')
+        ? 1.5
+        : 1;
+
     return baseCost * multiplier;
   }
 
   /**
    * アクションの工数見積もり
    */
-  private estimateActionEffort(requirement: ComplianceRequirement, gap: string): number {
+  private estimateActionEffort(
+    requirement: ComplianceRequirement,
+    gap: string
+  ): number {
     // 簡単な見積もりロジック（person-days）
-    const baseEffort = requirement.severity === 'critical' ? 20 : 
-                      requirement.severity === 'high' ? 10 : 
-                      requirement.severity === 'medium' ? 5 : 2;
-    
-    const multiplier = gap.includes('システム') ? 3 : 
-                      gap.includes('プロセス') ? 2 : 1;
-    
+    const baseEffort =
+      requirement.severity === 'critical'
+        ? 20
+        : requirement.severity === 'high'
+          ? 10
+          : requirement.severity === 'medium'
+            ? 5
+            : 2;
+
+    const multiplier = gap.includes('システム')
+      ? 3
+      : gap.includes('プロセス')
+        ? 2
+        : 1;
+
     return baseEffort * multiplier;
   }
 
   /**
    * コンプライアンスレポートの生成
    */
-  async generateComplianceReport(frameworkId: string, reportId?: string): Promise<ComplianceReport> {
+  async generateComplianceReport(
+    frameworkId: string,
+    reportId?: string
+  ): Promise<ComplianceReport> {
     const framework = this.frameworks.get(frameworkId);
     if (!framework) {
       throw new Error(`フレームワークが見つかりません: ${frameworkId}`);
@@ -959,7 +1063,7 @@ export class RegionalComplianceManager extends EventEmitter {
 
     const id = reportId || `report-${frameworkId}-${Date.now()}`;
     const latestAssessment = this.getLatestAssessment(frameworkId);
-    
+
     if (!latestAssessment) {
       throw new Error(`アセスメントが見つかりません: ${frameworkId}`);
     }
@@ -971,18 +1075,20 @@ export class RegionalComplianceManager extends EventEmitter {
       partiallyCompliantRequirements: 0,
       nonCompliantRequirements: 0,
       criticalGaps: 0,
-      highRiskItems: 0
+      highRiskItems: 0,
     };
 
-    Object.values(latestAssessment.requirementResults).forEach((result: any) => {
-      if (result.status === 'compliant') {
-        summary.compliantRequirements++;
-      } else if (result.status === 'partially-compliant') {
-        summary.partiallyCompliantRequirements++;
-      } else {
-        summary.nonCompliantRequirements++;
+    Object.values(latestAssessment.requirementResults).forEach(
+      (result: any) => {
+        if (result.status === 'compliant') {
+          summary.compliantRequirements++;
+        } else if (result.status === 'partially-compliant') {
+          summary.partiallyCompliantRequirements++;
+        } else {
+          summary.nonCompliantRequirements++;
+        }
       }
-    });
+    );
 
     framework.requirements.forEach(req => {
       if (req.severity === 'critical' && !req.isCompliant) {
@@ -1002,17 +1108,20 @@ export class RegionalComplianceManager extends EventEmitter {
       generatedAt: new Date(),
       reportPeriod: {
         start: new Date(Date.now() - 7776000000), // 90日前
-        end: new Date()
+        end: new Date(),
       },
       overallCompliance: latestAssessment.overallScore,
       summary,
       details: {
         assessment: latestAssessment,
         framework: framework,
-        requirements: framework.requirements
+        requirements: framework.requirements,
       },
-      recommendations: this.generateRecommendations(framework, latestAssessment),
-      actionPlan: latestAssessment.actionPlan
+      recommendations: this.generateRecommendations(
+        framework,
+        latestAssessment
+      ),
+      actionPlan: latestAssessment.actionPlan,
     };
 
     this.reports.set(id, report);
@@ -1031,26 +1140,32 @@ export class RegionalComplianceManager extends EventEmitter {
     const recommendations: string[] = [];
 
     // 重要度の高い未対応要件
-    const criticalGaps = framework.requirements.filter(req => 
-      req.severity === 'critical' && !req.isCompliant
+    const criticalGaps = framework.requirements.filter(
+      req => req.severity === 'critical' && !req.isCompliant
     );
-    
+
     if (criticalGaps.length > 0) {
-      recommendations.push(`重要度「Critical」の要件 ${criticalGaps.length} 件を優先的に対応してください`);
+      recommendations.push(
+        `重要度「Critical」の要件 ${criticalGaps.length} 件を優先的に対応してください`
+      );
     }
 
     // 全体的なコンプライアンススコアが低い場合
     if (assessment.overallScore < 60) {
-      recommendations.push('全体的なコンプライアンススコアが低いため、包括的な改善計画を策定してください');
+      recommendations.push(
+        '全体的なコンプライアンススコアが低いため、包括的な改善計画を策定してください'
+      );
     }
 
     // 期限切れのアクション
-    const overdueActions = assessment.actionPlan.filter(action => 
-      action.dueDate < new Date() && action.status !== 'completed'
+    const overdueActions = assessment.actionPlan.filter(
+      action => action.dueDate < new Date() && action.status !== 'completed'
     );
-    
+
     if (overdueActions.length > 0) {
-      recommendations.push(`期限切れのアクション ${overdueActions.length} 件を早急に対応してください`);
+      recommendations.push(
+        `期限切れのアクション ${overdueActions.length} 件を早急に対応してください`
+      );
     }
 
     return recommendations;
@@ -1059,27 +1174,31 @@ export class RegionalComplianceManager extends EventEmitter {
   /**
    * 最新のアセスメント取得
    */
-  private getLatestAssessment(frameworkId: string): ComplianceAssessment | null {
+  private getLatestAssessment(
+    frameworkId: string
+  ): ComplianceAssessment | null {
     const assessments = Array.from(this.assessments.values())
       .filter(a => a.frameworkId === frameworkId)
       .sort((a, b) => b.assessmentDate.getTime() - a.assessmentDate.getTime());
-    
+
     return assessments[0] || null;
   }
 
   /**
    * データ処理活動の登録
    */
-  registerDataProcessingActivity(activity: Omit<DataProcessingActivity, 'id'>): string {
+  registerDataProcessingActivity(
+    activity: Omit<DataProcessingActivity, 'id'>
+  ): string {
     const id = `activity-${Date.now()}`;
     const fullActivity: DataProcessingActivity = {
       id,
-      ...activity
+      ...activity,
     };
-    
+
     this.dataProcessingActivities.set(id, fullActivity);
     this.saveDataProcessingActivities();
-    
+
     this.emit('data-processing-registered', { activityId: id });
     return id;
   }
@@ -1159,7 +1278,7 @@ export class RegionalComplianceManager extends EventEmitter {
       if (this.assessmentInterval) {
         clearInterval(this.assessmentInterval);
       }
-      
+
       if (this.reportingInterval) {
         clearInterval(this.reportingInterval);
       }

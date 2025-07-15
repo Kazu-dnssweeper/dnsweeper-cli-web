@@ -1,28 +1,29 @@
 /**
  * コマンドファクトリー
- * 
+ *
  * すべてのコマンドインスタンスを生成する中央管理クラス
  */
 
-import { Command } from 'commander';
+import { createAddCommand } from './add.js';
+import { createAnalyzeCommand } from './analyze.js';
 import { BaseCommand } from './base-command.js';
 
 // 既存のコマンドインポート（段階的に置き換え）
-import { createAddCommand } from './add.js';
-import { createAnalyzeCommand } from './analyze.js';
 import { createDeleteCommand } from './delete.js';
 import { createImportCommand } from './import.js';
 import { createListCommand } from './list.js';
+import { createLookupCommand } from './lookup-refactored.js';
 import { createLookupCommand as createLookupCommandOld } from './lookup.js';
+import { createOptimizeCommand } from './optimize.js';
 import { createPerformanceCommand } from './performance.js';
+import { createSecurityCommand } from './security.js';
 import { createSweepCommand } from './sweep.js';
 import { createSyncCommand } from './sync.js';
 import { createValidateCommand } from './validate.js';
-import { createOptimizeCommand } from './optimize.js';
-import { createSecurityCommand } from './security.js';
+
+import type { Command } from 'commander';
 
 // リファクタリングされたコマンド
-import { createLookupCommand } from './lookup-refactored.js';
 
 export interface CommandConfig {
   useRefactored?: boolean; // リファクタリング版を使用するかどうか
@@ -34,7 +35,7 @@ export class CommandFactory {
   constructor(config: CommandConfig = {}) {
     this.config = {
       useRefactored: false, // デフォルトは既存版を使用
-      ...config
+      ...config,
     };
   }
 
@@ -144,7 +145,7 @@ export class CommandFactory {
     ];
 
     const refactored = commands.filter(c => c.refactored).length;
-    
+
     return {
       total: commands.length,
       refactored,

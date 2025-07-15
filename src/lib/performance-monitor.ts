@@ -4,8 +4,9 @@
  */
 
 import { EventEmitter } from 'events';
-import { performance } from 'perf_hooks';
 import { cpus, freemem, totalmem, loadavg } from 'os';
+import { performance } from 'perf_hooks';
+
 import { Logger } from './logger.js';
 
 export interface PerformanceMetric {
@@ -57,10 +58,7 @@ export class PerformanceMonitor extends EventEmitter {
   private monitoringInterval?: NodeJS.Timeout;
   private readonly maxMetrics = 10000; // メモリ管理のため制限
 
-  constructor(
-    logger?: Logger,
-    thresholds?: Partial<PerformanceThresholds>
-  ) {
+  constructor(logger?: Logger, thresholds?: Partial<PerformanceThresholds>) {
     super();
     this.logger = logger || new Logger({ verbose: false });
     this.thresholds = {
@@ -69,14 +67,17 @@ export class PerformanceMonitor extends EventEmitter {
       maxCpuUsage: 80, // %
       maxErrorRate: 5, // %
       minOperationsPerSecond: 10,
-      ...thresholds
+      ...thresholds,
     };
   }
 
   /**
    * パフォーマンス測定開始
    */
-  startMeasurement(category: PerformanceMetric['category'], operation: string): () => void {
+  startMeasurement(
+    category: PerformanceMetric['category'],
+    operation: string
+  ): () => void {
     const startTime = performance.now();
     const startMemory = process.memoryUsage().heapUsed;
 
@@ -94,8 +95,8 @@ export class PerformanceMonitor extends EventEmitter {
         metadata,
         resourceUsage: {
           memory: endMemory - startMemory,
-          cpu: this.getCpuUsage()
-        }
+          cpu: this.getCpuUsage(),
+        },
       };
 
       this.addMetric(metric);
@@ -112,15 +113,15 @@ export class PerformanceMonitor extends EventEmitter {
     domain?: string
   ): Promise<T> {
     const measure = this.startMeasurement('dns', operation);
-    
+
     try {
       const result = await fn();
       measure(true, { domain, resultType: typeof result });
       return result;
     } catch (error) {
-      measure(false, { 
-        domain, 
-        error: error instanceof Error ? error.message : String(error) 
+      measure(false, {
+        domain,
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -136,16 +137,16 @@ export class PerformanceMonitor extends EventEmitter {
     fileSize?: number
   ): Promise<T> {
     const measure = this.startMeasurement('file', operation);
-    
+
     try {
       const result = await fn();
       measure(true, { filePath, fileSize, resultType: typeof result });
       return result;
     } catch (error) {
-      measure(false, { 
-        filePath, 
+      measure(false, {
+        filePath,
         fileSize,
-        error: error instanceof Error ? error.message : String(error) 
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -160,15 +161,15 @@ export class PerformanceMonitor extends EventEmitter {
     endpoint?: string
   ): Promise<T> {
     const measure = this.startMeasurement('api', operation);
-    
+
     try {
       const result = await fn();
       measure(true, { endpoint, resultType: typeof result });
       return result;
     } catch (error) {
-      measure(false, { 
+      measure(false, {
         endpoint,
-        error: error instanceof Error ? error.message : String(error) 
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -179,7 +180,7 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private addMetric(metric: PerformanceMetric): void {
     this.metrics.push(metric);
-    
+
     // メモリ管理：古いメトリクスを削除
     if (this.metrics.length > this.maxMetrics) {
       this.metrics = this.metrics.slice(-this.maxMetrics);
@@ -211,20 +212,21 @@ export class PerformanceMonitor extends EventEmitter {
         total: totalMem,
         free: freeMem,
         used: usedMem,
-        percentage: memoryPercentage
+        percentage: memoryPercentage,
       },
       cpu: {
         count: cpuCount,
         loadAverage: loadAvg,
-        usage: cpuUsage
+        usage: cpuUsage,
       },
-      performance: performanceStats
+      performance: performanceStats,
     };
 
     this.systemMetrics.push(systemMetrics);
-    
+
     // システムメトリクスも制限
-    if (this.systemMetrics.length > 1440) { // 24時間分（分毎）
+    if (this.systemMetrics.length > 1440) {
+      // 24時間分（分毎）
       this.systemMetrics = this.systemMetrics.slice(-1440);
     }
 
@@ -236,12 +238,15 @@ export class PerformanceMonitor extends EventEmitter {
    */
   private checkThresholds(metric: PerformanceMetric): void {
     // DNS タイムアウトチェック
-    if (metric.category === 'dns' && metric.duration > this.thresholds.dnsTimeout) {
+    if (
+      metric.category === 'dns' &&
+      metric.duration > this.thresholds.dnsTimeout
+    ) {
       this.emit('alert', {
         type: 'performance_warning',
         message: `DNS operation '${metric.operation}' took ${metric.duration}ms (threshold: ${this.thresholds.dnsTimeout}ms)`,
         metric,
-        severity: 'warning'
+        severity: 'warning',
       });
     }
 
@@ -249,13 +254,13 @@ export class PerformanceMonitor extends EventEmitter {
     if (!metric.success) {
       const recentMetrics = this.getRecentMetrics(300000); // 5分
       const errorRate = this.calculateErrorRate(recentMetrics, metric.category);
-      
+
       if (errorRate > this.thresholds.maxErrorRate) {
         this.emit('alert', {
           type: 'error_rate_high',
           message: `Error rate for ${metric.category} operations is ${errorRate.toFixed(1)}% (threshold: ${this.thresholds.maxErrorRate}%)`,
           metric,
-          severity: 'error'
+          severity: 'error',
         });
       }
     }
@@ -271,14 +276,14 @@ export class PerformanceMonitor extends EventEmitter {
 
     this.monitoringInterval = setInterval(() => {
       const systemMetrics = this.collectSystemMetrics();
-      
+
       // システムリソース閾値チェック
       if (systemMetrics.memory.percentage > this.thresholds.maxMemoryUsage) {
         this.emit('alert', {
           type: 'memory_high',
           message: `Memory usage is ${systemMetrics.memory.percentage.toFixed(1)}% (threshold: ${this.thresholds.maxMemoryUsage}%)`,
           systemMetrics,
-          severity: 'warning'
+          severity: 'warning',
         });
       }
 
@@ -287,7 +292,7 @@ export class PerformanceMonitor extends EventEmitter {
           type: 'cpu_high',
           message: `CPU usage is ${systemMetrics.cpu.usage.toFixed(1)}% (threshold: ${this.thresholds.maxCpuUsage}%)`,
           systemMetrics,
-          severity: 'warning'
+          severity: 'warning',
         });
       }
 
@@ -296,7 +301,7 @@ export class PerformanceMonitor extends EventEmitter {
 
     this.logger.info('Continuous performance monitoring started', {
       interval: intervalMs,
-      thresholds: this.thresholds
+      thresholds: this.thresholds,
     });
   }
 
@@ -321,7 +326,7 @@ export class PerformanceMonitor extends EventEmitter {
   } {
     const recentMetrics = this.getRecentMetrics(timeRangeMs);
     const recentSystemMetrics = this.getRecentSystemMetrics(timeRangeMs);
-    
+
     const summary = {
       timeRange: `${timeRangeMs / 1000}s`,
       totalOperations: recentMetrics.length,
@@ -329,13 +334,14 @@ export class PerformanceMonitor extends EventEmitter {
       averageResponseTime: this.calculateAverageResponseTime(recentMetrics),
       operationsByCategory: this.groupMetricsByCategory(recentMetrics),
       performanceStats: this.calculatePerformanceStats(recentMetrics),
-      systemResourceUsage: this.calculateSystemResourceUsage(recentSystemMetrics)
+      systemResourceUsage:
+        this.calculateSystemResourceUsage(recentSystemMetrics),
     };
 
     return {
       summary,
       metrics: recentMetrics,
-      systemMetrics: recentSystemMetrics
+      systemMetrics: recentSystemMetrics,
     };
   }
 
@@ -364,18 +370,26 @@ export class PerformanceMonitor extends EventEmitter {
     return totalTime / metrics.length;
   }
 
-  private calculateErrorRate(metrics: PerformanceMetric[], category: string): number {
+  private calculateErrorRate(
+    metrics: PerformanceMetric[],
+    category: string
+  ): number {
     const categoryMetrics = metrics.filter(m => m.category === category);
     if (categoryMetrics.length === 0) return 0;
     const errorCount = categoryMetrics.filter(m => !m.success).length;
     return (errorCount / categoryMetrics.length) * 100;
   }
 
-  private groupMetricsByCategory(metrics: PerformanceMetric[]): Record<string, number> {
-    return metrics.reduce((acc, metric) => {
-      acc[metric.category] = (acc[metric.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  private groupMetricsByCategory(
+    metrics: PerformanceMetric[]
+  ): Record<string, number> {
+    return metrics.reduce(
+      (acc, metric) => {
+        acc[metric.category] = (acc[metric.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
   }
 
   private calculatePerformanceStats(metrics: PerformanceMetric[]): {
@@ -386,24 +400,26 @@ export class PerformanceMonitor extends EventEmitter {
     const stats = {
       operationsPerSecond: {} as Record<string, number>,
       averageResponseTime: {} as Record<string, number>,
-      errorRate: {} as Record<string, number>
+      errorRate: {} as Record<string, number>,
     };
 
     const categories = [...new Set(metrics.map(m => m.category))];
-    
+
     categories.forEach(category => {
       const categoryMetrics = metrics.filter(m => m.category === category);
-      
+
       if (categoryMetrics.length > 0) {
         // 操作回数/秒
-        const timeSpan = Math.max(...categoryMetrics.map(m => m.timestamp)) - 
-                        Math.min(...categoryMetrics.map(m => m.timestamp));
-        stats.operationsPerSecond[category] = timeSpan > 0 ? 
-          (categoryMetrics.length / (timeSpan / 1000)) : 0;
+        const timeSpan =
+          Math.max(...categoryMetrics.map(m => m.timestamp)) -
+          Math.min(...categoryMetrics.map(m => m.timestamp));
+        stats.operationsPerSecond[category] =
+          timeSpan > 0 ? categoryMetrics.length / (timeSpan / 1000) : 0;
 
         // 平均応答時間
-        stats.averageResponseTime[category] = 
-          categoryMetrics.reduce((sum, m) => sum + m.duration, 0) / categoryMetrics.length;
+        stats.averageResponseTime[category] =
+          categoryMetrics.reduce((sum, m) => sum + m.duration, 0) /
+          categoryMetrics.length;
 
         // エラー率
         stats.errorRate[category] = this.calculateErrorRate(metrics, category);
@@ -424,7 +440,7 @@ export class PerformanceMonitor extends EventEmitter {
         averageMemoryUsage: 0,
         averageCpuUsage: 0,
         peakMemoryUsage: 0,
-        peakCpuUsage: 0
+        peakCpuUsage: 0,
       };
     }
 
@@ -432,10 +448,13 @@ export class PerformanceMonitor extends EventEmitter {
     const cpuUsages = systemMetrics.map(m => m.cpu.usage);
 
     return {
-      averageMemoryUsage: memoryUsages.reduce((sum, usage) => sum + usage, 0) / memoryUsages.length,
-      averageCpuUsage: cpuUsages.reduce((sum, usage) => sum + usage, 0) / cpuUsages.length,
+      averageMemoryUsage:
+        memoryUsages.reduce((sum, usage) => sum + usage, 0) /
+        memoryUsages.length,
+      averageCpuUsage:
+        cpuUsages.reduce((sum, usage) => sum + usage, 0) / cpuUsages.length,
       peakMemoryUsage: Math.max(...memoryUsages),
-      peakCpuUsage: Math.max(...cpuUsages)
+      peakCpuUsage: Math.max(...cpuUsages),
     };
   }
 
@@ -472,9 +491,9 @@ export const globalPerformanceMonitor = new PerformanceMonitor();
 // 自動監視開始
 if (process.env.NODE_ENV === 'production') {
   globalPerformanceMonitor.startContinuousMonitoring();
-  
+
   // アラートをログに記録
-  globalPerformanceMonitor.on('alert', (alert) => {
+  globalPerformanceMonitor.on('alert', alert => {
     const logger = new Logger();
     logger.warn('Performance alert', alert);
   });

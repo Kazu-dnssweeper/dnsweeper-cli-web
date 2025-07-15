@@ -2,12 +2,18 @@
  * analyzeコマンド - ドメインリストの詳細分析（リファクタリング版）
  */
 
-import { BaseCommand } from './base-command.js';
 import { CSVProcessor } from '../lib/csv-processor.js';
 import { DNSResolver } from '../lib/dns-resolver.js';
 import { RiskCalculator } from '../lib/risk-calculator.js';
 import { validateDNSServer } from '../lib/validators.js';
-import type { IDNSRecord, OutputFormat, AnalysisResult } from '../types/index.js';
+
+import { BaseCommand } from './base-command.js';
+
+import type {
+  IDNSRecord,
+  OutputFormat,
+  AnalysisResult,
+} from '../types/index.js';
 
 interface AnalyzeOptions {
   format?: string;
@@ -51,11 +57,7 @@ export class AnalyzeCommand extends BaseCommand {
   private setupCommand(): void {
     this.command
       .argument('<file>', 'CSVファイルのパス')
-      .option(
-        '-f, --format <format>',
-        '出力形式 (table, json, csv)',
-        'table'
-      )
+      .option('-f, --format <format>', '出力形式 (table, json, csv)', 'table')
       .option('--timeout <ms>', 'タイムアウト (ミリ秒)', '5000')
       .option('-n, --nameserver <server>', 'カスタムネームサーバー')
       .option('-p, --parallel <count>', '並列処理数', '10');
@@ -73,7 +75,7 @@ export class AnalyzeCommand extends BaseCommand {
 
     // ファイルの検証
     const filePath = this.validateFileExists(file);
-    
+
     // オプションの検証
     const timeout = this.validateTimeout(options.timeout);
     const parallel = this.validateParallel(options.parallel);
@@ -138,7 +140,8 @@ export class AnalyzeCommand extends BaseCommand {
 
     for (const record of records) {
       // 'domain', 'name', 'ドメイン名' などのカラムを探す
-      const domain = record.domain || record.name || record['ドメイン名'] || record.Domain;
+      const domain =
+        record.domain || record.name || record['ドメイン名'] || record.Domain;
       if (domain && typeof domain === 'string') {
         domains.add(domain.trim().toLowerCase());
       }
@@ -165,7 +168,7 @@ export class AnalyzeCommand extends BaseCommand {
     // バッチ処理
     for (let i = 0; i < domains.length; i += parallel) {
       const batch = domains.slice(i, i + parallel);
-      
+
       const batchResults = await Promise.all(
         batch.map(domain => this.analyzeSingleDomain(domain))
       );
@@ -175,7 +178,9 @@ export class AnalyzeCommand extends BaseCommand {
 
       // 進捗表示
       if (this.logger.verbose || completed % 50 === 0) {
-        this.logger.info(`進捗: ${completed}/${total} (${Math.round(completed / total * 100)}%)`);
+        this.logger.info(
+          `進捗: ${completed}/${total} (${Math.round((completed / total) * 100)}%)`
+        );
       }
     }
 
@@ -200,14 +205,24 @@ export class AnalyzeCommand extends BaseCommand {
         this.resolveRecords(domain, 'CNAME'),
       ]);
 
-      const records = { A: a, AAAA: aaaa, MX: mx, TXT: txt, NS: ns, CNAME: cname };
+      const records = {
+        A: a,
+        AAAA: aaaa,
+        MX: mx,
+        TXT: txt,
+        NS: ns,
+        CNAME: cname,
+      };
       const allRecords = [...a, ...aaaa, ...mx, ...txt, ...ns, ...cname];
 
       // ステータスの判定
       const status = allRecords.length > 0 ? 'active' : 'inactive';
 
       // リスク分析
-      const riskScore = await this.riskCalculator.calculateRiskScore(domain, allRecords);
+      const riskScore = await this.riskCalculator.calculateRiskScore(
+        domain,
+        allRecords
+      );
       const factors = this.riskCalculator.identifyRiskFactors(allRecords);
 
       return {
@@ -234,7 +249,10 @@ export class AnalyzeCommand extends BaseCommand {
   /**
    * レコードの解決
    */
-  private async resolveRecords(domain: string, type: string): Promise<IDNSRecord[]> {
+  private async resolveRecords(
+    domain: string,
+    type: string
+  ): Promise<IDNSRecord[]> {
     try {
       const result = await this.resolver.resolve(domain, type as any);
       return this.convertToIDNSRecords(result, domain, type as any);

@@ -2,7 +2,11 @@
  * PDFエクスポーター
  */
 
-import type { ReportTemplate, ReportSection, GeneratedReport } from '../core/types.js';
+import type {
+  ReportTemplate,
+  ReportSection,
+  GeneratedReport,
+} from '../core/types.js';
 
 export interface PDFExporterOptions {
   watermark?: {
@@ -37,7 +41,7 @@ export class PDFExporter {
     // ここでは簡易的な実装を示す
 
     const pdfContent = this.generatePDFContent(template, sections, data);
-    
+
     if (options?.watermark) {
       this.addWatermark(pdfContent, options.watermark);
     }
@@ -65,29 +69,29 @@ export class PDFExporter {
         author: data.metadata.generatedBy,
         subject: template.description,
         creator: 'DNSweeper',
-        creationDate: new Date()
+        creationDate: new Date(),
       },
       pageSize: template.styling.layout.pageSize,
       orientation: template.styling.layout.orientation,
       margins: template.styling.layout.margins,
-      pages: []
+      pages: [],
     };
 
     // セクションをページに変換
     let currentPage: any = this.createPage(template);
-    
+
     for (const section of sections) {
       const sectionContent = this.renderSection(section, template);
-      
+
       // ページに収まるかチェック（簡易版）
       if (this.shouldStartNewPage(currentPage, sectionContent)) {
         pdf.pages.push(currentPage);
         currentPage = this.createPage(template);
       }
-      
+
       currentPage.content.push(sectionContent);
     }
-    
+
     if (currentPage.content.length > 0) {
       pdf.pages.push(currentPage);
     }
@@ -102,7 +106,7 @@ export class PDFExporter {
     return {
       content: [],
       header: this.createHeader(template),
-      footer: this.createFooter(template)
+      footer: this.createFooter(template),
     };
   }
 
@@ -118,10 +122,10 @@ export class PDFExporter {
           text: template.name,
           style: {
             fontSize: 12,
-            color: template.styling.colors.secondary
-          }
-        }
-      ]
+            color: template.styling.colors.secondary,
+          },
+        },
+      ],
     };
   }
 
@@ -137,10 +141,10 @@ export class PDFExporter {
           alignment: 'center',
           style: {
             fontSize: 10,
-            color: template.styling.colors.secondary
-          }
-        }
-      ]
+            color: template.styling.colors.secondary,
+          },
+        },
+      ],
     };
   }
 
@@ -150,7 +154,7 @@ export class PDFExporter {
   private renderSection(section: ReportSection, template: ReportTemplate): any {
     const rendered: any = {
       type: section.type,
-      content: []
+      content: [],
     };
 
     // タイトルの追加
@@ -159,7 +163,7 @@ export class PDFExporter {
         type: 'heading',
         text: section.title,
         level: section.type === 'header' ? 1 : 2,
-        style: this.getSectionStyle(section, template)
+        style: this.getSectionStyle(section, template),
       });
     }
 
@@ -169,7 +173,7 @@ export class PDFExporter {
         rendered.content.push({
           type: 'paragraph',
           text: section.content,
-          style: this.getSectionStyle(section, template)
+          style: this.getSectionStyle(section, template),
         });
         break;
 
@@ -180,8 +184,8 @@ export class PDFExporter {
           style: {
             ...this.getSectionStyle(section, template),
             headerBackground: template.styling.colors.primary,
-            headerColor: '#ffffff'
-          }
+            headerColor: '#ffffff',
+          },
         });
         break;
 
@@ -189,7 +193,7 @@ export class PDFExporter {
         rendered.content.push({
           type: section.content.ordered ? 'ol' : 'ul',
           items: section.content.items,
-          style: this.getSectionStyle(section, template)
+          style: this.getSectionStyle(section, template),
         });
         break;
 
@@ -197,7 +201,7 @@ export class PDFExporter {
         rendered.content.push({
           type: 'metrics',
           data: section.content,
-          style: this.getSectionStyle(section, template)
+          style: this.getSectionStyle(section, template),
         });
         break;
 
@@ -206,7 +210,7 @@ export class PDFExporter {
           type: 'image',
           src: 'chart-placeholder', // 実際はチャートを画像に変換
           width: 500,
-          height: 300
+          height: 300,
         });
         break;
     }
@@ -217,11 +221,14 @@ export class PDFExporter {
   /**
    * セクションスタイルの取得
    */
-  private getSectionStyle(section: ReportSection, template: ReportTemplate): any {
+  private getSectionStyle(
+    section: ReportSection,
+    template: ReportTemplate
+  ): any {
     const baseStyle = {
       fontSize: template.styling.fonts.sizes.medium,
       color: template.styling.colors.text,
-      fontFamily: template.styling.fonts.primary
+      fontFamily: template.styling.fonts.primary,
     };
 
     if (section.styling) {
@@ -229,7 +236,7 @@ export class PDFExporter {
         ...baseStyle,
         ...section.styling,
         fontSize: section.styling.fontSize || baseStyle.fontSize,
-        color: section.styling.textColor || baseStyle.color
+        color: section.styling.textColor || baseStyle.color,
       };
     }
 
@@ -258,7 +265,7 @@ export class PDFExporter {
         position: watermark.position,
         fontSize: 48,
         color: '#cccccc',
-        rotation: watermark.position === 'diagonal' ? -45 : 0
+        rotation: watermark.position === 'diagonal' ? -45 : 0,
       };
     }
   }
@@ -273,8 +280,8 @@ export class PDFExporter {
       permissions: encryption.permissions || {
         printing: true,
         copying: false,
-        modifying: false
-      }
+        modifying: false,
+      },
     };
   }
 }

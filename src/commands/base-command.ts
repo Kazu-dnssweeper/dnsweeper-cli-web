@@ -1,6 +1,6 @@
 /**
  * ベースコマンドクラス
- * 
+ *
  * すべてのCLIコマンドの共通機能を提供
  * - 共通オプションの管理
  * - エラーハンドリング
@@ -9,12 +9,19 @@
  * - 結果出力
  */
 
-import { Command } from 'commander';
-import { Logger } from '../lib/logger.js';
-import { createFormatter } from '../lib/output-formatter.js';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
-import type { DNSRecordType, IDNSRecord, OutputFormat } from '../types/index.js';
+
+import { Command } from 'commander';
+
+import { Logger } from '../lib/logger.js';
+import { createFormatter } from '../lib/output-formatter.js';
+
+import type {
+  DNSRecordType,
+  IDNSRecord,
+  OutputFormat,
+} from '../types/index.js';
 
 export interface BaseCommandOptions {
   verbose?: boolean;
@@ -75,7 +82,7 @@ export abstract class BaseCommand {
       if (this.logger?.stopSpinner) {
         this.logger.stopSpinner(false, errorMessage || 'エラーが発生しました');
       }
-      
+
       if (this.logger) {
         this.logger.error(
           error instanceof Error ? error.message : 'Unknown error occurred'
@@ -83,7 +90,7 @@ export abstract class BaseCommand {
       } else {
         console.error(error);
       }
-      
+
       process.exit(1);
     }
   }
@@ -98,7 +105,7 @@ export abstract class BaseCommand {
     errorMessage?: string
   ): Promise<T> {
     this.logger.startSpinner(message);
-    
+
     try {
       const result = await fn();
       this.logger.stopSpinner(true, successMessage);
@@ -117,7 +124,8 @@ export abstract class BaseCommand {
       throw new Error('ドメイン名が指定されていません');
     }
 
-    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    const domainRegex =
+      /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!domainRegex.test(domain)) {
       throw new Error(`無効なドメイン名: ${domain}`);
     }
@@ -148,7 +156,10 @@ export abstract class BaseCommand {
   /**
    * タイムアウト値の検証
    */
-  protected validateTimeout(timeout: string | undefined, defaultValue = '5000'): number {
+  protected validateTimeout(
+    timeout: string | undefined,
+    defaultValue = '5000'
+  ): number {
     const value = parseInt(timeout || defaultValue, 10);
     if (isNaN(value) || value <= 0 || value > 60000) {
       throw new Error('タイムアウトは1-60000msの範囲で指定してください');
@@ -159,10 +170,15 @@ export abstract class BaseCommand {
   /**
    * 出力形式の検証
    */
-  protected validateOutputFormat(format: string | undefined, allowedFormats: string[]): OutputFormat {
+  protected validateOutputFormat(
+    format: string | undefined,
+    allowedFormats: string[]
+  ): OutputFormat {
     const normalizedFormat = format?.toLowerCase() || 'table';
     if (!allowedFormats.includes(normalizedFormat)) {
-      throw new Error(`無効な出力形式: ${format}. 利用可能: ${allowedFormats.join(', ')}`);
+      throw new Error(
+        `無効な出力形式: ${format}. 利用可能: ${allowedFormats.join(', ')}`
+      );
     }
     return normalizedFormat as OutputFormat;
   }
@@ -210,8 +226,8 @@ export abstract class BaseCommand {
         case 'TXT':
           return {
             ...baseRecord,
-            data: Array.isArray(record.entries) 
-              ? record.entries.join('') 
+            data: Array.isArray(record.entries)
+              ? record.entries.join('')
               : record.value || '',
           };
         case 'SOA':

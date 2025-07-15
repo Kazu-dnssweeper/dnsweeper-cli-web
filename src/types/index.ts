@@ -21,7 +21,17 @@ export type DNSRecordType =
   | 'SOA'
   | 'SRV'
   | 'PTR'
-  | 'CAA';
+  | 'CAA'
+  | 'NAPTR'
+  | 'DS'
+  | 'DNSKEY'
+  | 'RRSIG'
+  | 'NSEC'
+  | 'NSEC3'
+  | 'TLSA'
+  | 'SSHFP'
+  | 'SPF'
+  | 'ANY';
 
 export interface ICommandOptions {
   verbose?: boolean;

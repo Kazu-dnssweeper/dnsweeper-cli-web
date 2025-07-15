@@ -329,7 +329,7 @@ export function measurePerformance(
   target: unknown,
   propertyKey: string,
   descriptor: PropertyDescriptor
-): void {
+): PropertyDescriptor {
   const originalMethod = descriptor.value;
 
   descriptor.value = async function (...args: unknown[]): Promise<unknown> {

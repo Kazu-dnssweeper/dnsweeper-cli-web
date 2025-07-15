@@ -2,12 +2,17 @@
  * APIゲートウェイ - マイクロサービスへの統一エントリポイント
  */
 
-import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
+import { EventEmitter } from 'events';
+
 import { Logger } from '@lib/logger.js';
-import type { ServiceInstance, ServiceMessage } from '@lib/microservices/core/types.js';
-import { ServiceRegistryImpl } from '@lib/microservices/discovery/service-registry.js';
-import { CircuitBreakerImpl } from '@lib/microservices/circuit-breaker/circuit-breaker.js';
+
+import type { CircuitBreakerImpl } from '@lib/microservices/circuit-breaker/circuit-breaker.js';
+import type {
+  ServiceInstance,
+  ServiceMessage,
+} from '@lib/microservices/core/types.js';
+import type { ServiceRegistryImpl } from '@lib/microservices/discovery/service-registry.js';
 
 export interface GatewayRoute {
   id: string;
@@ -72,8 +77,8 @@ export class APIGateway extends EventEmitter {
       corsOptions: options?.corsOptions || {
         origins: ['*'],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        headers: ['Content-Type', 'Authorization']
-      }
+        headers: ['Content-Type', 'Authorization'],
+      },
     };
     this.startMetricsCollection();
   }
@@ -86,7 +91,7 @@ export class APIGateway extends EventEmitter {
     this.logger.info('ルートを追加しました', {
       path: route.path,
       service: route.service,
-      methods: route.methods
+      methods: route.methods,
     });
     this.emit('route:added', route);
   }
@@ -145,8 +150,8 @@ export class APIGateway extends EventEmitter {
       headers: { ...headers, ...route.headers },
       metadata: {
         retryCount: 0,
-        priority: 'medium'
-      }
+        priority: 'medium',
+      },
     };
 
     // サーキットブレーカーを通してリクエスト
@@ -156,7 +161,7 @@ export class APIGateway extends EventEmitter {
         () => this.sendRequest(instance, message, route),
         {
           timeout: route.timeout,
-          failureThreshold: 5
+          failureThreshold: 5,
         }
       );
 
@@ -164,7 +169,7 @@ export class APIGateway extends EventEmitter {
         route: route.path,
         service: route.service,
         instance: instance.id,
-        duration: Date.now() - message.timestamp.getTime()
+        duration: Date.now() - message.timestamp.getTime(),
       });
 
       return response;
@@ -173,7 +178,7 @@ export class APIGateway extends EventEmitter {
         route: route.path,
         service: route.service,
         instance: instance.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       // リトライロジック
@@ -210,7 +215,7 @@ export class APIGateway extends EventEmitter {
    * レート制限をチェック
    */
   private checkRateLimit(route: GatewayRoute): void {
-    const key = `${route.path}:${Date.now() / 1000 / 60 | 0}`;
+    const key = `${route.path}:${(Date.now() / 1000 / 60) | 0}`;
     const count = this.requestCount.get(key) || 0;
 
     if (count >= route.rateLimit.requests) {
@@ -223,7 +228,10 @@ export class APIGateway extends EventEmitter {
   /**
    * インスタンスを選択（ロードバランシング）
    */
-  private selectInstance(instances: ServiceInstance[], serviceName: string): ServiceInstance {
+  private selectInstance(
+    instances: ServiceInstance[],
+    serviceName: string
+  ): ServiceInstance {
     const index = this.loadBalancerIndex.get(serviceName) || 0;
     const selected = instances[index % instances.length];
     this.loadBalancerIndex.set(serviceName, index + 1);
@@ -243,7 +251,7 @@ export class APIGateway extends EventEmitter {
     this.logger.info('リクエストを送信します', {
       instance: instance.id,
       service: route.service,
-      messageId: message.id
+      messageId: message.id,
     });
 
     // シミュレーション：成功レスポンス
@@ -255,8 +263,8 @@ export class APIGateway extends EventEmitter {
       destination: 'api-gateway',
       payload: {
         status: 200,
-        data: { message: 'Success' }
-      }
+        data: { message: 'Success' },
+      },
     };
   }
 
@@ -281,20 +289,21 @@ export class APIGateway extends EventEmitter {
       routes: this.routes.size,
       requests: {
         total: 0,
-        perRoute: {} as Record<string, number>
+        perRoute: {} as Record<string, number>,
       },
       services: [] as Array<{
         name: string;
         instances: number;
         healthy: number;
-      }>
+      }>,
     };
 
     // リクエスト数を集計
     for (const [key, count] of this.requestCount) {
       const [route] = key.split(':');
       metrics.requests.total += count;
-      metrics.requests.perRoute[route] = (metrics.requests.perRoute[route] || 0) + count;
+      metrics.requests.perRoute[route] =
+        (metrics.requests.perRoute[route] || 0) + count;
     }
 
     // サービス情報を収集
@@ -319,10 +328,10 @@ export class APIGateway extends EventEmitter {
         path: route.path,
         service: route.service,
         methods: route.methods,
-        authentication: route.authentication
+        authentication: route.authentication,
       })),
       metrics: this.collectMetrics(),
-      circuitBreakers: this.circuitBreaker.getStats()
+      circuitBreakers: this.circuitBreaker.getStats(),
     };
   }
 }

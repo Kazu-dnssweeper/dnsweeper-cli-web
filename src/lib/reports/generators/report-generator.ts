@@ -2,17 +2,18 @@
  * レポート生成エンジン
  */
 
-import { EventEmitter } from 'events';
-import { Logger } from '../../logger.js';
-import { I18nManager } from '../../i18n-manager.js';
-import type { 
-  ReportTemplate, 
-  ReportData, 
-  ReportOptions, 
-  GeneratedReport,
-  ReportSection 
-} from '../core/types.js';
 import { createHash } from 'crypto';
+import { EventEmitter } from 'events';
+
+import type { I18nManager } from '../../i18n-manager.js';
+import type { Logger } from '../../logger.js';
+import type {
+  ReportTemplate,
+  ReportData,
+  ReportOptions,
+  GeneratedReport,
+  ReportSection,
+} from '../core/types.js';
 
 export class ReportGenerator extends EventEmitter {
   private logger: Logger;
@@ -46,7 +47,7 @@ export class ReportGenerator extends EventEmitter {
       reportId,
       templateId: template.id,
       language: options.language,
-      format: options.format
+      format: options.format,
     });
 
     try {
@@ -91,24 +92,23 @@ export class ReportGenerator extends EventEmitter {
           generatedBy: data.metadata.generatedBy,
           duration: Date.now() - startTime,
           templateId: template.id,
-          options
+          options,
         },
-        checksum: this.generateChecksum(content)
+        checksum: this.generateChecksum(content),
       };
 
       this.logger.info('レポート生成完了', {
         reportId,
         duration: report.metadata.duration,
-        size: report.size
+        size: report.size,
       });
 
       this.emit('report:generated', report);
       return report;
-
     } catch (error) {
       this.logger.error('レポート生成エラー', {
         reportId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -131,27 +131,27 @@ export class ReportGenerator extends EventEmitter {
     const localizedData: ReportData = {
       ...data,
       title: this.i18nManager.translate(data.title, 'reports'),
-      subtitle: data.subtitle 
+      subtitle: data.subtitle
         ? this.i18nManager.translate(data.subtitle, 'reports')
-        : undefined
+        : undefined,
     };
 
     // セクションデータのローカライズ
     localizedData.sections = data.sections.map(section => ({
       ...section,
-      data: this.localizeObject(section.data, language)
+      data: this.localizeObject(section.data, language),
     }));
 
     // サマリーのローカライズ
     if (data.summary) {
       localizedData.summary = {
         ...data.summary,
-        highlights: data.summary.highlights.map(h => 
+        highlights: data.summary.highlights.map(h =>
           this.i18nManager.translate(h, 'reports')
         ),
-        recommendations: data.summary.recommendations.map(r => 
+        recommendations: data.summary.recommendations.map(r =>
           this.i18nManager.translate(r, 'reports')
-        )
+        ),
       };
     }
 
@@ -214,10 +214,7 @@ export class ReportGenerator extends EventEmitter {
     for (const section of sections) {
       // 条件の評価
       if (section.conditions) {
-        const shouldInclude = this.evaluateConditions(
-          section.conditions,
-          data
-        );
+        const shouldInclude = this.evaluateConditions(section.conditions, data);
         if (!shouldInclude) {
           continue;
         }
@@ -230,7 +227,7 @@ export class ReportGenerator extends EventEmitter {
       const processedSection: ReportSection = {
         ...section,
         title: this.i18nManager.translate(section.title, 'reports'),
-        content: this.processContent(section, sectionData, options)
+        content: this.processContent(section, sectionData, options),
       };
 
       processedSections.push(processedSection);
@@ -317,10 +314,7 @@ export class ReportGenerator extends EventEmitter {
   /**
    * セクションデータの取得
    */
-  private getSectionData(
-    section: ReportSection,
-    data: ReportData
-  ): any {
+  private getSectionData(section: ReportSection, data: ReportData): any {
     const sectionData = data.sections.find(s => s.id === section.id);
     return sectionData?.data || {};
   }
@@ -337,7 +331,7 @@ export class ReportGenerator extends EventEmitter {
       case 'table':
         return this.processTableContent(section, data);
       case 'chart':
-        return options.includeCharts 
+        return options.includeCharts
           ? this.processChartContent(section, data)
           : null;
       case 'metrics':
@@ -359,7 +353,7 @@ export class ReportGenerator extends EventEmitter {
     return {
       columns: columns.map((col: string) => ({
         key: col,
-        label: this.i18nManager.translate(`column.${col}`, 'reports')
+        label: this.i18nManager.translate(`column.${col}`, 'reports'),
       })),
       rows: rows.map((row: any) => {
         const processedRow: any = {};
@@ -367,7 +361,7 @@ export class ReportGenerator extends EventEmitter {
           processedRow[col] = this.formatCellValue(row[col], col);
         }
         return processedRow;
-      })
+      }),
     };
   }
 
@@ -380,8 +374,8 @@ export class ReportGenerator extends EventEmitter {
       data: data,
       options: {
         title: section.title,
-        ...section.content.options
-      }
+        ...section.content.options,
+      },
     };
   }
 
@@ -398,7 +392,7 @@ export class ReportGenerator extends EventEmitter {
         processedMetrics.push({
           key: metric,
           label: this.i18nManager.translate(`metric.${metric}`, 'reports'),
-          value: this.formatMetricValue(value, metric)
+          value: this.formatMetricValue(value, metric),
         });
       }
     }
@@ -411,12 +405,12 @@ export class ReportGenerator extends EventEmitter {
    */
   private processListContent(section: ReportSection, data: any): any {
     const items = Array.isArray(data) ? data : data.items || [];
-    
+
     return {
       ordered: section.content.ordered || false,
-      items: items.map((item: any) => 
+      items: items.map((item: any) =>
         typeof item === 'string' ? item : item.text || String(item)
-      )
+      ),
     };
   }
 
@@ -482,7 +476,7 @@ export class ReportGenerator extends EventEmitter {
       subtitle: data.subtitle,
       sections: sections,
       summary: data.summary,
-      generated: new Date()
+      generated: new Date(),
     };
 
     return JSON.stringify(content, null, 2);
@@ -499,8 +493,8 @@ export class ReportGenerator extends EventEmitter {
    * サイズの計算
    */
   private calculateSize(content: Buffer | string): number {
-    return Buffer.isBuffer(content) 
-      ? content.length 
+    return Buffer.isBuffer(content)
+      ? content.length
       : Buffer.byteLength(content, 'utf-8');
   }
 
@@ -522,16 +516,16 @@ export class ReportGenerator extends EventEmitter {
     options: ReportOptions
   ): Promise<string> {
     const id = this.generateReportId();
-    
+
     this.generationQueue.push({
       id,
       template,
       data,
-      options
+      options,
     });
 
     this.emit('report:queued', { id, position: this.generationQueue.length });
-    
+
     // キューの処理を開始
     if (!this.isGenerating) {
       this.processQueue();
@@ -552,13 +546,13 @@ export class ReportGenerator extends EventEmitter {
 
     while (this.generationQueue.length > 0) {
       const job = this.generationQueue.shift()!;
-      
+
       try {
         await this.generate(job.template, job.data, job.options);
       } catch (error) {
         this.emit('report:error', {
           id: job.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }

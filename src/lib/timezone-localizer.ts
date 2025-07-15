@@ -1,6 +1,6 @@
 /**
  * タイムゾーン・日付形式ローカライザー
- * 
+ *
  * グローバル対応のためのタイムゾーン・日付・時刻処理機能
  * - 地域別タイムゾーン自動検出
  * - 文化的な日付・時刻形式対応
@@ -10,8 +10,9 @@
  */
 
 import { EventEmitter } from 'events';
-import { Logger } from './logger.js';
+
 import { I18nManager } from './i18n-manager.js';
+import { Logger } from './logger.js';
 
 export interface TimezoneInfo {
   timezone: string;
@@ -94,9 +95,13 @@ export class TimezoneLocalizer extends EventEmitter {
   private currentLocale: string;
   private updateInterval?: NodeJS.Timeout;
 
-  constructor(logger?: Logger, i18nManager?: I18nManager, options: DateTimeLocalizerOptions = {}) {
+  constructor(
+    logger?: Logger,
+    i18nManager?: I18nManager,
+    options: DateTimeLocalizerOptions = {}
+  ) {
     super();
-    this.logger = logger || new Logger({ level: 'info' });
+    this.logger = logger || new Logger({ logLevel: 'info' });
     this.i18nManager = i18nManager || new I18nManager();
     this.options = {
       defaultTimezone: 'UTC',
@@ -109,7 +114,7 @@ export class TimezoneLocalizer extends EventEmitter {
       enableRelativeTime: true,
       cacheSize: 100,
       updateInterval: 3600000, // 1時間
-      ...options
+      ...options,
     };
 
     this.timezoneCache = new Map();
@@ -147,7 +152,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'North America',
         country: 'United States',
         city: 'New York',
-        utcOffset: 'UTC-5'
+        utcOffset: 'UTC-5',
       },
       {
         timezone: 'America/Chicago',
@@ -158,7 +163,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'North America',
         country: 'United States',
         city: 'Chicago',
-        utcOffset: 'UTC-6'
+        utcOffset: 'UTC-6',
       },
       {
         timezone: 'America/Denver',
@@ -169,7 +174,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'North America',
         country: 'United States',
         city: 'Denver',
-        utcOffset: 'UTC-7'
+        utcOffset: 'UTC-7',
       },
       {
         timezone: 'America/Los_Angeles',
@@ -180,7 +185,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'North America',
         country: 'United States',
         city: 'Los Angeles',
-        utcOffset: 'UTC-8'
+        utcOffset: 'UTC-8',
       },
       {
         timezone: 'America/Toronto',
@@ -191,7 +196,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'North America',
         country: 'Canada',
         city: 'Toronto',
-        utcOffset: 'UTC-5'
+        utcOffset: 'UTC-5',
       },
 
       // ヨーロッパ
@@ -204,7 +209,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Europe',
         country: 'United Kingdom',
         city: 'London',
-        utcOffset: 'UTC+0'
+        utcOffset: 'UTC+0',
       },
       {
         timezone: 'Europe/Paris',
@@ -215,7 +220,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Europe',
         country: 'France',
         city: 'Paris',
-        utcOffset: 'UTC+1'
+        utcOffset: 'UTC+1',
       },
       {
         timezone: 'Europe/Berlin',
@@ -226,7 +231,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Europe',
         country: 'Germany',
         city: 'Berlin',
-        utcOffset: 'UTC+1'
+        utcOffset: 'UTC+1',
       },
       {
         timezone: 'Europe/Rome',
@@ -237,7 +242,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Europe',
         country: 'Italy',
         city: 'Rome',
-        utcOffset: 'UTC+1'
+        utcOffset: 'UTC+1',
       },
       {
         timezone: 'Europe/Stockholm',
@@ -248,7 +253,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Europe',
         country: 'Sweden',
         city: 'Stockholm',
-        utcOffset: 'UTC+1'
+        utcOffset: 'UTC+1',
       },
 
       // アジア太平洋
@@ -260,7 +265,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Japan',
         city: 'Tokyo',
-        utcOffset: 'UTC+9'
+        utcOffset: 'UTC+9',
       },
       {
         timezone: 'Asia/Shanghai',
@@ -270,7 +275,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'China',
         city: 'Shanghai',
-        utcOffset: 'UTC+8'
+        utcOffset: 'UTC+8',
       },
       {
         timezone: 'Asia/Hong_Kong',
@@ -280,7 +285,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Hong Kong',
         city: 'Hong Kong',
-        utcOffset: 'UTC+8'
+        utcOffset: 'UTC+8',
       },
       {
         timezone: 'Asia/Singapore',
@@ -290,7 +295,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Singapore',
         city: 'Singapore',
-        utcOffset: 'UTC+8'
+        utcOffset: 'UTC+8',
       },
       {
         timezone: 'Asia/Seoul',
@@ -300,7 +305,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'South Korea',
         city: 'Seoul',
-        utcOffset: 'UTC+9'
+        utcOffset: 'UTC+9',
       },
       {
         timezone: 'Asia/Kolkata',
@@ -310,7 +315,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'India',
         city: 'Kolkata',
-        utcOffset: 'UTC+5:30'
+        utcOffset: 'UTC+5:30',
       },
       {
         timezone: 'Asia/Bangkok',
@@ -320,7 +325,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Thailand',
         city: 'Bangkok',
-        utcOffset: 'UTC+7'
+        utcOffset: 'UTC+7',
       },
       {
         timezone: 'Asia/Manila',
@@ -330,7 +335,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Philippines',
         city: 'Manila',
-        utcOffset: 'UTC+8'
+        utcOffset: 'UTC+8',
       },
       {
         timezone: 'Asia/Jakarta',
@@ -340,7 +345,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Indonesia',
         city: 'Jakarta',
-        utcOffset: 'UTC+7'
+        utcOffset: 'UTC+7',
       },
       {
         timezone: 'Asia/Kuala_Lumpur',
@@ -350,7 +355,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Malaysia',
         city: 'Kuala Lumpur',
-        utcOffset: 'UTC+8'
+        utcOffset: 'UTC+8',
       },
       {
         timezone: 'Australia/Sydney',
@@ -361,7 +366,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Asia Pacific',
         country: 'Australia',
         city: 'Sydney',
-        utcOffset: 'UTC+10'
+        utcOffset: 'UTC+10',
       },
 
       // 中東・アフリカ
@@ -373,7 +378,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Middle East',
         country: 'UAE',
         city: 'Dubai',
-        utcOffset: 'UTC+4'
+        utcOffset: 'UTC+4',
       },
       {
         timezone: 'Asia/Riyadh',
@@ -383,7 +388,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Middle East',
         country: 'Saudi Arabia',
         city: 'Riyadh',
-        utcOffset: 'UTC+3'
+        utcOffset: 'UTC+3',
       },
       {
         timezone: 'Asia/Jerusalem',
@@ -394,7 +399,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Middle East',
         country: 'Israel',
         city: 'Jerusalem',
-        utcOffset: 'UTC+2'
+        utcOffset: 'UTC+2',
       },
 
       // 南米
@@ -407,7 +412,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'South America',
         country: 'Brazil',
         city: 'São Paulo',
-        utcOffset: 'UTC-3'
+        utcOffset: 'UTC-3',
       },
       {
         timezone: 'America/Argentina/Buenos_Aires',
@@ -417,7 +422,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'South America',
         country: 'Argentina',
         city: 'Buenos Aires',
-        utcOffset: 'UTC-3'
+        utcOffset: 'UTC-3',
       },
       {
         timezone: 'America/Mexico_City',
@@ -428,7 +433,7 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'North America',
         country: 'Mexico',
         city: 'Mexico City',
-        utcOffset: 'UTC-6'
+        utcOffset: 'UTC-6',
       },
 
       // グローバル
@@ -440,8 +445,8 @@ export class TimezoneLocalizer extends EventEmitter {
         region: 'Global',
         country: 'Global',
         city: 'UTC',
-        utcOffset: 'UTC+0'
-      }
+        utcOffset: 'UTC+0',
+      },
     ];
 
     timezones.forEach(timezone => {
@@ -463,7 +468,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 0,
-        firstWeekContainsDate: 1
+        firstWeekContainsDate: 1,
       },
       'en-GB': {
         dateFormat: 'dd/MM/yyyy',
@@ -474,7 +479,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 1,
-        firstWeekContainsDate: 4
+        firstWeekContainsDate: 4,
       },
       'ja-JP': {
         dateFormat: 'yyyy/MM/dd',
@@ -485,7 +490,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 0,
-        firstWeekContainsDate: 1
+        firstWeekContainsDate: 1,
       },
       'de-DE': {
         dateFormat: 'dd.MM.yyyy',
@@ -496,7 +501,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 1,
-        firstWeekContainsDate: 4
+        firstWeekContainsDate: 4,
       },
       'fr-FR': {
         dateFormat: 'dd/MM/yyyy',
@@ -507,7 +512,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 1,
-        firstWeekContainsDate: 4
+        firstWeekContainsDate: 4,
       },
       'es-ES': {
         dateFormat: 'dd/MM/yyyy',
@@ -518,7 +523,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 1,
-        firstWeekContainsDate: 4
+        firstWeekContainsDate: 4,
       },
       'it-IT': {
         dateFormat: 'dd/MM/yyyy',
@@ -529,7 +534,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 1,
-        firstWeekContainsDate: 4
+        firstWeekContainsDate: 4,
       },
       'pt-BR': {
         dateFormat: 'dd/MM/yyyy',
@@ -540,7 +545,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 0,
-        firstWeekContainsDate: 1
+        firstWeekContainsDate: 1,
       },
       'ru-RU': {
         dateFormat: 'dd.MM.yyyy',
@@ -551,7 +556,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 1,
-        firstWeekContainsDate: 4
+        firstWeekContainsDate: 4,
       },
       'ko-KR': {
         dateFormat: 'yyyy. MM. dd.',
@@ -562,7 +567,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'a h:mm',
         timeFormat24: 'HH:mm',
         weekStartsOn: 0,
-        firstWeekContainsDate: 1
+        firstWeekContainsDate: 1,
       },
       'zh-CN': {
         dateFormat: 'yyyy-MM-dd',
@@ -573,7 +578,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'a h:mm',
         timeFormat24: 'HH:mm',
         weekStartsOn: 1,
-        firstWeekContainsDate: 4
+        firstWeekContainsDate: 4,
       },
       'ar-SA': {
         dateFormat: 'dd/MM/yyyy',
@@ -584,7 +589,7 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 0,
-        firstWeekContainsDate: 1
+        firstWeekContainsDate: 1,
       },
       'hi-IN': {
         dateFormat: 'dd/MM/yyyy',
@@ -595,8 +600,8 @@ export class TimezoneLocalizer extends EventEmitter {
         timeFormat12: 'h:mm a',
         timeFormat24: 'HH:mm',
         weekStartsOn: 0,
-        firstWeekContainsDate: 1
-      }
+        firstWeekContainsDate: 1,
+      },
     };
 
     Object.entries(formats).forEach(([locale, format]) => {
@@ -618,14 +623,29 @@ export class TimezoneLocalizer extends EventEmitter {
           wednesday: { open: '09:00', close: '17:00', isOpen: true },
           thursday: { open: '09:00', close: '17:00', isOpen: true },
           friday: { open: '09:00', close: '17:00', isOpen: true },
-          saturday: { open: '', close: '', isOpen: false }
+          saturday: { open: '', close: '', isOpen: false },
         },
         specialHours: [],
         holidays: [
-          { date: '2024-01-01', name: 'New Year\'s Day', isRecurring: true, region: 'US' },
-          { date: '2024-07-04', name: 'Independence Day', isRecurring: true, region: 'US' },
-          { date: '2024-12-25', name: 'Christmas Day', isRecurring: true, region: 'US' }
-        ]
+          {
+            date: '2024-01-01',
+            name: "New Year's Day",
+            isRecurring: true,
+            region: 'US',
+          },
+          {
+            date: '2024-07-04',
+            name: 'Independence Day',
+            isRecurring: true,
+            region: 'US',
+          },
+          {
+            date: '2024-12-25',
+            name: 'Christmas Day',
+            isRecurring: true,
+            region: 'US',
+          },
+        ],
       },
       'Europe/London': {
         timezone: 'Europe/London',
@@ -636,14 +656,29 @@ export class TimezoneLocalizer extends EventEmitter {
           wednesday: { open: '09:00', close: '17:00', isOpen: true },
           thursday: { open: '09:00', close: '17:00', isOpen: true },
           friday: { open: '09:00', close: '17:00', isOpen: true },
-          saturday: { open: '', close: '', isOpen: false }
+          saturday: { open: '', close: '', isOpen: false },
         },
         specialHours: [],
         holidays: [
-          { date: '2024-01-01', name: 'New Year\'s Day', isRecurring: true, region: 'UK' },
-          { date: '2024-12-25', name: 'Christmas Day', isRecurring: true, region: 'UK' },
-          { date: '2024-12-26', name: 'Boxing Day', isRecurring: true, region: 'UK' }
-        ]
+          {
+            date: '2024-01-01',
+            name: "New Year's Day",
+            isRecurring: true,
+            region: 'UK',
+          },
+          {
+            date: '2024-12-25',
+            name: 'Christmas Day',
+            isRecurring: true,
+            region: 'UK',
+          },
+          {
+            date: '2024-12-26',
+            name: 'Boxing Day',
+            isRecurring: true,
+            region: 'UK',
+          },
+        ],
       },
       'Asia/Tokyo': {
         timezone: 'Asia/Tokyo',
@@ -654,16 +689,31 @@ export class TimezoneLocalizer extends EventEmitter {
           wednesday: { open: '09:00', close: '18:00', isOpen: true },
           thursday: { open: '09:00', close: '18:00', isOpen: true },
           friday: { open: '09:00', close: '18:00', isOpen: true },
-          saturday: { open: '', close: '', isOpen: false }
+          saturday: { open: '', close: '', isOpen: false },
         },
         specialHours: [],
         holidays: [
           { date: '2024-01-01', name: '元日', isRecurring: true, region: 'JP' },
-          { date: '2024-12-29', name: '年末年始', isRecurring: true, region: 'JP' },
-          { date: '2024-12-30', name: '年末年始', isRecurring: true, region: 'JP' },
-          { date: '2024-12-31', name: '年末年始', isRecurring: true, region: 'JP' }
-        ]
-      }
+          {
+            date: '2024-12-29',
+            name: '年末年始',
+            isRecurring: true,
+            region: 'JP',
+          },
+          {
+            date: '2024-12-30',
+            name: '年末年始',
+            isRecurring: true,
+            region: 'JP',
+          },
+          {
+            date: '2024-12-31',
+            name: '年末年始',
+            isRecurring: true,
+            region: 'JP',
+          },
+        ],
+      },
     };
 
     Object.entries(businessHours).forEach(([timezone, hours]) => {
@@ -677,14 +727,15 @@ export class TimezoneLocalizer extends EventEmitter {
   private detectTimezone(): void {
     try {
       // ブラウザ環境での検出
-      if (typeof window !== 'undefined' && window.Intl) {
-        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (typeof globalThis !== 'undefined' && globalThis.Intl) {
+        const detectedTimezone =
+          Intl.DateTimeFormat().resolvedOptions().timeZone;
         if (this.timezoneCache.has(detectedTimezone)) {
           this.currentTimezone = detectedTimezone;
           this.logger.info(`タイムゾーン自動検出: ${detectedTimezone}`);
         }
       }
-      
+
       // Node.js環境での検出
       if (typeof process !== 'undefined' && process.env.TZ) {
         const envTimezone = process.env.TZ;
@@ -694,7 +745,10 @@ export class TimezoneLocalizer extends EventEmitter {
         }
       }
     } catch (error) {
-      this.logger.error('タイムゾーン検出エラー:', error);
+      this.logger.error(
+        'タイムゾーン検出エラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
@@ -722,10 +776,13 @@ export class TimezoneLocalizer extends EventEmitter {
 
       this.emit('timezone-updated', {
         currentTimezone: this.currentTimezone,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     } catch (error) {
-      this.logger.error('タイムゾーン情報更新エラー:', error);
+      this.logger.error(
+        'タイムゾーン情報更新エラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
@@ -737,15 +794,15 @@ export class TimezoneLocalizer extends EventEmitter {
       if (timezoneInfo.dstOffset !== undefined) {
         const now = new Date();
         const isDST = this.isDSTActive(now, timezone);
-        
+
         if (timezoneInfo.isDST !== isDST) {
           timezoneInfo.isDST = isDST;
           this.timezoneCache.set(timezone, timezoneInfo);
-          
+
           this.emit('dst-changed', {
             timezone,
             isDST,
-            timestamp: now
+            timestamp: now,
           });
         }
       }
@@ -759,14 +816,17 @@ export class TimezoneLocalizer extends EventEmitter {
     try {
       const january = new Date(date.getFullYear(), 0, 1);
       const july = new Date(date.getFullYear(), 6, 1);
-      
+
       const januaryOffset = this.getTimezoneOffset(january, timezone);
       const julyOffset = this.getTimezoneOffset(july, timezone);
       const currentOffset = this.getTimezoneOffset(date, timezone);
-      
+
       return currentOffset !== Math.max(januaryOffset, julyOffset);
     } catch (error) {
-      this.logger.error('DST判定エラー:', error);
+      this.logger.error(
+        'DST判定エラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return false;
     }
   }
@@ -776,11 +836,18 @@ export class TimezoneLocalizer extends EventEmitter {
    */
   private getTimezoneOffset(date: Date, timezone: string): number {
     try {
-      const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-      const localDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+      const utcDate = new Date(
+        date.toLocaleString('en-US', { timeZone: 'UTC' })
+      );
+      const localDate = new Date(
+        date.toLocaleString('en-US', { timeZone: timezone })
+      );
       return (utcDate.getTime() - localDate.getTime()) / (1000 * 60);
     } catch (error) {
-      this.logger.error('タイムゾーンオフセット取得エラー:', error);
+      this.logger.error(
+        'タイムゾーンオフセット取得エラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return 0;
     }
   }
@@ -792,9 +859,11 @@ export class TimezoneLocalizer extends EventEmitter {
     // 必要に応じてキャッシュサイズを制限
     if (this.formatCache.size > this.options.cacheSize!) {
       const entries = Array.from(this.formatCache.entries());
-      entries.slice(0, entries.length - this.options.cacheSize!).forEach(([key]) => {
-        this.formatCache.delete(key);
-      });
+      entries
+        .slice(0, entries.length - this.options.cacheSize!)
+        .forEach(([key]) => {
+          this.formatCache.delete(key);
+        });
     }
   }
 
@@ -821,7 +890,9 @@ export class TimezoneLocalizer extends EventEmitter {
   setLocale(locale: string): void {
     if (!this.formatCache.has(locale)) {
       // フォールバック処理
-      this.logger.warn(`未対応のロケール: ${locale}、フォールバック: ${this.options.fallbackLocale}`);
+      this.logger.warn(
+        `未対応のロケール: ${locale}、フォールバック: ${this.options.fallbackLocale}`
+      );
       locale = this.options.fallbackLocale!;
     }
 
@@ -835,16 +906,21 @@ export class TimezoneLocalizer extends EventEmitter {
   /**
    * 日付のフォーマット
    */
-  formatDate(date: Date, options: {
-    timezone?: string;
-    locale?: string;
-    format?: 'short' | 'long' | 'custom';
-    customFormat?: string;
-  } = {}): string {
+  formatDate(
+    date: Date,
+    options: {
+      timezone?: string;
+      locale?: string;
+      format?: 'short' | 'long' | 'custom';
+      customFormat?: string;
+    } = {}
+  ): string {
     try {
       const timezone = options.timezone || this.currentTimezone;
       const locale = options.locale || this.currentLocale;
-      const format = this.formatCache.get(locale) || this.formatCache.get(this.options.fallbackLocale!)!;
+      const format =
+        this.formatCache.get(locale) ||
+        this.formatCache.get(this.options.fallbackLocale!)!;
 
       let formatString: string;
       switch (options.format) {
@@ -866,10 +942,13 @@ export class TimezoneLocalizer extends EventEmitter {
         timeZone: timezone,
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
       });
     } catch (error) {
-      this.logger.error('日付フォーマットエラー:', error);
+      this.logger.error(
+        '日付フォーマットエラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return date.toLocaleDateString();
     }
   }
@@ -877,28 +956,36 @@ export class TimezoneLocalizer extends EventEmitter {
   /**
    * 時刻のフォーマット
    */
-  formatTime(time: Date, options: {
-    timezone?: string;
-    locale?: string;
-    format?: '12' | '24';
-    showSeconds?: boolean;
-  } = {}): string {
+  formatTime(
+    time: Date,
+    options: {
+      timezone?: string;
+      locale?: string;
+      format?: '12' | '24';
+      showSeconds?: boolean;
+    } = {}
+  ): string {
     try {
       const timezone = options.timezone || this.currentTimezone;
       const locale = options.locale || this.currentLocale;
-      const format = this.formatCache.get(locale) || this.formatCache.get(this.options.fallbackLocale!)!;
+      const format =
+        this.formatCache.get(locale) ||
+        this.formatCache.get(this.options.fallbackLocale!)!;
 
       const hour12 = options.format === '12';
-      
+
       return time.toLocaleTimeString(locale, {
         timeZone: timezone,
         hour12,
         hour: '2-digit',
         minute: '2-digit',
-        second: options.showSeconds ? '2-digit' : undefined
+        second: options.showSeconds ? '2-digit' : undefined,
       });
     } catch (error) {
-      this.logger.error('時刻フォーマットエラー:', error);
+      this.logger.error(
+        '時刻フォーマットエラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return time.toLocaleTimeString();
     }
   }
@@ -906,30 +993,36 @@ export class TimezoneLocalizer extends EventEmitter {
   /**
    * 日時のフォーマット
    */
-  formatDateTime(dateTime: Date, options: {
-    timezone?: string;
-    locale?: string;
-    dateFormat?: 'short' | 'long' | 'custom';
-    timeFormat?: '12' | '24';
-    showSeconds?: boolean;
-  } = {}): string {
+  formatDateTime(
+    dateTime: Date,
+    options: {
+      timezone?: string;
+      locale?: string;
+      dateFormat?: 'short' | 'long' | 'custom';
+      timeFormat?: '12' | '24';
+      showSeconds?: boolean;
+    } = {}
+  ): string {
     try {
       const dateStr = this.formatDate(dateTime, {
         timezone: options.timezone,
         locale: options.locale,
-        format: options.dateFormat
+        format: options.dateFormat,
       });
-      
+
       const timeStr = this.formatTime(dateTime, {
         timezone: options.timezone,
         locale: options.locale,
         format: options.timeFormat,
-        showSeconds: options.showSeconds
+        showSeconds: options.showSeconds,
       });
 
       return `${dateStr} ${timeStr}`;
     } catch (error) {
-      this.logger.error('日時フォーマットエラー:', error);
+      this.logger.error(
+        '日時フォーマットエラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return dateTime.toLocaleString();
     }
   }
@@ -937,7 +1030,10 @@ export class TimezoneLocalizer extends EventEmitter {
   /**
    * 相対時間の表示
    */
-  formatRelativeTime(date: Date, options: RelativeTimeOptions = {}): string {
+  formatRelativeTime(
+    date: Date,
+    options: RelativeTimeOptions = { style: 'long', numeric: 'auto' }
+  ): string {
     try {
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
@@ -953,7 +1049,7 @@ export class TimezoneLocalizer extends EventEmitter {
       if (typeof Intl !== 'undefined' && Intl.RelativeTimeFormat) {
         const rtf = new Intl.RelativeTimeFormat(this.currentLocale, {
           numeric: options.numeric || 'auto',
-          style: options.style || 'long'
+          style: options.style || 'long',
         });
 
         if (Math.abs(diffDays) > 0) {
@@ -969,16 +1065,25 @@ export class TimezoneLocalizer extends EventEmitter {
 
       // フォールバック実装
       if (Math.abs(diffDays) > 0) {
-        return diffDays > 0 ? `${diffDays} days ago` : `in ${Math.abs(diffDays)} days`;
+        return diffDays > 0
+          ? `${diffDays} days ago`
+          : `in ${Math.abs(diffDays)} days`;
       } else if (Math.abs(diffHours) > 0) {
-        return diffHours > 0 ? `${diffHours} hours ago` : `in ${Math.abs(diffHours)} hours`;
+        return diffHours > 0
+          ? `${diffHours} hours ago`
+          : `in ${Math.abs(diffHours)} hours`;
       } else if (Math.abs(diffMinutes) > 0) {
-        return diffMinutes > 0 ? `${diffMinutes} minutes ago` : `in ${Math.abs(diffMinutes)} minutes`;
+        return diffMinutes > 0
+          ? `${diffMinutes} minutes ago`
+          : `in ${Math.abs(diffMinutes)} minutes`;
       } else {
         return 'just now';
       }
     } catch (error) {
-      this.logger.error('相対時間フォーマットエラー:', error);
+      this.logger.error(
+        '相対時間フォーマットエラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return this.formatDateTime(date);
     }
   }
@@ -990,7 +1095,7 @@ export class TimezoneLocalizer extends EventEmitter {
     try {
       const tz = timezone || this.currentTimezone;
       const businessHours = this.businessHoursCache.get(tz);
-      
+
       if (!businessHours) {
         this.logger.warn(`業務時間設定が見つかりません: ${tz}`);
         return false;
@@ -1002,10 +1107,12 @@ export class TimezoneLocalizer extends EventEmitter {
       }
 
       // 曜日の取得
-      const dayOfWeek = date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        timeZone: tz 
-      }).toLowerCase();
+      const dayOfWeek = date
+        .toLocaleDateString('en-US', {
+          weekday: 'long',
+          timeZone: tz,
+        })
+        .toLowerCase();
 
       const dayHours = businessHours.regularHours[dayOfWeek];
       if (!dayHours || !dayHours.isOpen) {
@@ -1017,12 +1124,15 @@ export class TimezoneLocalizer extends EventEmitter {
         timeZone: tz,
         hour12: false,
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
 
       return timeStr >= dayHours.open && timeStr <= dayHours.close;
     } catch (error) {
-      this.logger.error('業務時間判定エラー:', error);
+      this.logger.error(
+        '業務時間判定エラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return false;
     }
   }
@@ -1041,11 +1151,11 @@ export class TimezoneLocalizer extends EventEmitter {
   getNextBusinessDay(date: Date = new Date(), timezone?: string): Date {
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
-    
+
     while (!this.isBusinessHours(nextDay, timezone)) {
       nextDay.setDate(nextDay.getDate() + 1);
     }
-    
+
     return nextDay;
   }
 
@@ -1056,18 +1166,21 @@ export class TimezoneLocalizer extends EventEmitter {
     try {
       // 元のタイムゾーンでの時刻文字列を取得
       const dateStr = date.toLocaleString('en-US', { timeZone: fromTimezone });
-      
+
       // 対象タイムゾーンでのDateオブジェクトを作成
       const convertedDate = new Date(dateStr);
-      
+
       // タイムゾーンオフセットを調整
       const fromOffset = this.getTimezoneOffset(date, fromTimezone);
       const toOffset = this.getTimezoneOffset(date, toTimezone);
       const offsetDiff = (toOffset - fromOffset) * 60 * 1000;
-      
+
       return new Date(convertedDate.getTime() + offsetDiff);
     } catch (error) {
-      this.logger.error('タイムゾーン変換エラー:', error);
+      this.logger.error(
+        'タイムゾーン変換エラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return date;
     }
   }
@@ -1117,7 +1230,10 @@ export class TimezoneLocalizer extends EventEmitter {
 
       this.logger.info('TimezoneLocalizer正常終了');
     } catch (error) {
-      this.logger.error('TimezoneLocalizer終了エラー:', error);
+      this.logger.error(
+        'TimezoneLocalizer終了エラー:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }

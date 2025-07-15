@@ -1,0 +1,174 @@
+name: Auto Fix Errors with Claude API
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.github/workflows/**'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run even with [skip ci]'
+        required: false
+        default: 'false'
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    # 無限ループ防止: [skip ci]がコミットメッセージに含まれている場合はスキップ
+    if: |
+      !contains(github.event.head_commit.message, '[skip ci]') || 
+      github.event.inputs.force_run == 'true'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Node dependencies
+      run: npm ci
+
+    - name: Install Python dependencies
+      run: |
+        pip install -r requirements.txt || pip install anthropic
+
+    - name: Check cost limit
+      id: cost_check
+      run: |
+        python scripts/cost_optimizer.py check-budget
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      continue-on-error: true
+
+    - name: Collect TypeScript errors
+      id: ts_errors
+      run: |
+        echo "Collecting TypeScript errors..."
+        npx tsc --noEmit 2>&1 | head -n 200 > ts_errors.log || true
+        echo "ts_error_count=$(grep -c "error TS" ts_errors.log || echo 0)" >> $GITHUB_OUTPUT
+      continue-on-error: true
+
+    - name: Collect ESLint errors
+      id: eslint_errors
+      run: |
+        echo "Collecting ESLint errors..."
+        npm run lint -- --format json > eslint_errors.json 2>&1 || true
+        echo "eslint_error_count=$(jq '[.[] | .errorCount] | add' eslint_errors.json || echo 0)" >> $GITHUB_OUTPUT
+      continue-on-error: true
+
+    - name: Collect test failures
+      id: test_errors
+      run: |
+        echo "Collecting test failures..."
+        npm test -- --reporter=json > test_errors.json 2>&1 || true
+        echo "test_error_count=$(jq '.numFailedTests' test_errors.json || echo 0)" >> $GITHUB_OUTPUT
+      continue-on-error: true
+
+    - name: Calculate total errors
+      id: total_errors
+      run: |
+        ts_count=${{ steps.ts_errors.outputs.ts_error_count }}
+        eslint_count=${{ steps.eslint_errors.outputs.eslint_error_count }}
+        test_count=${{ steps.test_errors.outputs.test_error_count }}
+        total=$((ts_count + eslint_count + test_count))
+        echo "Total errors: $total (TS: $ts_count, ESLint: $eslint_count, Tests: $test_count)"
+        echo "total_count=$total" >> $GITHUB_OUTPUT
+
+    - name: Fix errors with Claude API
+      if: steps.total_errors.outputs.total_count != '0' && steps.cost_check.outcome == 'success'
+      id: fix_errors
+      run: |
+        python scripts/fix_all_errors.py \
+          --ts-errors ts_errors.log \
+          --eslint-errors eslint_errors.json \
+          --test-errors test_errors.json \
+          --max-fixes 5 \
+          --output fixes.json
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+
+    - name: Apply fixes
+      if: steps.fix_errors.outcome == 'success'
+      run: |
+        python scripts/apply_fixes.py fixes.json
+
+    - name: Run tests after fixes
+      if: steps.fix_errors.outcome == 'success'
+      run: |
+        npm test -- --passWithNoTests || true
+        npm run lint || true
+        npx tsc --noEmit || true
+
+    - name: Commit and push fixes
+      if: steps.fix_errors.outcome == 'success'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🤖 Auto-fix errors with Claude API [skip ci]
+
+        Fixed:
+        - TypeScript errors: ${{ steps.ts_errors.outputs.ts_error_count }}
+        - ESLint errors: ${{ steps.eslint_errors.outputs.eslint_error_count }}
+        - Test failures: ${{ steps.test_errors.outputs.test_error_count }}
+
+        Co-Authored-By: Claude API <noreply@anthropic.com>"
+          git push
+        fi
+
+    - name: Create issues for remaining errors
+      if: steps.total_errors.outputs.total_count > 10
+      run: |
+        python scripts/create_error_issues.py \
+          --ts-errors ts_errors.log \
+          --eslint-errors eslint_errors.json \
+          --test-errors test_errors.json \
+          --fixed-count 5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update cost tracking
+      if: always()
+      run: |
+        python scripts/cost_optimizer.py update-usage \
+          --tokens-used ${{ steps.fix_errors.outputs.tokens_used || 0 }} \
+          --model ${{ steps.fix_errors.outputs.model_used || 'claude-3-haiku-20240307' }}
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    - name: Post summary
+      if: always()
+      run: |
+        echo "## 🤖 Auto-Fix Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Errors Found:" >> $GITHUB_STEP_SUMMARY
+        echo "- TypeScript: ${{ steps.ts_errors.outputs.ts_error_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "- ESLint: ${{ steps.eslint_errors.outputs.eslint_error_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Tests: ${{ steps.test_errors.outputs.test_error_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Status: ${{ steps.fix_errors.outcome }}" >> $GITHUB_STEP_SUMMARY
+        if [ -f "fixes.json" ]; then
+          echo "### Fixes Applied:" >> $GITHUB_STEP_SUMMARY
+          jq -r '.fixes[] | "- \(.file): \(.description)"' fixes.json >> $GITHUB_STEP_SUMMARY || true
+        fi

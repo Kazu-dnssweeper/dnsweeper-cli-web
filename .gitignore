@@ -59,3 +59,16 @@ temp/
 .cache/
 .eslintcache
 .prettierignore
+
+# Claude API Integration
+venv/
+__pycache__/
+*.pyc
+.fix-history.json
+cost-tracking.json
+cost_report.md
+cost_summary.json
+cost_chart.png
+fixes.json
+*.bak
+.python-version

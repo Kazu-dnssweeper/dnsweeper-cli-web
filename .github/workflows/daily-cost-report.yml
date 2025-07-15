@@ -1,0 +1,189 @@
+name: Daily Cost Report
+
+on:
+  schedule:
+    # 毎日午前9時（JST）に実行 = UTC 0:00
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  cost-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install anthropic matplotlib pandas
+
+    - name: Generate cost report
+      id: generate_report
+      run: |
+        python scripts/generate_cost_report.py \
+          --output cost_report.md \
+          --json-output cost_summary.json
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    - name: Read cost summary
+      id: cost_summary
+      run: |
+        if [ -f cost_summary.json ]; then
+          echo "daily_cost=$(jq -r '.daily_cost' cost_summary.json)" >> $GITHUB_OUTPUT
+          echo "monthly_cost=$(jq -r '.monthly_cost' cost_summary.json)" >> $GITHUB_OUTPUT
+          echo "remaining_budget=$(jq -r '.remaining_budget' cost_summary.json)" >> $GITHUB_OUTPUT
+          echo "budget_percentage=$(jq -r '.budget_percentage' cost_summary.json)" >> $GITHUB_OUTPUT
+          echo "projected_monthly=$(jq -r '.projected_monthly_cost' cost_summary.json)" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Update cost tracking file
+      run: |
+        # コスト追跡ファイルを更新
+        if [ ! -f cost-tracking.json ]; then
+          echo '{"entries": []}' > cost-tracking.json
+        fi
+        
+        # 新しいエントリを追加
+        jq --arg date "$(date -u +%Y-%m-%d)" \
+           --arg daily "${{ steps.cost_summary.outputs.daily_cost }}" \
+           --arg monthly "${{ steps.cost_summary.outputs.monthly_cost }}" \
+           '.entries += [{
+             "date": $date,
+             "daily_cost": ($daily | tonumber),
+             "monthly_cumulative": ($monthly | tonumber),
+             "timestamp": now
+           }]' cost-tracking.json > cost-tracking-new.json
+        
+        mv cost-tracking-new.json cost-tracking.json
+
+    - name: Create cost visualization
+      run: |
+        python scripts/visualize_costs.py \
+          --input cost-tracking.json \
+          --output cost_chart.png
+
+    - name: Commit cost tracking
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add cost-tracking.json
+        if [ -f cost_chart.png ]; then
+          git add cost_chart.png
+        fi
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "📊 Daily cost report - $(date -u +%Y-%m-%d) [skip ci]"
+          git push
+        fi
+
+    - name: Create issue if budget exceeded
+      if: steps.cost_summary.outputs.budget_percentage > 75
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const percentage = ${{ steps.cost_summary.outputs.budget_percentage }};
+          const remaining = "${{ steps.cost_summary.outputs.remaining_budget }}";
+          const projected = "${{ steps.cost_summary.outputs.projected_monthly }}";
+          
+          let severity = percentage >= 90 ? '🚨 Critical' : '⚠️ Warning';
+          
+          const issueTitle = `${severity}: Claude API Budget Alert - ${percentage}% Used`;
+          
+          // 既存のアラートイシューを検索
+          const issues = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open',
+            labels: 'budget-alert'
+          });
+          
+          const existingIssue = issues.data.find(issue => 
+            issue.title.includes('Claude API Budget Alert')
+          );
+          
+          const issueBody = `## Claude API Usage Alert
+          
+          The Claude API usage has reached **${percentage}%** of the monthly budget.
+          
+          ### Current Status:
+          - **Daily Cost**: $${steps.cost_summary.outputs.daily_cost}
+          - **Monthly Cost**: $${steps.cost_summary.outputs.monthly_cost}
+          - **Remaining Budget**: $${remaining}
+          - **Projected Monthly Cost**: $${projected}
+          
+          ### Recommended Actions:
+          ${percentage >= 90 ? `
+          1. **Immediate Action Required**: Switch to economy mode
+          2. Review and reduce API calls
+          3. Consider increasing budget or pausing non-critical operations
+          ` : `
+          1. Monitor usage closely
+          2. Consider optimizing API calls
+          3. Review upcoming automated tasks
+          `}
+          
+          ### Cost Breakdown:
+          See the attached cost report for detailed breakdown.
+          
+          ---
+          *This alert was automatically generated by the cost monitoring system.*`;
+          
+          if (existingIssue) {
+            // 既存のイシューを更新
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: existingIssue.number,
+              body: issueBody
+            });
+          } else {
+            // 新しいイシューを作成
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['budget-alert', percentage >= 90 ? 'critical' : 'warning']
+            });
+          }
+
+    - name: Post summary
+      if: always()
+      run: |
+        echo "## 📊 Daily Cost Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Today's Usage ($(date -u +%Y-%m-%d))" >> $GITHUB_STEP_SUMMARY
+        echo "- **Daily Cost**: \$${{ steps.cost_summary.outputs.daily_cost }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Monthly Total**: \$${{ steps.cost_summary.outputs.monthly_cost }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Budget Used**: ${{ steps.cost_summary.outputs.budget_percentage }}%" >> $GITHUB_STEP_SUMMARY
+        echo "- **Remaining**: \$${{ steps.cost_summary.outputs.remaining_budget }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Projection" >> $GITHUB_STEP_SUMMARY
+        echo "- **Estimated Monthly**: \$${{ steps.cost_summary.outputs.projected_monthly }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f cost_report.md ]; then
+          cat cost_report.md >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Check and switch economy mode
+      if: steps.cost_summary.outputs.budget_percentage > 80
+      run: |
+        python scripts/cost_optimizer.py set-economy-mode \
+          --mode "economy" \
+          --reason "Budget usage at ${{ steps.cost_summary.outputs.budget_percentage }}%"
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

@@ -1,6 +1,6 @@
 /**
  * 地域別DNS設定管理システム
- * 
+ *
  * グローバル展開に対応した地域別DNS最適化機能
  * - 地域別DNSサーバー設定
  * - コンプライアンス要件対応
@@ -9,9 +9,10 @@
  */
 
 import { EventEmitter } from 'events';
-import { Logger } from './logger.js';
+
 import { DNSRecord } from './dns-resolver.js';
 import { I18nManager, RegionalSettings } from './i18n-manager.js';
+import { Logger } from './logger.js';
 
 export interface RegionalDNSConfig {
   region: string;
@@ -116,7 +117,11 @@ export class RegionalDNSManager extends EventEmitter {
   private options: RegionalDNSManagerOptions;
   private monitoringIntervals: Map<string, NodeJS.Timeout>;
 
-  constructor(logger?: Logger, i18nManager?: I18nManager, options: RegionalDNSManagerOptions = {}) {
+  constructor(
+    logger?: Logger,
+    i18nManager?: I18nManager,
+    options: RegionalDNSManagerOptions = {}
+  ) {
     super();
     this.logger = logger || new Logger({ level: 'info' });
     this.i18nManager = i18nManager || new I18nManager();
@@ -130,16 +135,16 @@ export class RegionalDNSManager extends EventEmitter {
       performanceThresholds: {
         responseTime: 100,
         uptime: 99.9,
-        throughput: 1000
+        throughput: 1000,
       },
       complianceCheckInterval: 3600000, // 1時間
       enableAlerts: true,
       alertThresholds: {
         responseTime: 200,
         uptime: 99.0,
-        complianceScore: 80
+        complianceScore: 80,
       },
-      ...options
+      ...options,
     };
 
     this.regionalConfigs = new Map();
@@ -185,21 +190,21 @@ export class RegionalDNSManager extends EventEmitter {
         performanceTargets: {
           responseTime: 50,
           uptime: 99.9,
-          throughput: 10000
+          throughput: 10000,
         },
         complianceRequirements: {
           dataLocalization: false,
           encryptionRequired: true,
           auditLogging: true,
-          retentionPeriod: 365
+          retentionPeriod: 365,
         },
         businessHours: {
           timezone: 'America/New_York',
           start: '09:00',
           end: '17:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
         },
-        supportedLanguages: ['en', 'es', 'fr']
+        supportedLanguages: ['en', 'es', 'fr'],
       },
       {
         region: 'europe',
@@ -208,26 +213,43 @@ export class RegionalDNSManager extends EventEmitter {
         secondaryDNS: ['8.8.8.8', '8.8.4.4'],
         localDNS: ['185.228.168.9', '185.228.169.9'],
         cdnPreferences: ['cloudflare', 'aws-cloudfront', 'azure-cdn'],
-        optimizationTargets: ['gdpr-compliance', 'performance', 'data-sovereignty'],
+        optimizationTargets: [
+          'gdpr-compliance',
+          'performance',
+          'data-sovereignty',
+        ],
         securityFeatures: ['dnssec', 'doh', 'dot', 'gdpr-compliance'],
         performanceTargets: {
           responseTime: 30,
           uptime: 99.95,
-          throughput: 15000
+          throughput: 15000,
         },
         complianceRequirements: {
           dataLocalization: true,
           encryptionRequired: true,
           auditLogging: true,
-          retentionPeriod: 730
+          retentionPeriod: 730,
         },
         businessHours: {
           timezone: 'Europe/London',
           start: '09:00',
           end: '17:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
         },
-        supportedLanguages: ['en', 'de', 'fr', 'es', 'it', 'nl', 'sv', 'da', 'no', 'fi', 'pl', 'cs']
+        supportedLanguages: [
+          'en',
+          'de',
+          'fr',
+          'es',
+          'it',
+          'nl',
+          'sv',
+          'da',
+          'no',
+          'fi',
+          'pl',
+          'cs',
+        ],
       },
       {
         region: 'asia-pacific',
@@ -236,26 +258,41 @@ export class RegionalDNSManager extends EventEmitter {
         secondaryDNS: ['1.1.1.1', '1.0.0.1'],
         localDNS: ['210.2.4.8', '168.95.1.1'],
         cdnPreferences: ['cloudflare', 'aws-cloudfront', 'alibaba-cloud'],
-        optimizationTargets: ['performance', 'regional-compliance', 'cost-optimization'],
+        optimizationTargets: [
+          'performance',
+          'regional-compliance',
+          'cost-optimization',
+        ],
         securityFeatures: ['dnssec', 'doh', 'regional-filtering'],
         performanceTargets: {
           responseTime: 40,
           uptime: 99.9,
-          throughput: 20000
+          throughput: 20000,
         },
         complianceRequirements: {
           dataLocalization: true,
           encryptionRequired: true,
           auditLogging: true,
-          retentionPeriod: 1095
+          retentionPeriod: 1095,
         },
         businessHours: {
           timezone: 'Asia/Tokyo',
           start: '09:00',
           end: '18:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
         },
-        supportedLanguages: ['en', 'ja', 'zh', 'ko', 'hi', 'th', 'vi', 'id', 'ms', 'tl']
+        supportedLanguages: [
+          'en',
+          'ja',
+          'zh',
+          'ko',
+          'hi',
+          'th',
+          'vi',
+          'id',
+          'ms',
+          'tl',
+        ],
       },
       {
         region: 'middle-east',
@@ -264,26 +301,34 @@ export class RegionalDNSManager extends EventEmitter {
         secondaryDNS: ['1.1.1.1', '1.0.0.1'],
         localDNS: ['8.26.56.26', '8.20.247.20'],
         cdnPreferences: ['cloudflare', 'aws-cloudfront', 'azure-cdn'],
-        optimizationTargets: ['regional-compliance', 'performance', 'content-filtering'],
-        securityFeatures: ['dnssec', 'content-filtering', 'regional-compliance'],
+        optimizationTargets: [
+          'regional-compliance',
+          'performance',
+          'content-filtering',
+        ],
+        securityFeatures: [
+          'dnssec',
+          'content-filtering',
+          'regional-compliance',
+        ],
         performanceTargets: {
           responseTime: 60,
           uptime: 99.8,
-          throughput: 8000
+          throughput: 8000,
         },
         complianceRequirements: {
           dataLocalization: true,
           encryptionRequired: true,
           auditLogging: true,
-          retentionPeriod: 2190
+          retentionPeriod: 2190,
         },
         businessHours: {
           timezone: 'Asia/Dubai',
           start: '08:00',
           end: '16:00',
-          days: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday']
+          days: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'],
         },
-        supportedLanguages: ['ar', 'en', 'he']
+        supportedLanguages: ['ar', 'en', 'he'],
       },
       {
         region: 'americas',
@@ -292,26 +337,30 @@ export class RegionalDNSManager extends EventEmitter {
         secondaryDNS: ['1.1.1.1', '1.0.0.1'],
         localDNS: ['200.160.7.186', '200.160.0.186'],
         cdnPreferences: ['cloudflare', 'aws-cloudfront', 'google-cloud-cdn'],
-        optimizationTargets: ['cost-optimization', 'performance', 'regional-availability'],
+        optimizationTargets: [
+          'cost-optimization',
+          'performance',
+          'regional-availability',
+        ],
         securityFeatures: ['dnssec', 'doh'],
         performanceTargets: {
           responseTime: 80,
           uptime: 99.5,
-          throughput: 5000
+          throughput: 5000,
         },
         complianceRequirements: {
           dataLocalization: false,
           encryptionRequired: false,
           auditLogging: true,
-          retentionPeriod: 1095
+          retentionPeriod: 1095,
         },
         businessHours: {
           timezone: 'America/Mexico_City',
           start: '08:00',
           end: '17:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
         },
-        supportedLanguages: ['es', 'pt', 'en']
+        supportedLanguages: ['es', 'pt', 'en'],
       },
       {
         region: 'global',
@@ -320,27 +369,39 @@ export class RegionalDNSManager extends EventEmitter {
         secondaryDNS: ['1.1.1.1', '1.0.0.1'],
         localDNS: ['8.8.8.8', '8.8.4.4'],
         cdnPreferences: ['cloudflare', 'aws-cloudfront', 'google-cloud-cdn'],
-        optimizationTargets: ['global-availability', 'performance', 'cost-optimization'],
+        optimizationTargets: [
+          'global-availability',
+          'performance',
+          'cost-optimization',
+        ],
         securityFeatures: ['dnssec', 'doh', 'dot'],
         performanceTargets: {
           responseTime: 100,
           uptime: 99.9,
-          throughput: 50000
+          throughput: 50000,
         },
         complianceRequirements: {
           dataLocalization: false,
           encryptionRequired: false,
           auditLogging: false,
-          retentionPeriod: 365
+          retentionPeriod: 365,
         },
         businessHours: {
           timezone: 'UTC',
           start: '00:00',
           end: '23:59',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+          days: [
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+            'sunday',
+          ],
         },
-        supportedLanguages: ['en']
-      }
+        supportedLanguages: ['en'],
+      },
     ];
 
     configs.forEach(config => {
@@ -360,12 +421,12 @@ export class RegionalDNSManager extends EventEmitter {
         performanceImpact: {
           responseTime: -30,
           uptime: 0,
-          throughput: 10
+          throughput: 10,
         },
         implementationComplexity: 'medium',
         estimatedCost: 'medium',
         riskLevel: 'low',
-        prerequisites: ['regional-dns-servers', 'performance-monitoring']
+        prerequisites: ['regional-dns-servers', 'performance-monitoring'],
       },
       {
         strategy: 'geo-dns-routing',
@@ -374,12 +435,12 @@ export class RegionalDNSManager extends EventEmitter {
         performanceImpact: {
           responseTime: -50,
           uptime: 2,
-          throughput: 25
+          throughput: 25,
         },
         implementationComplexity: 'high',
         estimatedCost: 'high',
         riskLevel: 'medium',
-        prerequisites: ['multiple-regions', 'traffic-management']
+        prerequisites: ['multiple-regions', 'traffic-management'],
       },
       {
         strategy: 'cdn-integration',
@@ -388,12 +449,12 @@ export class RegionalDNSManager extends EventEmitter {
         performanceImpact: {
           responseTime: -40,
           uptime: 5,
-          throughput: 50
+          throughput: 50,
         },
         implementationComplexity: 'high',
         estimatedCost: 'high',
         riskLevel: 'low',
-        prerequisites: ['cdn-service', 'cache-management']
+        prerequisites: ['cdn-service', 'cache-management'],
       },
       {
         strategy: 'dnssec-implementation',
@@ -402,12 +463,12 @@ export class RegionalDNSManager extends EventEmitter {
         performanceImpact: {
           responseTime: 10,
           uptime: 1,
-          throughput: -5
+          throughput: -5,
         },
         implementationComplexity: 'high',
         estimatedCost: 'medium',
         riskLevel: 'medium',
-        prerequisites: ['dns-management', 'key-management']
+        prerequisites: ['dns-management', 'key-management'],
       },
       {
         strategy: 'anycast-deployment',
@@ -416,13 +477,13 @@ export class RegionalDNSManager extends EventEmitter {
         performanceImpact: {
           responseTime: -60,
           uptime: 10,
-          throughput: 100
+          throughput: 100,
         },
         implementationComplexity: 'high',
         estimatedCost: 'high',
         riskLevel: 'medium',
-        prerequisites: ['multiple-datacenters', 'bgp-routing']
-      }
+        prerequisites: ['multiple-datacenters', 'bgp-routing'],
+      },
     ];
 
     strategies.forEach(strategy => {
@@ -446,8 +507,8 @@ export class RegionalDNSManager extends EventEmitter {
         trends: {
           responseTime: [],
           uptime: [],
-          throughput: []
-        }
+          throughput: [],
+        },
       };
 
       this.performanceMetrics.set(region, metrics);
@@ -465,44 +526,52 @@ export class RegionalDNSManager extends EventEmitter {
       if (region === 'europe') {
         checks.push({
           requirement: 'GDPR Data Localization',
-          status: config.complianceRequirements.dataLocalization ? 'compliant' : 'non-compliant',
+          status: config.complianceRequirements.dataLocalization
+            ? 'compliant'
+            : 'non-compliant',
           details: 'EU内でのデータ処理・保存要件',
-          actionRequired: config.complianceRequirements.dataLocalization 
-            ? [] 
+          actionRequired: config.complianceRequirements.dataLocalization
+            ? []
             : ['データ処理をEU内に移転', 'データ保護影響評価の実施'],
-          riskLevel: 'high'
+          riskLevel: 'high',
         });
 
         checks.push({
           requirement: 'GDPR Encryption',
-          status: config.complianceRequirements.encryptionRequired ? 'compliant' : 'non-compliant',
+          status: config.complianceRequirements.encryptionRequired
+            ? 'compliant'
+            : 'non-compliant',
           details: '保存時および転送時の暗号化要件',
-          actionRequired: config.complianceRequirements.encryptionRequired 
-            ? [] 
+          actionRequired: config.complianceRequirements.encryptionRequired
+            ? []
             : ['暗号化の実装', '暗号化ポリシーの策定'],
-          riskLevel: 'high'
+          riskLevel: 'high',
         });
       }
 
       // 一般的なセキュリティチェック
       checks.push({
         requirement: 'DNS Security',
-        status: config.securityFeatures.includes('dnssec') ? 'compliant' : 'partially-compliant',
+        status: config.securityFeatures.includes('dnssec')
+          ? 'compliant'
+          : 'partially-compliant',
         details: 'DNS セキュリティ機能の実装状況',
-        actionRequired: config.securityFeatures.includes('dnssec') 
-          ? [] 
+        actionRequired: config.securityFeatures.includes('dnssec')
+          ? []
           : ['DNSSEC実装', 'DNS over HTTPS設定'],
-        riskLevel: 'medium'
+        riskLevel: 'medium',
       });
 
       checks.push({
         requirement: 'Audit Logging',
-        status: config.complianceRequirements.auditLogging ? 'compliant' : 'non-compliant',
+        status: config.complianceRequirements.auditLogging
+          ? 'compliant'
+          : 'non-compliant',
         details: '監査ログの実装・保存要件',
-        actionRequired: config.complianceRequirements.auditLogging 
-          ? [] 
+        actionRequired: config.complianceRequirements.auditLogging
+          ? []
           : ['監査ログシステム実装', 'ログ保存ポリシー策定'],
-        riskLevel: 'medium'
+        riskLevel: 'medium',
       });
 
       this.complianceChecks.set(region, checks);
@@ -588,9 +657,11 @@ export class RegionalDNSManager extends EventEmitter {
       this.checkPerformanceAlerts(region, metrics);
 
       this.emit('performance-updated', { region, metrics });
-
     } catch (error) {
-      this.logger.error(`パフォーマンスメトリクス更新エラー (${region}):`, error);
+      this.logger.error(
+        `パフォーマンスメトリクス更新エラー (${region}):`,
+        error
+      );
     }
   }
 
@@ -621,7 +692,10 @@ export class RegionalDNSManager extends EventEmitter {
   /**
    * パフォーマンスアラートのチェック
    */
-  private checkPerformanceAlerts(region: string, metrics: RegionalPerformanceMetrics): void {
+  private checkPerformanceAlerts(
+    region: string,
+    metrics: RegionalPerformanceMetrics
+  ): void {
     const thresholds = this.options.alertThresholds!;
 
     if (metrics.averageResponseTime > thresholds.responseTime) {
@@ -630,7 +704,7 @@ export class RegionalDNSManager extends EventEmitter {
         type: 'response-time',
         value: metrics.averageResponseTime,
         threshold: thresholds.responseTime,
-        severity: 'warning'
+        severity: 'warning',
       });
     }
 
@@ -640,7 +714,7 @@ export class RegionalDNSManager extends EventEmitter {
         type: 'uptime',
         value: metrics.uptime,
         threshold: thresholds.uptime,
-        severity: 'critical'
+        severity: 'critical',
       });
     }
 
@@ -650,7 +724,7 @@ export class RegionalDNSManager extends EventEmitter {
         type: 'compliance',
         value: metrics.complianceScore,
         threshold: thresholds.complianceScore,
-        severity: 'warning'
+        severity: 'warning',
       });
     }
   }
@@ -670,10 +744,16 @@ export class RegionalDNSManager extends EventEmitter {
 
       // コンプライアンススコアの計算
       const totalChecks = checks.length;
-      const compliantChecks = checks.filter(c => c.status === 'compliant').length;
-      const partiallyCompliantChecks = checks.filter(c => c.status === 'partially-compliant').length;
+      const compliantChecks = checks.filter(
+        c => c.status === 'compliant'
+      ).length;
+      const partiallyCompliantChecks = checks.filter(
+        c => c.status === 'partially-compliant'
+      ).length;
 
-      const complianceScore = (compliantChecks + partiallyCompliantChecks * 0.5) / totalChecks * 100;
+      const complianceScore =
+        ((compliantChecks + partiallyCompliantChecks * 0.5) / totalChecks) *
+        100;
 
       const metrics = this.performanceMetrics.get(region);
       if (metrics) {
@@ -681,7 +761,11 @@ export class RegionalDNSManager extends EventEmitter {
         this.performanceMetrics.set(region, metrics);
       }
 
-      this.emit('compliance-updated', { region, score: complianceScore, checks });
+      this.emit('compliance-updated', {
+        region,
+        score: complianceScore,
+        checks,
+      });
     });
   }
 
@@ -695,16 +779,24 @@ export class RegionalDNSManager extends EventEmitter {
     // 実際の実装では、各要件の実装状況を動的にチェック
     switch (check.requirement) {
       case 'GDPR Data Localization':
-        check.status = config.complianceRequirements.dataLocalization ? 'compliant' : 'non-compliant';
+        check.status = config.complianceRequirements.dataLocalization
+          ? 'compliant'
+          : 'non-compliant';
         break;
       case 'GDPR Encryption':
-        check.status = config.complianceRequirements.encryptionRequired ? 'compliant' : 'non-compliant';
+        check.status = config.complianceRequirements.encryptionRequired
+          ? 'compliant'
+          : 'non-compliant';
         break;
       case 'DNS Security':
-        check.status = config.securityFeatures.includes('dnssec') ? 'compliant' : 'partially-compliant';
+        check.status = config.securityFeatures.includes('dnssec')
+          ? 'compliant'
+          : 'partially-compliant';
         break;
       case 'Audit Logging':
-        check.status = config.complianceRequirements.auditLogging ? 'compliant' : 'non-compliant';
+        check.status = config.complianceRequirements.auditLogging
+          ? 'compliant'
+          : 'non-compliant';
         break;
     }
   }
@@ -752,16 +844,19 @@ export class RegionalDNSManager extends EventEmitter {
    */
   getOptimizationStrategies(region?: string): DNSOptimizationStrategy[] {
     const targetRegion = region || this.currentRegion;
-    return Array.from(this.optimizationStrategies.values()).filter(strategy => 
-      strategy.applicableRegions.includes('all') || 
-      strategy.applicableRegions.includes(targetRegion)
+    return Array.from(this.optimizationStrategies.values()).filter(
+      strategy =>
+        strategy.applicableRegions.includes('all') ||
+        strategy.applicableRegions.includes(targetRegion)
     );
   }
 
   /**
    * パフォーマンスメトリクスの取得
    */
-  getPerformanceMetrics(region?: string): RegionalPerformanceMetrics | undefined {
+  getPerformanceMetrics(
+    region?: string
+  ): RegionalPerformanceMetrics | undefined {
     return this.performanceMetrics.get(region || this.currentRegion);
   }
 
@@ -790,23 +885,25 @@ export class RegionalDNSManager extends EventEmitter {
   }> {
     const targetRegion = region || this.currentRegion;
     const config = this.regionalConfigs.get(targetRegion);
-    
+
     if (!config) {
       throw new Error(`地域設定が見つかりません: ${targetRegion}`);
     }
 
     const strategies = this.getOptimizationStrategies(targetRegion);
     const metrics = this.performanceMetrics.get(targetRegion);
-    
+
     if (!metrics) {
-      throw new Error(`パフォーマンスメトリクスが見つかりません: ${targetRegion}`);
+      throw new Error(
+        `パフォーマンスメトリクスが見つかりません: ${targetRegion}`
+      );
     }
 
     const appliedStrategies: string[] = [];
     const expectedImpact = {
       responseTime: 0,
       uptime: 0,
-      throughput: 0
+      throughput: 0,
     };
     const recommendations: string[] = [];
 
@@ -814,7 +911,7 @@ export class RegionalDNSManager extends EventEmitter {
     for (const strategy of strategies) {
       if (this.shouldApplyStrategy(strategy, metrics, config)) {
         appliedStrategies.push(strategy.strategy);
-        
+
         expectedImpact.responseTime += strategy.performanceImpact.responseTime;
         expectedImpact.uptime += strategy.performanceImpact.uptime;
         expectedImpact.throughput += strategy.performanceImpact.throughput;
@@ -825,21 +922,21 @@ export class RegionalDNSManager extends EventEmitter {
 
     this.logger.info(`地域別DNS最適化実行: ${targetRegion}`, {
       appliedStrategies,
-      expectedImpact
+      expectedImpact,
     });
 
     this.emit('optimization-completed', {
       region: targetRegion,
       appliedStrategies,
       expectedImpact,
-      recommendations
+      recommendations,
     });
 
     return {
       region: targetRegion,
       appliedStrategies,
       expectedImpact,
-      recommendations
+      recommendations,
     };
   }
 
@@ -882,8 +979,10 @@ export class RegionalDNSManager extends EventEmitter {
     const metrics = this.getPerformanceMetrics(targetRegion);
 
     const overallScore = metrics?.complianceScore || 0;
-    const highRiskChecks = checks.filter(c => c.riskLevel === 'high' && c.status !== 'compliant');
-    
+    const highRiskChecks = checks.filter(
+      c => c.riskLevel === 'high' && c.status !== 'compliant'
+    );
+
     const recommendations: string[] = [];
     checks.forEach(check => {
       if (check.status !== 'compliant') {
@@ -891,18 +990,19 @@ export class RegionalDNSManager extends EventEmitter {
       }
     });
 
-    const riskAssessment = highRiskChecks.length > 0 
-      ? 'High Risk: 重要なコンプライアンス要件が未対応です'
-      : overallScore < 80 
-        ? 'Medium Risk: 一部のコンプライアンス要件の改善が必要です'
-        : 'Low Risk: コンプライアンス要件をおおむね満たしています';
+    const riskAssessment =
+      highRiskChecks.length > 0
+        ? 'High Risk: 重要なコンプライアンス要件が未対応です'
+        : overallScore < 80
+          ? 'Medium Risk: 一部のコンプライアンス要件の改善が必要です'
+          : 'Low Risk: コンプライアンス要件をおおむね満たしています';
 
     return {
       region: targetRegion,
       overallScore,
       checks,
       recommendations,
-      riskAssessment
+      riskAssessment,
     };
   }
 

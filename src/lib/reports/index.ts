@@ -12,5 +12,11 @@ export { TemplateManager } from './templates/template-manager.js';
 export { ReportGenerator } from './generators/report-generator.js';
 
 // Exporters
-export { PDFExporter, type PDFExporterOptions } from './exporters/pdf-exporter.js';
-export { ExcelExporter, type ExcelExporterOptions } from './exporters/excel-exporter.js';
+export {
+  PDFExporter,
+  type PDFExporterOptions,
+} from './exporters/pdf-exporter.js';
+export {
+  ExcelExporter,
+  type ExcelExporterOptions,
+} from './exporters/excel-exporter.js';

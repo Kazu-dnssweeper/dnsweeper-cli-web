@@ -18,10 +18,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     numberFormat: { decimal: '.', thousand: ',', currency: '$' },
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [1] },
-      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] }
+      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 100
+    completeness: 100,
   },
   {
     code: 'ja',
@@ -34,10 +34,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     timeFormat: 'HH:mm',
     numberFormat: { decimal: '.', thousand: ',', currency: '¥' },
     pluralRules: [
-      { rule: 'other', forms: ['invariant'], examples: [0, 1, 2, 3, 4, 5] }
+      { rule: 'other', forms: ['invariant'], examples: [0, 1, 2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 100
+    completeness: 100,
   },
   {
     code: 'zh',
@@ -50,10 +50,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     timeFormat: 'HH:mm',
     numberFormat: { decimal: '.', thousand: ',', currency: '¥' },
     pluralRules: [
-      { rule: 'other', forms: ['invariant'], examples: [0, 1, 2, 3, 4, 5] }
+      { rule: 'other', forms: ['invariant'], examples: [0, 1, 2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 95
+    completeness: 95,
   },
   {
     code: 'es',
@@ -67,10 +67,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     numberFormat: { decimal: ',', thousand: '.', currency: '€' },
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [1] },
-      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] }
+      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 90
+    completeness: 90,
   },
   {
     code: 'fr',
@@ -84,10 +84,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     numberFormat: { decimal: ',', thousand: ' ', currency: '€' },
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [0, 1] },
-      { rule: 'other', forms: ['plural'], examples: [2, 3, 4, 5] }
+      { rule: 'other', forms: ['plural'], examples: [2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 85
+    completeness: 85,
   },
   {
     code: 'de',
@@ -101,10 +101,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     numberFormat: { decimal: ',', thousand: '.', currency: '€' },
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [1] },
-      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] }
+      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 85
+    completeness: 85,
   },
   {
     code: 'pt',
@@ -118,10 +118,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     numberFormat: { decimal: ',', thousand: '.', currency: 'R$' },
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [0, 1] },
-      { rule: 'other', forms: ['plural'], examples: [2, 3, 4, 5] }
+      { rule: 'other', forms: ['plural'], examples: [2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 80
+    completeness: 80,
   },
   {
     code: 'ko',
@@ -134,10 +134,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     timeFormat: 'HH:mm',
     numberFormat: { decimal: '.', thousand: ',', currency: '₩' },
     pluralRules: [
-      { rule: 'other', forms: ['invariant'], examples: [0, 1, 2, 3, 4, 5] }
+      { rule: 'other', forms: ['invariant'], examples: [0, 1, 2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 75
+    completeness: 75,
   },
   {
     code: 'it',
@@ -151,10 +151,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     numberFormat: { decimal: ',', thousand: '.', currency: '€' },
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [1] },
-      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] }
+      { rule: 'other', forms: ['plural'], examples: [0, 2, 3, 4, 5] },
     ],
     enabled: true,
-    completeness: 70
+    completeness: 70,
   },
   {
     code: 'ru',
@@ -169,10 +169,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [1, 21, 31, 41] },
       { rule: 'few', forms: ['few'], examples: [2, 3, 4, 22, 23, 24] },
-      { rule: 'other', forms: ['many'], examples: [0, 5, 6, 7, 8, 9] }
+      { rule: 'other', forms: ['many'], examples: [0, 5, 6, 7, 8, 9] },
     ],
     enabled: true,
-    completeness: 65
+    completeness: 65,
   },
   {
     code: 'ar',
@@ -190,10 +190,10 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
       { rule: 'two', forms: ['dual'], examples: [2] },
       { rule: 'few', forms: ['few'], examples: [3, 4, 5, 6, 7, 8, 9, 10] },
       { rule: 'many', forms: ['many'], examples: [11, 12, 13] },
-      { rule: 'other', forms: ['other'], examples: [100, 101, 102] }
+      { rule: 'other', forms: ['other'], examples: [100, 101, 102] },
     ],
     enabled: false,
-    completeness: 50
+    completeness: 50,
   },
   {
     code: 'hi',
@@ -207,11 +207,11 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     numberFormat: { decimal: '.', thousand: ',', currency: '₹' },
     pluralRules: [
       { rule: 'one', forms: ['singular'], examples: [0, 1] },
-      { rule: 'other', forms: ['plural'], examples: [2, 3, 4, 5] }
+      { rule: 'other', forms: ['plural'], examples: [2, 3, 4, 5] },
     ],
     enabled: false,
-    completeness: 40
-  }
+    completeness: 40,
+  },
 ];
 
 export function getLanguageByCode(code: string): SupportedLanguage | undefined {

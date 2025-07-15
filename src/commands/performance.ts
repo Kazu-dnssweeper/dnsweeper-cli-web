@@ -1,8 +1,9 @@
 import { readFile } from 'fs/promises';
-import { join } from 'path';
 import os from 'os';
-import { Command } from 'commander';
+import { join } from 'path';
+
 import chalk from 'chalk';
+import { Command } from 'commander';
 
 import { Logger } from '../lib/logger.js';
 // import { MetricsCollector } from '../lib/metrics/metrics-collector.js';

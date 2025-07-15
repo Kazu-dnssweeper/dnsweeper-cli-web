@@ -1,10 +1,10 @@
 /**
  * エラーハンドラー
- * 
+ *
  * 統一されたエラー処理を提供
  */
 
-import { Logger } from './logger.js';
+import type { Logger } from './logger.js';
 
 export interface ErrorContext {
   command?: string;
@@ -34,7 +34,7 @@ export class ErrorHandler {
 
     // エラーメッセージの生成
     const message = this.formatError(error);
-    
+
     // エラーログ出力
     this.logger.error(message);
 
@@ -79,35 +79,35 @@ export class ErrorHandler {
     switch (errorName) {
       case 'ValidationError':
         return `入力検証エラー: ${errorMessage}`;
-      
+
       case 'NetworkError':
       case 'ENOTFOUND':
       case 'ETIMEDOUT':
         return `ネットワークエラー: ${errorMessage}`;
-      
+
       case 'FileNotFoundError':
       case 'ENOENT':
         return `ファイルが見つかりません: ${errorMessage}`;
-      
+
       case 'PermissionError':
       case 'EACCES':
         return `権限エラー: ${errorMessage}`;
-      
+
       case 'DNSError':
         return `DNS解決エラー: ${errorMessage}`;
-      
+
       case 'AuthenticationError':
         return `認証エラー: ${errorMessage}`;
-      
+
       case 'RateLimitError':
         return `レート制限エラー: ${errorMessage}`;
-      
+
       case 'SyntaxError':
         return `構文エラー: ${errorMessage}`;
-      
+
       case 'TypeError':
         return `型エラー: ${errorMessage}`;
-      
+
       default:
         return errorMessage;
     }
@@ -125,22 +125,18 @@ export class ErrorHandler {
    */
   rethrow(error: unknown, customMessage?: string): never {
     this.handle(error, customMessage);
-    
+
     if (error instanceof Error) {
       throw error;
     }
-    
+
     throw new Error(customMessage || 'An error occurred');
   }
 
   /**
    * 条件付きエラーハンドリング
    */
-  handleIf(
-    condition: boolean,
-    error: unknown,
-    customMessage?: string
-  ): void {
+  handleIf(condition: boolean, error: unknown, customMessage?: string): void {
     if (condition) {
       this.handle(error, customMessage);
     }
@@ -169,7 +165,7 @@ export class ErrorHandler {
       error.message = `${additionalMessage}: ${error.message}`;
       return error;
     }
-    
+
     return new Error(`${additionalMessage}: ${String(error)}`);
   }
 }

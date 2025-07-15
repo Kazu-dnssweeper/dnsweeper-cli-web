@@ -3,6 +3,7 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { Logger } from '@lib/logger.js';
 
 export interface CircuitBreaker {
@@ -34,7 +35,7 @@ export class CircuitBreakerImpl extends EventEmitter {
     successThreshold: 3,
     timeout: 5000,
     resetTimeout: 30000,
-    monitoringPeriod: 60000
+    monitoringPeriod: 60000,
   };
 
   constructor(options?: CircuitBreakerOptions) {
@@ -51,7 +52,7 @@ export class CircuitBreakerImpl extends EventEmitter {
    */
   getBreaker(name: string, options?: CircuitBreakerOptions): CircuitBreaker {
     let breaker = this.breakers.get(name);
-    
+
     if (!breaker) {
       const config = { ...this.defaultOptions, ...options };
       breaker = {
@@ -63,12 +64,12 @@ export class CircuitBreakerImpl extends EventEmitter {
         resetTimeout: config.resetTimeout,
         failureCount: 0,
         successCount: 0,
-        lastStateChange: new Date()
+        lastStateChange: new Date(),
       };
       this.breakers.set(name, breaker);
       this.logger.info('サーキットブレーカーを作成しました', { name });
     }
-    
+
     return breaker;
   }
 
@@ -116,7 +117,7 @@ export class CircuitBreakerImpl extends EventEmitter {
       fn(),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Operation timeout')), timeout)
-      )
+      ),
     ]);
   }
 
@@ -135,7 +136,7 @@ export class CircuitBreakerImpl extends EventEmitter {
 
     this.emit('success', {
       name: breaker.name,
-      state: breaker.state
+      state: breaker.state,
     });
   }
 
@@ -158,7 +159,7 @@ export class CircuitBreakerImpl extends EventEmitter {
     this.emit('failure', {
       name: breaker.name,
       state: breaker.state,
-      failureCount: breaker.failureCount
+      failureCount: breaker.failureCount,
     });
   }
 
@@ -172,13 +173,13 @@ export class CircuitBreakerImpl extends EventEmitter {
 
     this.logger.warn('サーキットブレーカーがOPENになりました', {
       name: breaker.name,
-      failureCount: breaker.failureCount
+      failureCount: breaker.failureCount,
     });
 
     this.emit('state-change', {
       name: breaker.name,
       from: 'closed',
-      to: 'open'
+      to: 'open',
     });
   }
 
@@ -192,13 +193,13 @@ export class CircuitBreakerImpl extends EventEmitter {
     breaker.failureCount = 0;
 
     this.logger.info('サーキットブレーカーがHALF-OPENになりました', {
-      name: breaker.name
+      name: breaker.name,
     });
 
     this.emit('state-change', {
       name: breaker.name,
       from: 'open',
-      to: 'half-open'
+      to: 'half-open',
     });
   }
 
@@ -212,13 +213,13 @@ export class CircuitBreakerImpl extends EventEmitter {
     breaker.failureCount = 0;
 
     this.logger.info('サーキットブレーカーがCLOSEDになりました', {
-      name: breaker.name
+      name: breaker.name,
     });
 
     this.emit('state-change', {
       name: breaker.name,
       from: 'half-open',
-      to: 'closed'
+      to: 'closed',
     });
   }
 
@@ -246,7 +247,7 @@ export class CircuitBreakerImpl extends EventEmitter {
         state: string;
         failureCount: number;
         lastFailure?: string;
-      }>
+      }>,
     };
 
     for (const breaker of this.breakers.values()) {
@@ -266,7 +267,7 @@ export class CircuitBreakerImpl extends EventEmitter {
         name: breaker.name,
         state: breaker.state,
         failureCount: breaker.failureCount,
-        lastFailure: breaker.lastFailureTime?.toISOString()
+        lastFailure: breaker.lastFailureTime?.toISOString(),
       });
     }
 

@@ -18,18 +18,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: true,
       dataLocalization: false,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '17:00',
-      timezone: 'America/New_York'
+      timezone: 'America/New_York',
     },
     supportContacts: {
       email: 'support-us@dnsweeper.com',
       phone: '+1-800-DNS-SWEEP',
-      hours: '24/7'
-    }
+      hours: '24/7',
+    },
   },
   {
     region: 'CA',
@@ -43,18 +43,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: false,
       dataLocalization: false,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '17:00',
-      timezone: 'America/Toronto'
+      timezone: 'America/Toronto',
     },
     supportContacts: {
       email: 'support-ca@dnsweeper.com',
       phone: '+1-800-DNS-SWEEP',
-      hours: 'Mon-Fri 9AM-5PM EST'
-    }
+      hours: 'Mon-Fri 9AM-5PM EST',
+    },
   },
   // ヨーロッパ
   {
@@ -69,18 +69,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: true,
       ccpa: false,
       dataLocalization: true,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '17:00',
-      timezone: 'Europe/Brussels'
+      timezone: 'Europe/Brussels',
     },
     supportContacts: {
       email: 'support-eu@dnsweeper.com',
       phone: '+32-2-DNS-SWEEP',
-      hours: 'Mon-Fri 9AM-5PM CET'
-    }
+      hours: 'Mon-Fri 9AM-5PM CET',
+    },
   },
   {
     region: 'UK',
@@ -94,18 +94,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: true,
       ccpa: false,
       dataLocalization: false,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '17:00',
-      timezone: 'Europe/London'
+      timezone: 'Europe/London',
     },
     supportContacts: {
       email: 'support-uk@dnsweeper.com',
       phone: '+44-20-DNS-SWEEP',
-      hours: 'Mon-Fri 9AM-5PM GMT'
-    }
+      hours: 'Mon-Fri 9AM-5PM GMT',
+    },
   },
   // アジア太平洋
   {
@@ -120,18 +120,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: false,
       dataLocalization: true,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '18:00',
-      timezone: 'Asia/Tokyo'
+      timezone: 'Asia/Tokyo',
     },
     supportContacts: {
       email: 'support-jp@dnsweeper.com',
       phone: '+81-3-DNS-SWEEP',
-      hours: '月-金 9:00-18:00 JST'
-    }
+      hours: '月-金 9:00-18:00 JST',
+    },
   },
   {
     region: 'CN',
@@ -145,18 +145,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: false,
       dataLocalization: true,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '18:00',
-      timezone: 'Asia/Shanghai'
+      timezone: 'Asia/Shanghai',
     },
     supportContacts: {
       email: 'support-cn@dnsweeper.com',
       phone: '+86-10-DNS-SWEEP',
-      hours: '周一至周五 9:00-18:00 CST'
-    }
+      hours: '周一至周五 9:00-18:00 CST',
+    },
   },
   {
     region: 'KR',
@@ -170,18 +170,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: false,
       dataLocalization: true,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '18:00',
-      timezone: 'Asia/Seoul'
+      timezone: 'Asia/Seoul',
     },
     supportContacts: {
       email: 'support-kr@dnsweeper.com',
       phone: '+82-2-DNS-SWEEP',
-      hours: '월-금 9:00-18:00 KST'
-    }
+      hours: '월-금 9:00-18:00 KST',
+    },
   },
   {
     region: 'AU',
@@ -195,18 +195,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: false,
       dataLocalization: false,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '17:00',
-      timezone: 'Australia/Sydney'
+      timezone: 'Australia/Sydney',
     },
     supportContacts: {
       email: 'support-au@dnsweeper.com',
       phone: '+61-2-DNS-SWEEP',
-      hours: 'Mon-Fri 9AM-5PM AEST'
-    }
+      hours: 'Mon-Fri 9AM-5PM AEST',
+    },
   },
   // 南米
   {
@@ -221,18 +221,18 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: false,
       dataLocalization: true,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '18:00',
-      timezone: 'America/Sao_Paulo'
+      timezone: 'America/Sao_Paulo',
     },
     supportContacts: {
       email: 'support-br@dnsweeper.com',
       phone: '+55-11-DNS-SWEEP',
-      hours: 'Seg-Sex 9:00-18:00 BRT'
-    }
+      hours: 'Seg-Sex 9:00-18:00 BRT',
+    },
   },
   // 中東
   {
@@ -247,30 +247,36 @@ export const REGIONAL_SETTINGS: RegionalSettings[] = [
       gdpr: false,
       ccpa: false,
       dataLocalization: true,
-      auditLog: true
+      auditLog: true,
     },
     businessHours: {
       start: '09:00',
       end: '18:00',
-      timezone: 'Asia/Dubai'
+      timezone: 'Asia/Dubai',
     },
     supportContacts: {
       email: 'support-ae@dnsweeper.com',
       phone: '+971-4-DNS-SWEEP',
-      hours: 'Sun-Thu 9AM-6PM GST'
-    }
-  }
+      hours: 'Sun-Thu 9AM-6PM GST',
+    },
+  },
 ];
 
-export function getRegionalSettingsByCode(code: string): RegionalSettings | undefined {
+export function getRegionalSettingsByCode(
+  code: string
+): RegionalSettings | undefined {
   return REGIONAL_SETTINGS.find(settings => settings.region === code);
 }
 
-export function getRegionalSettingsByTimezone(timezone: string): RegionalSettings[] {
+export function getRegionalSettingsByTimezone(
+  timezone: string
+): RegionalSettings[] {
   return REGIONAL_SETTINGS.filter(settings => settings.timezone === timezone);
 }
 
-export function getRegionalSettingsByCurrency(currency: string): RegionalSettings[] {
+export function getRegionalSettingsByCurrency(
+  currency: string
+): RegionalSettings[] {
   return REGIONAL_SETTINGS.filter(settings => settings.currency === currency);
 }
 

@@ -1,6 +1,6 @@
 /**
  * グローバル展開・多言語対応管理システム
- * 
+ *
  * DNSweeper のグローバル展開に対応する包括的な国際化機能
  * - 40言語対応
  * - 地域別設定
@@ -11,11 +11,19 @@
  */
 
 import { EventEmitter } from 'events';
-import { Logger } from '@lib/logger.js';
-import { SUPPORTED_LANGUAGES, getLanguageByCode } from '@lib/i18n/languages/language-definitions.js';
-import { REGIONAL_SETTINGS, getRegionalSettingsByCode } from '@lib/i18n/regions/regional-settings.js';
-import { TranslationManager } from '@lib/i18n/translations/translation-manager.js';
+
 import { I18nFormatter } from '@lib/i18n/formatters/formatter.js';
+import {
+  SUPPORTED_LANGUAGES,
+  getLanguageByCode,
+} from '@lib/i18n/languages/language-definitions.js';
+import {
+  REGIONAL_SETTINGS,
+  getRegionalSettingsByCode,
+} from '@lib/i18n/regions/regional-settings.js';
+import { TranslationManager } from '@lib/i18n/translations/translation-manager.js';
+import { Logger } from '@lib/logger.js';
+
 import type {
   SupportedLanguage,
   PluralRule,
@@ -25,7 +33,7 @@ import type {
   NumberFormatOptions,
   RegionalSettings,
   I18nManagerConfig,
-  TranslationReport
+  TranslationReport,
 } from '@lib/i18n/core/types.js';
 
 // Re-export types for backward compatibility
@@ -38,7 +46,7 @@ export type {
   NumberFormatOptions,
   RegionalSettings,
   I18nManagerConfig,
-  TranslationReport
+  TranslationReport,
 };
 
 export class I18nManager extends EventEmitter {
@@ -54,7 +62,7 @@ export class I18nManager extends EventEmitter {
 
   constructor(logger?: Logger, config?: Partial<I18nManagerConfig>) {
     super();
-    
+
     this.logger = logger || new Logger();
     this.config = {
       defaultLanguage: 'en',
@@ -66,20 +74,20 @@ export class I18nManager extends EventEmitter {
       missingKeyHandling: 'warning',
       enableRTL: true,
       enableRegionalSettings: true,
-      ...config
+      ...config,
     };
-    
+
     this.currentLanguage = this.config.defaultLanguage;
     this.currentRegion = 'US';
-    
+
     this.initializeSupportedLanguages();
     this.initializeRegionalSettings();
     this.initializeLocalizationContext();
-    
+
     // 翻訳マネージャーとフォーマッターを初期化
     this.translationManager = new TranslationManager();
     this.formatter = new I18nFormatter(this.localizationContext);
-    
+
     // イベントハンドラーを設定
     this.setupEventHandlers();
   }
@@ -93,9 +101,11 @@ export class I18nManager extends EventEmitter {
       this.supportedLanguages.set(language.code, language);
     }
 
-    this.logger.info('サポート言語を初期化しました', { 
+    this.logger.info('サポート言語を初期化しました', {
       total: this.supportedLanguages.size,
-      enabled: Array.from(this.supportedLanguages.values()).filter(l => l.enabled).length
+      enabled: Array.from(this.supportedLanguages.values()).filter(
+        l => l.enabled
+      ).length,
     });
   }
 
@@ -104,19 +114,19 @@ export class I18nManager extends EventEmitter {
    */
   private setupEventHandlers(): void {
     // 翻訳マネージャーのイベントを転送
-    this.translationManager.on('translation:added', (event) => {
+    this.translationManager.on('translation:added', event => {
       this.emit('translation:added', event);
     });
 
-    this.translationManager.on('translation:missing', (event) => {
+    this.translationManager.on('translation:missing', event => {
       this.emit('translation:missing', event);
     });
 
-    this.translationManager.on('translations:imported', (event) => {
+    this.translationManager.on('translations:imported', event => {
       this.emit('translations:imported', event);
     });
 
-    this.translationManager.on('translations:exported', (event) => {
+    this.translationManager.on('translations:exported', event => {
       this.emit('translations:exported', event);
     });
   }
@@ -131,7 +141,7 @@ export class I18nManager extends EventEmitter {
     }
 
     this.logger.info('地域設定を初期化しました', {
-      total: this.regionalSettings.size
+      total: this.regionalSettings.size,
     });
   }
 
@@ -154,14 +164,14 @@ export class I18nManager extends EventEmitter {
         thousand: currentLang?.numberFormat.thousand || ',',
         precision: 2,
         currency: currentLang?.numberFormat.currency || '$',
-        currencyDisplay: 'symbol'
+        currencyDisplay: 'symbol',
       },
       rtl: currentLang?.direction === 'rtl',
       culturalPreferences: {
         firstDayOfWeek: this.currentRegion === 'US' ? 0 : 1, // 0=Sunday, 1=Monday
         weekendDays: [0, 6], // Sunday, Saturday
-        hourFormat: currentLang?.timeFormat.includes('A') ? 12 : 24
-      }
+        hourFormat: currentLang?.timeFormat.includes('A') ? 12 : 24,
+      },
     };
   }
 
@@ -184,21 +194,21 @@ export class I18nManager extends EventEmitter {
     // 地域設定の更新
     this.currentRegion = language.region;
     this.initializeLocalizationContext();
-    
+
     // フォーマッターのコンテキストを更新
     this.formatter.updateContext(this.localizationContext);
 
     this.logger.info('言語を変更しました', {
       from: previousLanguage,
       to: languageCode,
-      region: this.currentRegion
+      region: this.currentRegion,
     });
 
     this.emit('language-changed', {
       from: previousLanguage,
       to: languageCode,
       region: this.currentRegion,
-      context: this.localizationContext
+      context: this.localizationContext,
     });
   }
 
@@ -213,9 +223,12 @@ export class I18nManager extends EventEmitter {
 
     const previousRegion = this.currentRegion;
     this.currentRegion = regionCode;
-    
+
     // デフォルト言語の更新
-    if (regionSettings.defaultLanguage && this.supportedLanguages.has(regionSettings.defaultLanguage)) {
+    if (
+      regionSettings.defaultLanguage &&
+      this.supportedLanguages.has(regionSettings.defaultLanguage)
+    ) {
       this.currentLanguage = regionSettings.defaultLanguage;
     }
 
@@ -225,14 +238,14 @@ export class I18nManager extends EventEmitter {
     this.logger.info('地域を変更しました', {
       from: previousRegion,
       to: regionCode,
-      language: this.currentLanguage
+      language: this.currentLanguage,
     });
 
     this.emit('region-changed', {
       from: previousRegion,
       to: regionCode,
       language: this.currentLanguage,
-      context: this.localizationContext
+      context: this.localizationContext,
     });
   }
 
@@ -240,7 +253,7 @@ export class I18nManager extends EventEmitter {
    * 翻訳の取得
    */
   translate(
-    key: string, 
+    key: string,
     namespace: string = 'common',
     options?: {
       params?: Record<string, string | number>;
@@ -255,7 +268,7 @@ export class I18nManager extends EventEmitter {
       {
         count: options?.count,
         context: options?.context,
-        fallbackLanguage: this.config.fallbackLanguage
+        fallbackLanguage: this.config.fallbackLanguage,
       }
     );
   }
@@ -293,7 +306,11 @@ export class I18nManager extends EventEmitter {
     filePath: string,
     format: 'json' | 'csv' | 'po' = 'json'
   ): Promise<number> {
-    return this.translationManager.importTranslations(language, filePath, format);
+    return this.translationManager.importTranslations(
+      language,
+      filePath,
+      format
+    );
   }
 
   /**
@@ -308,7 +325,12 @@ export class I18nManager extends EventEmitter {
       approvedOnly?: boolean;
     }
   ): Promise<void> {
-    return this.translationManager.exportTranslations(language, filePath, format, options);
+    return this.translationManager.exportTranslations(
+      language,
+      filePath,
+      format,
+      options
+    );
   }
 
   /**
@@ -431,7 +453,9 @@ export class I18nManager extends EventEmitter {
    * 有効言語の取得
    */
   getEnabledLanguages(): SupportedLanguage[] {
-    return Array.from(this.supportedLanguages.values()).filter(lang => lang.enabled);
+    return Array.from(this.supportedLanguages.values()).filter(
+      lang => lang.enabled
+    );
   }
 
   /**
@@ -468,18 +492,18 @@ export class I18nManager extends EventEmitter {
   } {
     const stats = this.translationManager.getStatistics();
     const namespaces = new Set<string>();
-    
+
     // Get namespace count from translation manager
     // This is a simplified version - in a real implementation,
     // the TranslationManager would track namespaces
-    
+
     return {
       totalLanguages: this.supportedLanguages.size,
       enabledLanguages: this.getEnabledLanguages().length,
       totalNamespaces: 8, // Fixed for now based on the namespace definitions
       totalKeys: 0, // Would need to be tracked by TranslationManager
       totalTranslations: stats.totalTranslations,
-      cacheHitRate: stats.cacheHitRate
+      cacheHitRate: stats.cacheHitRate,
     };
   }
 }

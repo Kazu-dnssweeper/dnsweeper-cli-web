@@ -1,6 +1,6 @@
 /**
  * マイクロサービスアーキテクチャ設計 - メインクラス
- * 
+ *
  * DNSweeper を大規模組織向けマイクロサービスアーキテクチャで構築
  * - サービス分離
  * - 独立デプロイメント
@@ -9,13 +9,18 @@
  * - サービス間通信
  */
 
-import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
+import { EventEmitter } from 'events';
+
 import { Logger } from '@lib/logger.js';
-import { ServiceRegistryImpl } from '@lib/microservices/discovery/service-registry.js';
 import { CircuitBreakerImpl } from '@lib/microservices/circuit-breaker/circuit-breaker.js';
+import { ServiceRegistryImpl } from '@lib/microservices/discovery/service-registry.js';
 import { APIGateway } from '@lib/microservices/gateway/api-gateway.js';
-import type { ServiceDefinition, ServiceMessage } from '@lib/microservices/core/types.js';
+
+import type {
+  ServiceDefinition,
+  ServiceMessage,
+} from '@lib/microservices/core/types.js';
 
 export interface ServiceMesh {
   services: Map<string, ServiceDefinition>;
@@ -99,12 +104,12 @@ export class MicroservicesArchitecture extends EventEmitter {
   constructor() {
     super();
     this.logger = new Logger({ context: 'MicroservicesArchitecture' });
-    
+
     // コンポーネントを初期化
     this.registry = new ServiceRegistryImpl();
     this.circuitBreaker = new CircuitBreakerImpl();
     this.gateway = new APIGateway(this.registry, this.circuitBreaker);
-    
+
     // サービスメッシュを初期化
     this.serviceMesh = {
       services: new Map(),
@@ -117,10 +122,10 @@ export class MicroservicesArchitecture extends EventEmitter {
         endpoints: {
           metrics: '/metrics',
           tracing: '/tracing',
-          health: '/health'
+          health: '/health',
         },
-        dashboards: {}
-      }
+        dashboards: {},
+      },
     };
 
     this.setupEventHandlers();
@@ -132,21 +137,21 @@ export class MicroservicesArchitecture extends EventEmitter {
    */
   private setupEventHandlers(): void {
     // レジストリイベント
-    this.registry.on('service:registered', (event) => {
+    this.registry.on('service:registered', event => {
       this.emit('service:registered', event);
     });
 
     // サーキットブレーカーイベント
-    this.circuitBreaker.on('state-change', (event) => {
+    this.circuitBreaker.on('state-change', event => {
       this.emit('circuit:state-change', event);
     });
 
     // ゲートウェイイベント
-    this.gateway.on('request:success', (event) => {
+    this.gateway.on('request:success', event => {
       this.emit('gateway:request:success', event);
     });
 
-    this.gateway.on('request:failure', (event) => {
+    this.gateway.on('request:failure', event => {
       this.emit('gateway:request:failure', event);
     });
   }
@@ -157,7 +162,7 @@ export class MicroservicesArchitecture extends EventEmitter {
   async registerService(service: ServiceDefinition): Promise<string> {
     const serviceId = await this.registry.register(service);
     this.serviceMesh.services.set(serviceId, service);
-    
+
     // ゲートウェイにルートを追加
     for (const endpoint of service.endpoints) {
       this.gateway.addRoute({
@@ -168,7 +173,7 @@ export class MicroservicesArchitecture extends EventEmitter {
         authentication: endpoint.authentication,
         rateLimit: endpoint.rateLimit,
         timeout: endpoint.timeout,
-        retries: endpoint.retry.attempts
+        retries: endpoint.retry.attempts,
       });
     }
 
@@ -176,7 +181,7 @@ export class MicroservicesArchitecture extends EventEmitter {
       serviceId,
       name: service.name,
       version: service.version,
-      endpoints: service.endpoints.length
+      endpoints: service.endpoints.length,
     });
 
     return serviceId;
@@ -190,7 +195,7 @@ export class MicroservicesArchitecture extends EventEmitter {
     this.logger.info('ルートを追加しました', {
       id: route.id,
       source: route.source,
-      destination: route.destination
+      destination: route.destination,
     });
     this.emit('route:added', route);
   }
@@ -203,7 +208,7 @@ export class MicroservicesArchitecture extends EventEmitter {
     this.logger.info('ポリシーを追加しました', {
       id: policy.id,
       name: policy.name,
-      type: policy.type
+      type: policy.type,
     });
     this.emit('policy:added', policy);
   }
@@ -232,8 +237,8 @@ export class MicroservicesArchitecture extends EventEmitter {
       headers: options?.headers || {},
       metadata: {
         priority: options?.priority || 'medium',
-        ttl: options?.ttl
-      }
+        ttl: options?.ttl,
+      },
     };
 
     // メッセージキューに追加
@@ -244,7 +249,7 @@ export class MicroservicesArchitecture extends EventEmitter {
     this.logger.info('メッセージを送信しました', {
       messageId: message.id,
       source,
-      destination
+      destination,
     });
 
     this.emit('message:sent', message);
@@ -265,12 +270,12 @@ export class MicroservicesArchitecture extends EventEmitter {
       }>,
       gateway: {
         status: 'healthy',
-        routes: 0
+        routes: 0,
       },
       circuitBreakers: {
         total: 0,
-        open: 0
-      }
+        open: 0,
+      },
     };
 
     // サービス情報
@@ -286,7 +291,7 @@ export class MicroservicesArchitecture extends EventEmitter {
       health.services.push({
         name: service.name,
         status: service.healthy > 0 ? 'healthy' : 'unhealthy',
-        instances: service.instances
+        instances: service.instances,
       });
     }
 
@@ -303,11 +308,14 @@ export class MicroservicesArchitecture extends EventEmitter {
     };
     health.circuitBreakers = {
       total: cbStats.total,
-      open: cbStats.open
+      open: cbStats.open,
     };
 
     // 全体のステータスを判定
-    if (health.services.some(s => s.status === 'unhealthy') || cbStats.open > 0) {
+    if (
+      health.services.some(s => s.status === 'unhealthy') ||
+      cbStats.open > 0
+    ) {
       health.status = 'degraded';
     }
 
@@ -330,13 +338,13 @@ export class MicroservicesArchitecture extends EventEmitter {
         byService: Object.fromEntries(
           Array.from(this.messageQueue.entries()).map(([service, queue]) => [
             service,
-            queue.length
+            queue.length,
           ])
-        )
+        ),
       },
       registry: this.registry.getServiceStats(),
       gateway: this.gateway.getStats(),
-      circuitBreaker: this.circuitBreaker.getStats()
+      circuitBreaker: this.circuitBreaker.getStats(),
     };
   }
 
@@ -344,17 +352,19 @@ export class MicroservicesArchitecture extends EventEmitter {
    * シャットダウン
    */
   async shutdown(): Promise<void> {
-    this.logger.info('マイクロサービスアーキテクチャをシャットダウンしています');
-    
+    this.logger.info(
+      'マイクロサービスアーキテクチャをシャットダウンしています'
+    );
+
     // すべてのサーキットブレーカーをリセット
     this.circuitBreaker.resetAll();
-    
+
     // メッセージキューをクリア
     this.messageQueue.clear();
-    
+
     // イベントリスナーを削除
     this.removeAllListeners();
-    
+
     this.logger.info('シャットダウンが完了しました');
   }
 }

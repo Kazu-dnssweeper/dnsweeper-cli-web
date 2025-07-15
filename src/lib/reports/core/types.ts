@@ -91,7 +91,13 @@ export interface SectionStyling {
 
 export interface ReportCondition {
   field: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'not_contains'
+    | 'greater_than'
+    | 'less_than';
   value: any;
   action: 'show' | 'hide' | 'highlight';
 }

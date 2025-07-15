@@ -2,7 +2,11 @@
  * Excelエクスポーター
  */
 
-import type { ReportTemplate, ReportSection, GeneratedReport } from '../core/types.js';
+import type {
+  ReportTemplate,
+  ReportSection,
+  GeneratedReport,
+} from '../core/types.js';
 
 export interface ExcelExporterOptions {
   includeRawData?: boolean;
@@ -28,22 +32,22 @@ export class ExcelExporter {
   ): Promise<Buffer> {
     // 実際の実装では、ExcelJSなどのライブラリを使用
     const workbook = this.createWorkbook(template, data);
-    
+
     // サマリーシートの作成
     this.createSummarySheet(workbook, template, sections, data);
-    
+
     // セクション別シートの作成
     for (const section of sections) {
       if (section.type === 'table' || section.type === 'metrics') {
         this.createDataSheet(workbook, section, template);
       }
     }
-    
+
     // チャートシートの作成
     if (options?.chartSheets) {
       this.createChartSheets(workbook, sections, template);
     }
-    
+
     // 生データシートの作成
     if (options?.includeRawData) {
       this.createRawDataSheet(workbook, data);
@@ -62,10 +66,10 @@ export class ExcelExporter {
         title: data.title,
         subject: template.description,
         author: data.metadata.generatedBy,
-        created: new Date()
+        created: new Date(),
       },
       sheets: [],
-      styles: this.createStyles(template)
+      styles: this.createStyles(template),
     };
   }
 
@@ -79,37 +83,37 @@ export class ExcelExporter {
           name: template.styling.fonts.primary,
           size: template.styling.fonts.sizes.large,
           bold: true,
-          color: { argb: this.colorToARGB(template.styling.colors.primary) }
+          color: { argb: this.colorToARGB(template.styling.colors.primary) },
         },
         fill: {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFFFFFFF' }
+          fgColor: { argb: 'FFFFFFFF' },
         },
         alignment: {
           horizontal: 'center',
-          vertical: 'middle'
-        }
+          vertical: 'middle',
+        },
       },
       subheader: {
         font: {
           name: template.styling.fonts.primary,
           size: template.styling.fonts.sizes.medium,
           bold: true,
-          color: { argb: this.colorToARGB(template.styling.colors.text) }
-        }
+          color: { argb: this.colorToARGB(template.styling.colors.text) },
+        },
       },
       data: {
         font: {
           name: template.styling.fonts.primary,
           size: template.styling.fonts.sizes.small,
-          color: { argb: this.colorToARGB(template.styling.colors.text) }
+          color: { argb: this.colorToARGB(template.styling.colors.text) },
         },
         alignment: {
           horizontal: 'left',
-          vertical: 'middle'
-        }
-      }
+          vertical: 'middle',
+        },
+      },
     };
   }
 
@@ -126,7 +130,7 @@ export class ExcelExporter {
       name: 'Summary',
       data: [],
       merges: [],
-      styles: []
+      styles: [],
     };
 
     // タイトル
@@ -152,13 +156,13 @@ export class ExcelExporter {
     if (data.summary) {
       sheet.data.push([]);
       sheet.data.push(['Summary']);
-      sheet.styles.push({ 
-        cell: `A${sheet.data.length}`, 
-        style: 'subheader' 
+      sheet.styles.push({
+        cell: `A${sheet.data.length}`,
+        style: 'subheader',
       });
 
       sheet.data.push(['Total Items:', data.summary.totalItems]);
-      
+
       if (data.summary.highlights.length > 0) {
         sheet.data.push([]);
         sheet.data.push(['Highlights:']);
@@ -192,14 +196,14 @@ export class ExcelExporter {
       data: [],
       styles: [],
       autoFilter: false,
-      freezePanes: { row: 2, column: 0 }
+      freezePanes: { row: 2, column: 0 },
     };
 
     if (section.type === 'table') {
       // ヘッダー行
       const headers = section.content.columns.map((col: any) => col.label);
       sheet.data.push(headers);
-      
+
       // ヘッダーのスタイル
       headers.forEach((_: any, index: number) => {
         const cell = this.getColumnLetter(index) + '1';
@@ -208,8 +212,8 @@ export class ExcelExporter {
 
       // データ行
       section.content.rows.forEach((row: any) => {
-        const rowData = section.content.columns.map((col: any) => 
-          row[col.key] || ''
+        const rowData = section.content.columns.map(
+          (col: any) => row[col.key] || ''
         );
         sheet.data.push(rowData);
       });
@@ -238,18 +242,20 @@ export class ExcelExporter {
     template: ReportTemplate
   ): void {
     const chartSections = sections.filter(s => s.type === 'chart');
-    
+
     for (const section of chartSections) {
       const sheet = {
         name: this.sanitizeSheetName(`Chart - ${section.title}`),
-        charts: [{
-          type: section.content.type,
-          data: section.content.data,
-          options: section.content.options,
-          position: { from: 'A1', to: 'M20' }
-        }]
+        charts: [
+          {
+            type: section.content.type,
+            data: section.content.data,
+            options: section.content.options,
+            position: { from: 'A1', to: 'M20' },
+          },
+        ],
       };
-      
+
       workbook.sheets.push(sheet);
     }
   }
@@ -260,15 +266,15 @@ export class ExcelExporter {
   private createRawDataSheet(workbook: any, data: any): void {
     const sheet = {
       name: 'Raw Data',
-      data: []
+      data: [],
     };
 
     // JSONデータを行列形式に変換
     const flattenedData = this.flattenObject(data);
-    
+
     // ヘッダー
     sheet.data.push(['Key', 'Value']);
-    
+
     // データ
     for (const [key, value] of Object.entries(flattenedData)) {
       sheet.data.push([key, String(value)]);
@@ -280,18 +286,19 @@ export class ExcelExporter {
   /**
    * オブジェクトのフラット化
    */
-  private flattenObject(
-    obj: any,
-    prefix: string = ''
-  ): Record<string, any> {
+  private flattenObject(obj: any, prefix: string = ''): Record<string, any> {
     const flattened: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(obj)) {
       const newKey = prefix ? `${prefix}.${key}` : key;
-      
+
       if (value === null || value === undefined) {
         flattened[newKey] = '';
-      } else if (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      } else if (
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        !(value instanceof Date)
+      ) {
         Object.assign(flattened, this.flattenObject(value, newKey));
       } else if (Array.isArray(value)) {
         flattened[newKey] = value.join(', ');

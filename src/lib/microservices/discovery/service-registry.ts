@@ -3,8 +3,14 @@
  */
 
 import { EventEmitter } from 'events';
+
 import { Logger } from '@lib/logger.js';
-import type { ServiceDefinition, ServiceInstance, HealthCheck } from '@lib/microservices/core/types.js';
+
+import type {
+  ServiceDefinition,
+  ServiceInstance,
+  HealthCheck,
+} from '@lib/microservices/core/types.js';
 
 export interface ServiceRegistry {
   register(service: ServiceDefinition): Promise<string>;
@@ -13,7 +19,10 @@ export interface ServiceRegistry {
   updateHealth(healthCheck: HealthCheck): Promise<void>;
 }
 
-export class ServiceRegistryImpl extends EventEmitter implements ServiceRegistry {
+export class ServiceRegistryImpl
+  extends EventEmitter
+  implements ServiceRegistry
+{
   private services: Map<string, ServiceDefinition> = new Map();
   private instances: Map<string, ServiceInstance[]> = new Map();
   private healthChecks: Map<string, HealthCheck> = new Map();
@@ -30,11 +39,11 @@ export class ServiceRegistryImpl extends EventEmitter implements ServiceRegistry
   async register(service: ServiceDefinition): Promise<string> {
     const serviceId = `${service.name}-${service.version}-${Date.now()}`;
     this.services.set(serviceId, service);
-    
+
     this.logger.info('サービスを登録しました', {
       serviceId,
       name: service.name,
-      version: service.version
+      version: service.version,
     });
 
     this.emit('service:registered', { serviceId, service });
@@ -87,7 +96,8 @@ export class ServiceRegistryImpl extends EventEmitter implements ServiceRegistry
     if (instances) {
       const instance = instances.find(i => i.id === healthCheck.instanceId);
       if (instance) {
-        instance.status = healthCheck.status === 'healthy' ? 'healthy' : 'unhealthy';
+        instance.status =
+          healthCheck.status === 'healthy' ? 'healthy' : 'unhealthy';
         instance.lastHealthCheck = healthCheck.timestamp;
       }
     }
@@ -107,7 +117,7 @@ export class ServiceRegistryImpl extends EventEmitter implements ServiceRegistry
       serviceId,
       instanceId: instance.id,
       host: instance.host,
-      port: instance.port
+      port: instance.port,
     });
 
     this.emit('instance:registered', { serviceId, instance });
@@ -123,7 +133,7 @@ export class ServiceRegistryImpl extends EventEmitter implements ServiceRegistry
 
     this.logger.info('インスタンスを削除しました', {
       serviceId,
-      instanceId
+      instanceId,
     });
 
     this.emit('instance:deregistered', { serviceId, instanceId });
@@ -143,22 +153,22 @@ export class ServiceRegistryImpl extends EventEmitter implements ServiceRegistry
         version: string;
         instances: number;
         healthy: number;
-      }>
+      }>,
     };
 
     for (const [serviceId, service] of this.services.entries()) {
       const instances = this.instances.get(serviceId) || [];
       const healthyCount = instances.filter(i => i.status === 'healthy').length;
-      
+
       stats.totalInstances += instances.length;
       stats.healthyInstances += healthyCount;
       stats.unhealthyInstances += instances.length - healthyCount;
-      
+
       stats.services.push({
         name: service.name,
         version: service.version,
         instances: instances.length,
-        healthy: healthyCount
+        healthy: healthyCount,
       });
     }
 

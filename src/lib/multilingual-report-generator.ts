@@ -1,6 +1,6 @@
 /**
  * 多言語レポート生成システム
- * 
+ *
  * グローバル対応のためのレポート生成機能
  * - 40言語対応のレポート生成
  * - 地域別設定対応
@@ -10,21 +10,29 @@
  */
 
 import { EventEmitter } from 'events';
-import { Logger } from './logger.js';
-import { I18nManager } from './i18n-manager.js';
-import { TimezoneLocalizer } from './timezone-localizer.js';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { TemplateManager } from './reports/templates/template-manager.js';
+
+import {
+  ExcelExporter,
+  type ExcelExporterOptions,
+} from './reports/exporters/excel-exporter.js';
+import {
+  PDFExporter,
+  type PDFExporterOptions,
+} from './reports/exporters/pdf-exporter.js';
 import { ReportGenerator } from './reports/generators/report-generator.js';
-import { PDFExporter, type PDFExporterOptions } from './reports/exporters/pdf-exporter.js';
-import { ExcelExporter, type ExcelExporterOptions } from './reports/exporters/excel-exporter.js';
+import { TemplateManager } from './reports/templates/template-manager.js';
+
+import type { I18nManager } from './i18n-manager.js';
+import type { Logger } from './logger.js';
 import type {
   ReportTemplate,
   ReportData,
   ReportOptions,
-  GeneratedReport
+  GeneratedReport,
 } from './reports/core/types.js';
+import type { TimezoneLocalizer } from './timezone-localizer.js';
 
 // Re-export types for backward compatibility
 export type {
@@ -36,7 +44,7 @@ export type {
   ReportData,
   ReportOptions,
   ExportFormat,
-  GeneratedReport
+  GeneratedReport,
 } from './reports/core/types.js';
 
 export interface MultilingualReportGeneratorConfig {
@@ -66,11 +74,11 @@ export class MultilingualReportGenerator extends EventEmitter {
     config?: Partial<MultilingualReportGeneratorConfig>
   ) {
     super();
-    
+
     this.logger = logger;
     this.i18nManager = i18nManager;
     this.timezoneLocalizer = timezoneLocalizer;
-    
+
     this.config = {
       defaultLanguage: 'en',
       supportedFormats: ['pdf', 'excel', 'csv', 'json'],
@@ -78,7 +86,7 @@ export class MultilingualReportGenerator extends EventEmitter {
       cacheEnabled: true,
       cacheSize: 100,
       tempDirectory: '/tmp/reports',
-      ...config
+      ...config,
     };
 
     // コンポーネントの初期化
@@ -96,20 +104,20 @@ export class MultilingualReportGenerator extends EventEmitter {
    */
   private setupEventHandlers(): void {
     // テンプレートマネージャーのイベント
-    this.templateManager.on('template:added', (event) => {
+    this.templateManager.on('template:added', event => {
       this.emit('template:added', event);
     });
 
     // レポートジェネレーターのイベント
-    this.reportGenerator.on('report:generated', (report) => {
+    this.reportGenerator.on('report:generated', report => {
       this.emit('report:generated', report);
     });
 
-    this.reportGenerator.on('report:queued', (event) => {
+    this.reportGenerator.on('report:queued', event => {
       this.emit('report:queued', event);
     });
 
-    this.reportGenerator.on('report:error', (event) => {
+    this.reportGenerator.on('report:error', event => {
       this.emit('report:error', event);
     });
   }
@@ -130,7 +138,7 @@ export class MultilingualReportGenerator extends EventEmitter {
     const reportOptions: ReportOptions = {
       language: this.i18nManager.getCurrentLanguage(),
       format: 'pdf',
-      ...options
+      ...options,
     };
 
     // キャッシュチェック
@@ -176,34 +184,27 @@ export class MultilingualReportGenerator extends EventEmitter {
     template: ReportTemplate,
     options: ReportOptions
   ): Promise<Buffer> {
-    const content = typeof report.content === 'string' 
-      ? JSON.parse(report.content) 
-      : report.content;
+    const content =
+      typeof report.content === 'string'
+        ? JSON.parse(report.content)
+        : report.content;
 
     switch (options.format) {
       case 'pdf':
-        return this.pdfExporter.export(
-          template,
-          content.sections,
-          content,
-          {
-            watermark: options.watermark,
-            encryption: options.encryptionKey ? {
-              userPassword: options.encryptionKey
-            } : undefined
-          } as PDFExporterOptions
-        );
+        return this.pdfExporter.export(template, content.sections, content, {
+          watermark: options.watermark,
+          encryption: options.encryptionKey
+            ? {
+                userPassword: options.encryptionKey,
+              }
+            : undefined,
+        } as PDFExporterOptions);
 
       case 'excel':
-        return this.excelExporter.export(
-          template,
-          content.sections,
-          content,
-          {
-            includeRawData: options.includeRawData,
-            chartSheets: options.includeCharts
-          } as ExcelExporterOptions
-        );
+        return this.excelExporter.export(template, content.sections, content, {
+          includeRawData: options.includeRawData,
+          chartSheets: options.includeCharts,
+        } as ExcelExporterOptions);
 
       case 'csv':
         return this.exportToCSV(content);
@@ -218,7 +219,7 @@ export class MultilingualReportGenerator extends EventEmitter {
    */
   private async exportToCSV(content: any): Promise<Buffer> {
     const csv: string[] = [];
-    
+
     // メタデータ
     csv.push(`"Title","${content.title}"`);
     csv.push(`"Generated","${content.metadata.generated}"`);
@@ -230,24 +231,26 @@ export class MultilingualReportGenerator extends EventEmitter {
       if (section.type === 'table' && section.content.rows) {
         // セクションタイトル
         csv.push(`"${section.title}"`);
-        
+
         // ヘッダー
-        const headers = section.content.columns.map((col: any) => 
-          `"${col.label}"`
-        ).join(',');
+        const headers = section.content.columns
+          .map((col: any) => `"${col.label}"`)
+          .join(',');
         csv.push(headers);
-        
+
         // データ行
         for (const row of section.content.rows) {
-          const values = section.content.columns.map((col: any) => {
-            const value = row[col.key] || '';
-            // CSVエスケープ
-            const escaped = String(value).replace(/"/g, '""');
-            return `"${escaped}"`;
-          }).join(',');
+          const values = section.content.columns
+            .map((col: any) => {
+              const value = row[col.key] || '';
+              // CSVエスケープ
+              const escaped = String(value).replace(/"/g, '""');
+              return `"${escaped}"`;
+            })
+            .join(',');
           csv.push(values);
         }
-        
+
         csv.push('');
       }
     }
@@ -258,10 +261,7 @@ export class MultilingualReportGenerator extends EventEmitter {
   /**
    * ファイルへの保存
    */
-  async saveToFile(
-    report: GeneratedReport,
-    filePath: string
-  ): Promise<void> {
+  async saveToFile(report: GeneratedReport, filePath: string): Promise<void> {
     const directory = join(this.config.tempDirectory, 'generated');
     const fullPath = join(directory, filePath);
 
@@ -274,12 +274,12 @@ export class MultilingualReportGenerator extends EventEmitter {
     this.logger.info('レポートをファイルに保存しました', {
       reportId: report.id,
       filePath: fullPath,
-      size: report.size
+      size: report.size,
     });
 
     this.emit('report:saved', {
       reportId: report.id,
-      filePath: fullPath
+      filePath: fullPath,
     });
   }
 
@@ -300,17 +300,17 @@ export class MultilingualReportGenerator extends EventEmitter {
   ): Promise<string> {
     // スケジュール実装は別途必要
     const scheduleId = `schedule-${Date.now()}`;
-    
+
     this.logger.info('レポート生成をスケジュールしました', {
       scheduleId,
       templateId,
-      frequency: options.schedule.frequency
+      frequency: options.schedule.frequency,
     });
 
     this.emit('report:scheduled', {
       scheduleId,
       templateId,
-      options
+      options,
     });
 
     return scheduleId;
@@ -347,7 +347,7 @@ export class MultilingualReportGenerator extends EventEmitter {
     let templates = this.templateManager.getAllTemplates();
 
     if (language) {
-      templates = templates.filter(t => 
+      templates = templates.filter(t =>
         t.metadata.supportedLanguages.includes(language)
       );
     }
@@ -371,7 +371,7 @@ export class MultilingualReportGenerator extends EventEmitter {
       templateId,
       dataHash: this.hashObject(data),
       language: options.language,
-      format: options.format
+      format: options.format,
     };
     return JSON.stringify(key);
   }
@@ -384,7 +384,7 @@ export class MultilingualReportGenerator extends EventEmitter {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return hash.toString(36);
@@ -405,7 +405,7 @@ export class MultilingualReportGenerator extends EventEmitter {
       { title: report.title } as ReportData,
       report.metadata.options
     );
-    
+
     this.reportCache.set(cacheKey, report);
   }
 
@@ -429,10 +429,11 @@ export class MultilingualReportGenerator extends EventEmitter {
     return {
       templatesCount: this.templateManager.getAllTemplates().length,
       cacheSize: this.reportCache.size,
-      supportedLanguages: this.i18nManager.getSupportedLanguages()
+      supportedLanguages: this.i18nManager
+        .getSupportedLanguages()
         .filter(l => l.enabled)
         .map(l => l.code),
-      supportedFormats: this.config.supportedFormats
+      supportedFormats: this.config.supportedFormats,
     };
   }
 }

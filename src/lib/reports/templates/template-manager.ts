@@ -5,7 +5,12 @@
 import { EventEmitter } from 'events';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { ReportTemplate, ReportSection, ReportStyling } from '../core/types.js';
+
+import type {
+  ReportTemplate,
+  ReportSection,
+  ReportStyling,
+} from '../core/types.js';
 
 export class TemplateManager extends EventEmitter {
   private templates: Map<string, ReportTemplate> = new Map();
@@ -38,24 +43,30 @@ export class TemplateManager extends EventEmitter {
           content: {
             level: 1,
             showDate: true,
-            showLogo: true
-          }
+            showLogo: true,
+          },
         },
         {
           id: 'summary',
           title: 'Executive Summary',
           type: 'summary',
           content: {
-            fields: ['totalThreats', 'criticalIssues', 'recommendations']
-          }
+            fields: ['totalThreats', 'criticalIssues', 'recommendations'],
+          },
         },
         {
           id: 'threats',
           title: 'Detected Threats',
           type: 'table',
           content: {
-            columns: ['domain', 'threatType', 'severity', 'confidence', 'action']
-          }
+            columns: [
+              'domain',
+              'threatType',
+              'severity',
+              'confidence',
+              'action',
+            ],
+          },
         },
         {
           id: 'recommendations',
@@ -63,9 +74,9 @@ export class TemplateManager extends EventEmitter {
           type: 'list',
           content: {
             ordered: true,
-            prioritized: true
-          }
-        }
+            prioritized: true,
+          },
+        },
       ],
       styling: this.getDefaultStyling('corporate'),
       metadata: {
@@ -74,8 +85,8 @@ export class TemplateManager extends EventEmitter {
         created: new Date(),
         lastModified: new Date(),
         supportedLanguages: ['en', 'ja', 'zh', 'es', 'fr', 'de'],
-        supportedFormats: ['pdf', 'excel', 'html']
-      }
+        supportedFormats: ['pdf', 'excel', 'html'],
+      },
     });
 
     // パフォーマンスレポートテンプレート
@@ -93,16 +104,21 @@ export class TemplateManager extends EventEmitter {
           content: {
             level: 1,
             showDate: true,
-            showLogo: true
-          }
+            showLogo: true,
+          },
         },
         {
           id: 'metrics',
           title: 'Key Metrics',
           type: 'metrics',
           content: {
-            metrics: ['avgResponseTime', 'successRate', 'errorRate', 'throughput']
-          }
+            metrics: [
+              'avgResponseTime',
+              'successRate',
+              'errorRate',
+              'throughput',
+            ],
+          },
         },
         {
           id: 'chart',
@@ -111,17 +127,17 @@ export class TemplateManager extends EventEmitter {
           content: {
             chartType: 'line',
             dataSource: 'responseTimes',
-            timeRange: '24h'
-          }
+            timeRange: '24h',
+          },
         },
         {
           id: 'details',
           title: 'Detailed Analysis',
           type: 'table',
           content: {
-            columns: ['domain', 'avgTime', 'minTime', 'maxTime', 'successRate']
-          }
-        }
+            columns: ['domain', 'avgTime', 'minTime', 'maxTime', 'successRate'],
+          },
+        },
       ],
       styling: this.getDefaultStyling('minimal'),
       metadata: {
@@ -130,8 +146,8 @@ export class TemplateManager extends EventEmitter {
         created: new Date(),
         lastModified: new Date(),
         supportedLanguages: ['en', 'ja', 'zh', 'es', 'fr', 'de'],
-        supportedFormats: ['pdf', 'excel', 'html', 'json']
-      }
+        supportedFormats: ['pdf', 'excel', 'html', 'json'],
+      },
     });
 
     // コンプライアンスレポートテンプレート
@@ -150,39 +166,47 @@ export class TemplateManager extends EventEmitter {
             level: 1,
             showDate: true,
             showLogo: true,
-            disclaimer: true
-          }
+            disclaimer: true,
+          },
         },
         {
           id: 'summary',
           title: 'Compliance Summary',
           type: 'summary',
           content: {
-            fields: ['complianceScore', 'violations', 'recommendations']
-          }
+            fields: ['complianceScore', 'violations', 'recommendations'],
+          },
         },
         {
           id: 'dataMapping',
           title: 'Data Processing Activities',
           type: 'table',
           content: {
-            columns: ['domain', 'dataType', 'purpose', 'legalBasis', 'retention']
-          }
+            columns: [
+              'domain',
+              'dataType',
+              'purpose',
+              'legalBasis',
+              'retention',
+            ],
+          },
         },
         {
           id: 'violations',
           title: 'Identified Violations',
           type: 'table',
           content: {
-            columns: ['issue', 'severity', 'gdprArticle', 'recommendation']
+            columns: ['issue', 'severity', 'gdprArticle', 'recommendation'],
           },
-          conditions: [{
-            field: 'violations',
-            operator: 'greater_than',
-            value: 0,
-            action: 'show'
-          }]
-        }
+          conditions: [
+            {
+              field: 'violations',
+              operator: 'greater_than',
+              value: 0,
+              action: 'show',
+            },
+          ],
+        },
       ],
       styling: this.getDefaultStyling('corporate'),
       metadata: {
@@ -191,8 +215,8 @@ export class TemplateManager extends EventEmitter {
         created: new Date(),
         lastModified: new Date(),
         supportedLanguages: ['en', 'de', 'fr', 'es', 'it'],
-        supportedFormats: ['pdf', 'excel']
-      }
+        supportedFormats: ['pdf', 'excel'],
+      },
     });
 
     return templates;
@@ -201,7 +225,9 @@ export class TemplateManager extends EventEmitter {
   /**
    * デフォルトスタイリングの取得
    */
-  private getDefaultStyling(theme: 'light' | 'dark' | 'corporate' | 'minimal'): ReportStyling {
+  private getDefaultStyling(
+    theme: 'light' | 'dark' | 'corporate' | 'minimal'
+  ): ReportStyling {
     const styles: Record<string, ReportStyling> = {
       corporate: {
         theme: 'corporate',
@@ -213,7 +239,7 @@ export class TemplateManager extends EventEmitter {
           warning: '#f59e0b',
           error: '#ef4444',
           text: '#1f2937',
-          background: '#ffffff'
+          background: '#ffffff',
         },
         fonts: {
           primary: 'Arial, sans-serif',
@@ -223,8 +249,8 @@ export class TemplateManager extends EventEmitter {
             small: 10,
             medium: 12,
             large: 16,
-            xlarge: 20
-          }
+            xlarge: 20,
+          },
         },
         layout: {
           pageSize: 'A4',
@@ -233,9 +259,9 @@ export class TemplateManager extends EventEmitter {
             top: 25,
             right: 25,
             bottom: 25,
-            left: 25
-          }
-        }
+            left: 25,
+          },
+        },
       },
       minimal: {
         theme: 'minimal',
@@ -247,7 +273,7 @@ export class TemplateManager extends EventEmitter {
           warning: '#f59e0b',
           error: '#ef4444',
           text: '#111827',
-          background: '#ffffff'
+          background: '#ffffff',
         },
         fonts: {
           primary: 'Helvetica, Arial, sans-serif',
@@ -257,8 +283,8 @@ export class TemplateManager extends EventEmitter {
             small: 9,
             medium: 11,
             large: 14,
-            xlarge: 18
-          }
+            xlarge: 18,
+          },
         },
         layout: {
           pageSize: 'A4',
@@ -267,10 +293,10 @@ export class TemplateManager extends EventEmitter {
             top: 20,
             right: 20,
             bottom: 20,
-            left: 20
-          }
-        }
-      }
+            left: 20,
+          },
+        },
+      },
     };
 
     return styles[theme] || styles.corporate;
@@ -299,16 +325,18 @@ export class TemplateManager extends EventEmitter {
    * カテゴリ別テンプレートの取得
    */
   getTemplatesByCategory(category: string): ReportTemplate[] {
-    return Array.from(this.templates.values())
-      .filter(t => t.category === category);
+    return Array.from(this.templates.values()).filter(
+      t => t.category === category
+    );
   }
 
   /**
    * 言語別テンプレートの取得
    */
   getTemplatesByLanguage(language: string): ReportTemplate[] {
-    return Array.from(this.templates.values())
-      .filter(t => t.metadata.supportedLanguages.includes(language));
+    return Array.from(this.templates.values()).filter(t =>
+      t.metadata.supportedLanguages.includes(language)
+    );
   }
 
   /**
@@ -333,8 +361,8 @@ export class TemplateManager extends EventEmitter {
       ...updates,
       metadata: {
         ...template.metadata,
-        lastModified: new Date()
-      }
+        lastModified: new Date(),
+      },
     };
 
     this.templates.set(id, updated);

@@ -3,9 +3,12 @@
  * 機械学習とヒューリスティックを組み合わせた包括的DNS最適化
  */
 
+import { RiskLevel } from '../types/dns.js';
+
 import { Logger } from './logger.js';
-import { DNSRecord, RiskLevel } from '../types/dns.js';
-import { PerformanceMetric } from './performance-monitor.js';
+
+import type { PerformanceMetric } from './performance-monitor.js';
+import type { DNSRecord } from '../types/dns.js';
 
 export interface OptimizationSuggestion {
   id: string;
@@ -71,10 +74,12 @@ export class AIDNSOptimizer {
   /**
    * 包括的DNS最適化分析
    */
-  async analyzeAndOptimize(context: OptimizationContext): Promise<OptimizationSuggestion[]> {
+  async analyzeAndOptimize(
+    context: OptimizationContext
+  ): Promise<OptimizationSuggestion[]> {
     this.logger.info('Starting AI-driven DNS optimization analysis', {
       domain: context.domain,
-      recordCount: context.records.length
+      recordCount: context.records.length,
     });
 
     const suggestions: OptimizationSuggestion[] = [];
@@ -88,7 +93,8 @@ export class AIDNSOptimizer {
     suggestions.push(...performanceSuggestions);
 
     // 3. セキュリティ分析
-    const securitySuggestions = await this.analyzeSecurityOptimizations(context);
+    const securitySuggestions =
+      await this.analyzeSecurityOptimizations(context);
     suggestions.push(...securitySuggestions);
 
     // 4. コスト最適化分析
@@ -100,11 +106,16 @@ export class AIDNSOptimizer {
     suggestions.push(...aiSuggestions);
 
     // 6. 提案の優先順位付けと重複排除
-    const prioritizedSuggestions = this.prioritizeAndDeduplicateSuggestions(suggestions, context);
+    const prioritizedSuggestions = this.prioritizeAndDeduplicateSuggestions(
+      suggestions,
+      context
+    );
 
     this.logger.info('DNS optimization analysis completed', {
       totalSuggestions: prioritizedSuggestions.length,
-      criticalSuggestions: prioritizedSuggestions.filter(s => s.priority === 'critical').length
+      criticalSuggestions: prioritizedSuggestions.filter(
+        s => s.priority === 'critical'
+      ).length,
     });
 
     return prioritizedSuggestions;
@@ -113,7 +124,9 @@ export class AIDNSOptimizer {
   /**
    * ヒューリスティック最適化分析
    */
-  private async performHeuristicAnalysis(context: OptimizationContext): Promise<OptimizationSuggestion[]> {
+  private async performHeuristicAnalysis(
+    context: OptimizationContext
+  ): Promise<OptimizationSuggestion[]> {
     const suggestions: OptimizationSuggestion[] = [];
 
     // TTL最適化
@@ -134,12 +147,17 @@ export class AIDNSOptimizer {
   /**
    * TTL最適化分析
    */
-  private analyzeTTLOptimization(context: OptimizationContext): OptimizationSuggestion[] {
+  private analyzeTTLOptimization(
+    context: OptimizationContext
+  ): OptimizationSuggestion[] {
     const suggestions: OptimizationSuggestion[] = [];
 
     context.records.forEach(record => {
       // 頻繁に変更されるレコードの短いTTL提案
-      if (record.ttl > 300 && this.isFrequentlyChangingRecord(record, context)) {
+      if (
+        record.ttl > 300 &&
+        this.isFrequentlyChangingRecord(record, context)
+      ) {
         suggestions.push({
           id: `ttl-reduce-${record.name}`,
           type: 'performance',
@@ -150,24 +168,22 @@ export class AIDNSOptimizer {
             performance: 6,
             security: 2,
             reliability: 4,
-            cost: -1
+            cost: -1,
           },
           implementation: {
             difficulty: 'easy',
             estimatedTime: '5分',
-            steps: [
-              '現在のTTL値を確認',
-              'TTLを300秒に変更',
-              '変更反映を監視'
-            ],
-            risks: ['キャッシュミス増加によるわずかな負荷増']
+            steps: ['現在のTTL値を確認', 'TTLを300秒に変更', '変更反映を監視'],
+            risks: ['キャッシュミス増加によるわずかな負荷増'],
           },
           affectedRecords: [record.name],
           evidence: {
-            metrics: context.performance.filter(m => m.metadata?.domain === record.name),
+            metrics: context.performance.filter(
+              m => m.metadata?.domain === record.name
+            ),
             riskFactors: ['頻繁な変更パターン検出'],
-            benchmarks: { currentTTL: record.ttl, recommendedTTL: 300 }
-          }
+            benchmarks: { currentTTL: record.ttl, recommendedTTL: 300 },
+          },
         });
       }
 
@@ -183,7 +199,7 @@ export class AIDNSOptimizer {
             performance: 7,
             security: 0,
             reliability: 3,
-            cost: 2
+            cost: 2,
           },
           implementation: {
             difficulty: 'easy',
@@ -191,16 +207,18 @@ export class AIDNSOptimizer {
             steps: [
               'レコード安定性を最終確認',
               'TTLを3600秒に変更',
-              'キャッシュ効率を監視'
+              'キャッシュ効率を監視',
             ],
-            risks: ['レコード変更時の反映遅延']
+            risks: ['レコード変更時の反映遅延'],
           },
           affectedRecords: [record.name],
           evidence: {
-            metrics: context.performance.filter(m => m.metadata?.domain === record.name),
+            metrics: context.performance.filter(
+              m => m.metadata?.domain === record.name
+            ),
             riskFactors: [],
-            benchmarks: { currentTTL: record.ttl, recommendedTTL: 3600 }
-          }
+            benchmarks: { currentTTL: record.ttl, recommendedTTL: 3600 },
+          },
         });
       }
     });
@@ -211,12 +229,14 @@ export class AIDNSOptimizer {
   /**
    * パフォーマンス最適化分析
    */
-  private async analyzePerformance(context: OptimizationContext): Promise<OptimizationSuggestion[]> {
+  private async analyzePerformance(
+    context: OptimizationContext
+  ): Promise<OptimizationSuggestion[]> {
     const suggestions: OptimizationSuggestion[] = [];
 
     // 遅延レスポンスの分析
-    const slowQueries = context.performance.filter(m => 
-      m.category === 'dns' && m.duration > 1000
+    const slowQueries = context.performance.filter(
+      m => m.category === 'dns' && m.duration > 1000
     );
 
     if (slowQueries.length > 0) {
@@ -230,7 +250,7 @@ export class AIDNSOptimizer {
           performance: 8,
           security: 0,
           reliability: 6,
-          cost: -2
+          cost: -2,
         },
         implementation: {
           difficulty: 'medium',
@@ -239,19 +259,23 @@ export class AIDNSOptimizer {
             'DNS サーバー地理的分散の検討',
             'Anycast 設定の最適化',
             'キャッシュ戦略の見直し',
-            'DNS プロバイダーの性能評価'
+            'DNS プロバイダーの性能評価',
           ],
-          risks: ['DNS設定変更による一時的な不安定性']
+          risks: ['DNS設定変更による一時的な不安定性'],
         },
-        affectedRecords: slowQueries.map(q => q.metadata?.domain as string).filter(Boolean),
+        affectedRecords: slowQueries
+          .map(q => q.metadata?.domain as string)
+          .filter(Boolean),
         evidence: {
           metrics: slowQueries,
           riskFactors: ['応答時間劣化'],
-          benchmarks: { 
-            averageResponseTime: slowQueries.reduce((sum, q) => sum + q.duration, 0) / slowQueries.length,
-            targetResponseTime: 200
-          }
-        }
+          benchmarks: {
+            averageResponseTime:
+              slowQueries.reduce((sum, q) => sum + q.duration, 0) /
+              slowQueries.length,
+            targetResponseTime: 200,
+          },
+        },
       });
     }
 
@@ -265,23 +289,28 @@ export class AIDNSOptimizer {
   /**
    * セキュリティ最適化分析
    */
-  private async analyzeSecurityOptimizations(context: OptimizationContext): Promise<OptimizationSuggestion[]> {
+  private async analyzeSecurityOptimizations(
+    context: OptimizationContext
+  ): Promise<OptimizationSuggestion[]> {
     const suggestions: OptimizationSuggestion[] = [];
 
     // DNSSEC実装の提案
-    const dnssecRecords = context.records.filter(r => r.type === 'DS' || r.type === 'DNSKEY');
+    const dnssecRecords = context.records.filter(
+      r => r.type === 'DS' || r.type === 'DNSKEY'
+    );
     if (dnssecRecords.length === 0) {
       suggestions.push({
         id: 'security-dnssec',
         type: 'security',
         priority: 'high',
         title: 'DNSSEC実装の推奨',
-        description: 'DNSSECが実装されていません。DNS応答の完全性と認証を向上させるため、DNSSEC実装を強く推奨',
+        description:
+          'DNSSECが実装されていません。DNS応答の完全性と認証を向上させるため、DNSSEC実装を強く推奨',
         impact: {
           performance: -1,
           security: 9,
           reliability: 7,
-          cost: -3
+          cost: -3,
         },
         implementation: {
           difficulty: 'hard',
@@ -290,16 +319,16 @@ export class AIDNSOptimizer {
             'DNSSEC対応DNSプロバイダーの選定',
             'KSK/ZSKキーペアの生成',
             'DS レコードの親ゾーンへの登録',
-            'DNSSEC検証の確認'
+            'DNSSEC検証の確認',
           ],
-          risks: ['設定ミスによるDNS解決失敗', 'キー管理の複雑さ増加']
+          risks: ['設定ミスによるDNS解決失敗', 'キー管理の複雑さ増加'],
         },
         affectedRecords: context.records.map(r => r.name),
         evidence: {
           metrics: [],
           riskFactors: ['DNSSEC未実装', 'DNS応答の完全性検証不可'],
-          benchmarks: { dnssecCoverage: 0, targetCoverage: 100 }
-        }
+          benchmarks: { dnssecCoverage: 0, targetCoverage: 100 },
+        },
       });
     }
 
@@ -313,7 +342,9 @@ export class AIDNSOptimizer {
   /**
    * コスト最適化分析
    */
-  private async analyzeCostOptimizations(context: OptimizationContext): Promise<OptimizationSuggestion[]> {
+  private async analyzeCostOptimizations(
+    context: OptimizationContext
+  ): Promise<OptimizationSuggestion[]> {
     const suggestions: OptimizationSuggestion[] = [];
 
     // 未使用レコードの検出
@@ -329,7 +360,7 @@ export class AIDNSOptimizer {
           performance: 1,
           security: 3,
           reliability: 1,
-          cost: 4
+          cost: 4,
         },
         implementation: {
           difficulty: 'easy',
@@ -338,21 +369,21 @@ export class AIDNSOptimizer {
             '未使用レコードの最終確認',
             'バックアップの作成',
             '段階的な削除実行',
-            '影響監視'
+            '影響監視',
           ],
-          risks: ['誤削除による予期しないサービス影響']
+          risks: ['誤削除による予期しないサービス影響'],
         },
         affectedRecords: unusedRecords.map(r => r.name),
         evidence: {
-          metrics: context.performance.filter(m => 
+          metrics: context.performance.filter(m =>
             unusedRecords.some(r => r.name === m.metadata?.domain)
           ),
           riskFactors: ['未使用リソース', '管理コスト増加'],
-          benchmarks: { 
+          benchmarks: {
             currentRecordCount: context.records.length,
-            optimizedRecordCount: context.records.length - unusedRecords.length
-          }
-        }
+            optimizedRecordCount: context.records.length - unusedRecords.length,
+          },
+        },
       });
     }
 
@@ -369,11 +400,15 @@ export class AIDNSOptimizer {
     const suggestions: OptimizationSuggestion[] = [];
 
     // パターン認識による最適化
-    const patternSuggestions = await this.aiModel.analyzePatterns(context, existingSuggestions);
+    const patternSuggestions = await this.aiModel.analyzePatterns(
+      context,
+      existingSuggestions
+    );
     suggestions.push(...patternSuggestions);
 
     // 予測分析による最適化
-    const predictiveSuggestions = await this.aiModel.predictiveAnalysis(context);
+    const predictiveSuggestions =
+      await this.aiModel.predictiveAnalysis(context);
     suggestions.push(...predictiveSuggestions);
 
     return suggestions;
@@ -387,13 +422,17 @@ export class AIDNSOptimizer {
     context: OptimizationContext
   ): OptimizationSuggestion[] {
     // 重複排除
-    const uniqueSuggestions = suggestions.filter((suggestion, index, self) => 
-      index === self.findIndex(s => s.id === suggestion.id)
+    const uniqueSuggestions = suggestions.filter(
+      (suggestion, index, self) =>
+        index === self.findIndex(s => s.id === suggestion.id)
     );
 
     // ビジネスコンテキストに基づく優先順位調整
     const prioritizedSuggestions = uniqueSuggestions.map(suggestion => {
-      const adjustedPriority = this.adjustPriorityForBusinessContext(suggestion, context.businessContext);
+      const adjustedPriority = this.adjustPriorityForBusinessContext(
+        suggestion,
+        context.businessContext
+      );
       return { ...suggestion, priority: adjustedPriority };
     });
 
@@ -408,32 +447,46 @@ export class AIDNSOptimizer {
   /**
    * 補助メソッド群
    */
-  private isFrequentlyChangingRecord(record: DNSRecord, context: OptimizationContext): boolean {
+  private isFrequentlyChangingRecord(
+    record: DNSRecord,
+    context: OptimizationContext
+  ): boolean {
     // 実装：変更履歴やパフォーマンスメトリクスから判断
     return false; // 簡略化
   }
 
-  private isStableRecord(record: DNSRecord, context: OptimizationContext): boolean {
+  private isStableRecord(
+    record: DNSRecord,
+    context: OptimizationContext
+  ): boolean {
     // 実装：安定性指標から判断
     return true; // 簡略化
   }
 
-  private analyzeCDNOptimizations(context: OptimizationContext): OptimizationSuggestion[] {
+  private analyzeCDNOptimizations(
+    context: OptimizationContext
+  ): OptimizationSuggestion[] {
     // CDN最適化の詳細分析
     return [];
   }
 
-  private analyzeSPFOptimizations(context: OptimizationContext): OptimizationSuggestion[] {
+  private analyzeSPFOptimizations(
+    context: OptimizationContext
+  ): OptimizationSuggestion[] {
     // SPF最適化の詳細分析
     return [];
   }
 
-  private analyzeRecordConsolidation(context: OptimizationContext): OptimizationSuggestion[] {
+  private analyzeRecordConsolidation(
+    context: OptimizationContext
+  ): OptimizationSuggestion[] {
     // レコード統合最適化
     return [];
   }
 
-  private analyzeGeographicOptimization(context: OptimizationContext): OptimizationSuggestion[] {
+  private analyzeGeographicOptimization(
+    context: OptimizationContext
+  ): OptimizationSuggestion[] {
     // 地理的分散最適化
     return [];
   }
@@ -444,11 +497,12 @@ export class AIDNSOptimizer {
     const usedDomains = new Set(
       context.performance.map(m => m.metadata?.domain).filter(Boolean)
     );
-    
-    return context.records.filter(record => 
-      !usedDomains.has(record.name) && 
-      record.type !== 'SOA' && 
-      record.type !== 'NS' // 必須レコードは除外
+
+    return context.records.filter(
+      record =>
+        !usedDomains.has(record.name) &&
+        record.type !== 'SOA' &&
+        record.type !== 'NS' // 必須レコードは除外
     );
   }
 
@@ -474,10 +528,17 @@ export class AIDNSOptimizer {
     );
   }
 
-  private getBusinessContextWeights(businessContext: BusinessContext): Record<string, number> {
+  private getBusinessContextWeights(
+    businessContext: BusinessContext
+  ): Record<string, number> {
     // ビジネスコンテキストに基づく重み付け
-    const baseWeights = { performance: 0.3, security: 0.3, reliability: 0.3, cost: 0.1 };
-    
+    const baseWeights = {
+      performance: 0.3,
+      security: 0.3,
+      reliability: 0.3,
+      cost: 0.1,
+    };
+
     businessContext.priorities.forEach((priority, index) => {
       const bonus = (businessContext.priorities.length - index) * 0.1;
       baseWeights[priority] += bonus;
@@ -504,7 +565,9 @@ class AIModel {
     return [];
   }
 
-  async predictiveAnalysis(context: OptimizationContext): Promise<OptimizationSuggestion[]> {
+  async predictiveAnalysis(
+    context: OptimizationContext
+  ): Promise<OptimizationSuggestion[]> {
     // 予測分析による最適化提案
     return [];
   }

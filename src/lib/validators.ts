@@ -1,10 +1,10 @@
 /**
  * 共通バリデーション関数
- * 
+ *
  * 各種入力値の検証を行う共通関数群
  */
 
-import { DNSRecordType } from '../types/index.js';
+import type { DNSRecordType } from '../types/index.js';
 
 /**
  * ドメイン名の検証
@@ -15,7 +15,8 @@ export function validateDomain(domain: string): void {
   }
 
   // 基本的なドメイン名の正規表現
-  const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  const domainRegex =
+    /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   if (!domainRegex.test(domain)) {
     throw new Error(`無効なドメイン名: ${domain}`);
   }
@@ -44,7 +45,8 @@ export function validateDomain(domain: string): void {
  * IPアドレスの検証（IPv4）
  */
 export function validateIPv4(ip: string): void {
-  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  const ipv4Regex =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
   if (!ipv4Regex.test(ip)) {
     throw new Error(`無効なIPv4アドレス: ${ip}`);
   }
@@ -54,7 +56,8 @@ export function validateIPv4(ip: string): void {
  * IPアドレスの検証（IPv6）
  */
 export function validateIPv6(ip: string): void {
-  const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
+  const ipv6Regex =
+    /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
   if (!ipv6Regex.test(ip)) {
     throw new Error(`無効なIPv6アドレス: ${ip}`);
   }
@@ -65,14 +68,33 @@ export function validateIPv6(ip: string): void {
  */
 export function validateRecordType(type: string): DNSRecordType {
   const validTypes: DNSRecordType[] = [
-    'A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'PTR', 'SRV', 
-    'CAA', 'NAPTR', 'DS', 'DNSKEY', 'RRSIG', 'NSEC', 'NSEC3', 
-    'TLSA', 'SSHFP', 'SPF', 'ANY'
+    'A',
+    'AAAA',
+    'CNAME',
+    'MX',
+    'TXT',
+    'NS',
+    'SOA',
+    'PTR',
+    'SRV',
+    'CAA',
+    'NAPTR',
+    'DS',
+    'DNSKEY',
+    'RRSIG',
+    'NSEC',
+    'NSEC3',
+    'TLSA',
+    'SSHFP',
+    'SPF',
+    'ANY',
   ];
 
   const upperType = type.toUpperCase() as DNSRecordType;
   if (!validTypes.includes(upperType)) {
-    throw new Error(`無効なレコードタイプ: ${type}. 利用可能: ${validTypes.join(', ')}`);
+    throw new Error(
+      `無効なレコードタイプ: ${type}. 利用可能: ${validTypes.join(', ')}`
+    );
   }
 
   return upperType;
@@ -81,9 +103,13 @@ export function validateRecordType(type: string): DNSRecordType {
 /**
  * タイムアウト値の検証
  */
-export function validateTimeout(value: string | number | undefined, defaultValue = 5000): number {
-  const timeout = typeof value === 'string' ? parseInt(value, 10) : value || defaultValue;
-  
+export function validateTimeout(
+  value: string | number | undefined,
+  defaultValue = 5000
+): number {
+  const timeout =
+    typeof value === 'string' ? parseInt(value, 10) : value || defaultValue;
+
   if (isNaN(timeout) || timeout <= 0) {
     throw new Error('タイムアウトは正の数値である必要があります');
   }
@@ -142,7 +168,9 @@ export function validateFilePath(path: string): void {
   const dangerousChars = ['<', '>', '|', '&', ';', '$', '`', '\n', '\r'];
   for (const char of dangerousChars) {
     if (path.includes(char)) {
-      throw new Error(`無効なファイルパス: 危険な文字が含まれています: ${char}`);
+      throw new Error(
+        `無効なファイルパス: 危険な文字が含まれています: ${char}`
+      );
     }
   }
 }
@@ -150,7 +178,12 @@ export function validateFilePath(path: string): void {
 /**
  * 数値範囲の検証
  */
-export function validateRange(value: number, min: number, max: number, name: string): void {
+export function validateRange(
+  value: number,
+  min: number,
+  max: number,
+  name: string
+): void {
   if (value < min || value > max) {
     throw new Error(`${name}は${min}から${max}の範囲で指定してください`);
   }

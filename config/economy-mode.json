@@ -1,0 +1,42 @@
+{
+  "monthly_budget": 40.0,
+  "current_mode": "normal",
+  "warning_threshold": 0.75,
+  "economy_threshold": 0.80,
+  "emergency_threshold": 0.95,
+  "mode_settings": {
+    "normal": {
+      "description": "All features enabled, optimal model selection",
+      "max_errors_per_run": 10,
+      "allowed_models": ["claude-3-haiku-20240307", "claude-3-5-sonnet-20241022"],
+      "pr_review_enabled": true,
+      "auto_fix_enabled": true
+    },
+    "economy": {
+      "description": "Limited to important errors only, cheapest model",
+      "max_errors_per_run": 5,
+      "allowed_models": ["claude-3-haiku-20240307"],
+      "pr_review_enabled": true,
+      "auto_fix_enabled": true,
+      "error_priorities": ["critical", "error"]
+    },
+    "emergency": {
+      "description": "Manual intervention required, no automatic fixes",
+      "max_errors_per_run": 0,
+      "allowed_models": [],
+      "pr_review_enabled": false,
+      "auto_fix_enabled": false
+    }
+  },
+  "model_limits": {
+    "claude-3-haiku-20240307": {
+      "max_tokens_per_request": 4000,
+      "rate_limit_per_minute": 50
+    },
+    "claude-3-5-sonnet-20241022": {
+      "max_tokens_per_request": 4000,
+      "rate_limit_per_minute": 20
+    }
+  },
+  "last_updated": "2024-01-01T00:00:00Z"
+}

@@ -2,11 +2,18 @@
  * lookupコマンド - DNS解決を実行して結果を表示（リファクタリング版）
  */
 
-import { BaseCommand } from './base-command.js';
 import { DNSResolver } from '../lib/dns-resolver.js';
 import { RiskCalculator } from '../lib/risk-calculator.js';
 import { validateRecordType, validateDNSServer } from '../lib/validators.js';
-import type { DNSRecordType, IDNSRecord, OutputFormat, AnalysisResult } from '../types/index.js';
+
+import { BaseCommand } from './base-command.js';
+
+import type {
+  DNSRecordType,
+  IDNSRecord,
+  OutputFormat,
+  AnalysisResult,
+} from '../types/index.js';
 
 interface LookupOptions {
   type?: string;
@@ -88,7 +95,11 @@ export class LookupCommand extends BaseCommand {
       `${domain} の ${recordType} レコードを解決中...`,
       async () => {
         const lookupResult = await this.resolver.resolve(domain, recordType);
-        const records = this.convertToIDNSRecords(lookupResult, domain, recordType);
+        const records = this.convertToIDNSRecords(
+          lookupResult,
+          domain,
+          recordType
+        );
 
         // リスク分析の実行（オプション）
         let analysisResult: AnalysisResult | undefined;
@@ -128,7 +139,10 @@ export class LookupCommand extends BaseCommand {
     domain: string,
     records: IDNSRecord[]
   ): Promise<AnalysisResult> {
-    const riskScore = await this.riskCalculator.calculateRiskScore(domain, records);
+    const riskScore = await this.riskCalculator.calculateRiskScore(
+      domain,
+      records
+    );
     const factors = this.riskCalculator.identifyRiskFactors(records);
 
     return {
@@ -158,7 +172,9 @@ export class LookupCommand extends BaseCommand {
     const recommendations: string[] = [];
 
     if (factors.includes('No SPF record')) {
-      recommendations.push('SPFレコードを設定してメールのなりすましを防ぎましょう');
+      recommendations.push(
+        'SPFレコードを設定してメールのなりすましを防ぎましょう'
+      );
     }
     if (factors.includes('No DMARC record')) {
       recommendations.push('DMARCレコードを設定してメール認証を強化しましょう');
@@ -167,7 +183,9 @@ export class LookupCommand extends BaseCommand {
       recommendations.push('DNSSECを有効化してDNS応答の改ざんを防ぎましょう');
     }
     if (factors.includes('Short TTL')) {
-      recommendations.push('TTLを適切な値に設定してDNSクエリの負荷を軽減しましょう');
+      recommendations.push(
+        'TTLを適切な値に設定してDNSクエリの負荷を軽減しましょう'
+      );
     }
     if (factors.includes('Multiple MX with same priority')) {
       recommendations.push('MXレコードの優先度を適切に設定しましょう');
