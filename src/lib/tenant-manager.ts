@@ -200,7 +200,7 @@ export class TenantManager extends EventEmitter {
    */
   private initializeTenantBilling(tenant: Tenant): void {
     const pricing = this.getPlanPricing(tenant.plan);
-    
+
     const billing: TenantBilling = {
       tenantId: tenant.id,
       subscription: {
@@ -249,7 +249,7 @@ export class TenantManager extends EventEmitter {
     this.billingInfo.set(tenant.id, billing);
   }
 
-  private getPlanPricing(plan: Tenant['plan']) {
+  private getPlanPricing(plan: Tenant['plan']): { price: number; interval: 'month' } {
     switch (plan) {
       case 'free':
         return { price: 0, interval: 'month' as const };
@@ -271,7 +271,8 @@ export class TenantManager extends EventEmitter {
     const isolation: TenantIsolation = {
       tenantId: tenant.id,
       network: {
-        allowedIpRanges: tenant.plan === 'enterprise' ? ['10.0.0.0/8'] : undefined,
+        allowedIpRanges:
+          tenant.plan === 'enterprise' ? ['10.0.0.0/8'] : undefined,
       },
       dns: {
         nameservers: ['ns1.dnsweeper.com', 'ns2.dnsweeper.com'],
@@ -280,7 +281,8 @@ export class TenantManager extends EventEmitter {
       },
       storage: {
         encryption: {
-          enabled: tenant.plan === 'professional' || tenant.plan === 'enterprise',
+          enabled:
+            tenant.plan === 'professional' || tenant.plan === 'enterprise',
           algorithm: 'AES-256',
           keyRotation: tenant.plan === 'enterprise',
         },
@@ -346,10 +348,15 @@ export class TenantManager extends EventEmitter {
     // カスタム制限を適用
     if (options.customLimits) {
       Object.assign(tenant.settings, {
-        maxDNSRecords: options.customLimits.dnsRecords ?? tenant.settings.maxDNSRecords,
-        maxQueriesPerMonth: options.customLimits.queriesPerMonth ?? tenant.settings.maxQueriesPerMonth,
+        maxDNSRecords:
+          options.customLimits.dnsRecords ?? tenant.settings.maxDNSRecords,
+        maxQueriesPerMonth:
+          options.customLimits.queriesPerMonth ??
+          tenant.settings.maxQueriesPerMonth,
         maxUsers: options.customLimits.users ?? tenant.settings.maxUsers,
-        apiRateLimit: options.customLimits.apiCallsPerMinute ?? tenant.settings.apiRateLimit,
+        apiRateLimit:
+          options.customLimits.apiCallsPerMinute ??
+          tenant.settings.apiRateLimit,
       });
     }
 
@@ -368,7 +375,12 @@ export class TenantManager extends EventEmitter {
     return tenant;
   }
 
-  private getPlanLimits(plan: Tenant['plan']) {
+  private getPlanLimits(plan: Tenant['plan']): {
+    maxDNSRecords: number;
+    maxQueriesPerMonth: number;
+    maxUsers: number;
+    apiRateLimit: number;
+  } {
     switch (plan) {
       case 'free':
         return {
@@ -434,7 +446,10 @@ export class TenantManager extends EventEmitter {
   /**
    * テナントの更新
    */
-  async updateTenant(tenantId: string, options: TenantUpdateOptions): Promise<Tenant> {
+  async updateTenant(
+    tenantId: string,
+    options: TenantUpdateOptions
+  ): Promise<Tenant> {
     const tenant = this.tenants.get(tenantId);
     if (!tenant) {
       throw new Error(`テナント ${tenantId} が見つかりません`);

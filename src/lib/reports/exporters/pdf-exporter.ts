@@ -5,7 +5,7 @@
 import type {
   ReportTemplate,
   ReportSection,
-  GeneratedReport,
+  GeneratedReport as _GeneratedReport,
 } from '../core/types.js';
 
 export interface PDFExporterOptions {
@@ -34,7 +34,7 @@ export class PDFExporter {
   async export(
     template: ReportTemplate,
     sections: ReportSection[],
-    data: any,
+    data: unknown,
     options?: PDFExporterOptions
   ): Promise<Buffer> {
     // 実際の実装では、PDFライブラリ（例：PDFKit、jsPDF）を使用
@@ -60,13 +60,13 @@ export class PDFExporter {
   private generatePDFContent(
     template: ReportTemplate,
     sections: ReportSection[],
-    data: any
-  ): any {
+    data: unknown
+  ): unknown {
     // PDFドキュメントの構造を作成
     const pdf = {
       metadata: {
-        title: data.title,
-        author: data.metadata.generatedBy,
+        title: (data as any)?.title,
+        author: (data as any)?.metadata?.generatedBy,
         subject: template.description,
         creator: 'DNSweeper',
         creationDate: new Date(),
@@ -78,7 +78,7 @@ export class PDFExporter {
     };
 
     // セクションをページに変換
-    let currentPage: any = this.createPage(template);
+    let currentPage: unknown = this.createPage(template);
 
     for (const section of sections) {
       const sectionContent = this.renderSection(section, template);
@@ -102,7 +102,7 @@ export class PDFExporter {
   /**
    * ページの作成
    */
-  private createPage(template: ReportTemplate): any {
+  private createPage(template: ReportTemplate): unknown {
     return {
       content: [],
       header: this.createHeader(template),

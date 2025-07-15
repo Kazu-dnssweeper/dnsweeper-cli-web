@@ -48,7 +48,8 @@ export class TenantUserManager extends EventEmitter {
       tenantId: options.tenantId,
       email: options.email,
       role: options.role,
-      permissions: options.permissions || this.getDefaultPermissions(options.role),
+      permissions:
+        options.permissions || this.getDefaultPermissions(options.role),
       status: 'invited',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -109,12 +110,7 @@ export class TenantUserManager extends EventEmitter {
           'billing:read',
         ];
       case 'viewer':
-        return [
-          'tenant:read',
-          'user:read',
-          'dns:read',
-          'billing:read',
-        ];
+        return ['tenant:read', 'user:read', 'dns:read', 'billing:read'];
       default:
         return ['tenant:read', 'dns:read'];
     }
@@ -410,7 +406,7 @@ export class TenantUserManager extends EventEmitter {
     usersByRole: Record<TenantUser['role'], number>;
     mfaEnabledUsers: number;
   } {
-    const users = tenantId 
+    const users = tenantId
       ? this.getUsersByTenant(tenantId)
       : this.getAllUsers();
 
@@ -428,7 +424,7 @@ export class TenantUserManager extends EventEmitter {
 
     for (const user of users) {
       usersByRole[user.role]++;
-      
+
       switch (user.status) {
         case 'active':
           activeUsers++;

@@ -387,9 +387,16 @@ export class ReportGenerator extends EventEmitter {
   /**
    * メトリクスコンテンツの処理
    */
-  private processMetricsContent(section: ReportSection, data: unknown): unknown {
+  private processMetricsContent(
+    section: ReportSection,
+    data: unknown
+  ): unknown {
     const metrics = section.content.metrics || [];
-    const processedMetrics: Array<{key: string; label: string; value: string}> = [];
+    const processedMetrics: Array<{
+      key: string;
+      label: string;
+      value: string;
+    }> = [];
 
     for (const metric of metrics) {
       const value = (data as any)?.[metric];
