@@ -429,13 +429,13 @@ export class ReportGenerator extends EventEmitter {
 
     // 特定の列に対する特別なフォーマット
     if (column.includes('time') || column.includes('date')) {
-      return this.i18nManager.formatDateTime(value);
+      return this.i18nManager.formatDateTime(value as Date | string | number);
     }
     if (column.includes('size') || column.includes('bytes')) {
-      return this.i18nManager.formatFileSize(value);
+      return this.i18nManager.formatFileSize(value as number);
     }
     if (column.includes('percent') || column.includes('rate')) {
-      return this.i18nManager.formatPercentage(value / 100);
+      return this.i18nManager.formatPercentage((value as number) / 100);
     }
     if (typeof value === 'number') {
       return this.i18nManager.formatNumber(value);
@@ -449,13 +449,13 @@ export class ReportGenerator extends EventEmitter {
    */
   private formatMetricValue(value: unknown, metric: string): string {
     if (metric.includes('time')) {
-      return `${this.i18nManager.formatNumber(value)} ms`;
+      return `${this.i18nManager.formatNumber(value as number)} ms`;
     }
     if (metric.includes('rate') || metric.includes('percent')) {
-      return this.i18nManager.formatPercentage(value / 100);
+      return this.i18nManager.formatPercentage((value as number) / 100);
     }
     if (metric.includes('size') || metric.includes('bytes')) {
-      return this.i18nManager.formatFileSize(value);
+      return this.i18nManager.formatFileSize(value as number);
     }
     if (typeof value === 'number') {
       return this.i18nManager.formatNumber(value);

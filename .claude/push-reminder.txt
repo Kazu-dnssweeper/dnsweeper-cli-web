@@ -1,0 +1,8 @@
+🚨 GIT PUSH REQUIRED!
+
+最後のコミット後、git pushがまだ実行されていません。
+必ず以下を実行してください：
+
+git push origin master
+
+このファイルはpush後に削除されます。

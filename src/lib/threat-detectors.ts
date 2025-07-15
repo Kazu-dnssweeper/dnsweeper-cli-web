@@ -484,46 +484,26 @@ export class ThreatDetectors {
   }
 
   // プレースホルダーメソッド（実際の実装で具体化）
-  private async performNetworkAnalysis(_domain: string): Promise<{
-    ipReputationScore: number;
-    geoLocationRisk: number;
-    domainAge: number;
-    certificateStatus: string;
-    portScanResults: unknown[];
-  }> {
+  private async performNetworkAnalysis(_domain: string): Promise<any> {
     return {
       ipReputationScore: 50,
       geoLocationRisk: 30,
       domainAge: 365,
-      certificateStatus: 'valid',
+      certificateStatus: 'valid' as const,
       portScanResults: [],
     };
   }
 
-  private async getReputationData(_domain: string): Promise<{
-    blacklistStatus: unknown[];
-    threatIntelligence: unknown[];
-    historicalIncidents: unknown[];
-    communityReports: unknown[];
-  }> {
+  private async getReputationData(_domain: string): Promise<any> {
     return {
-      blacklistStatus: [],
-      threatIntelligence: [],
-      historicalIncidents: [],
-      communityReports: [],
+      blacklistStatus: [] as any[],
+      threatIntelligence: [] as any[],
+      historicalIncidents: [] as any[],
+      communityReports: [] as any[],
     };
   }
 
-  private async performAlgorithmicAnalysis(_domain: string): Promise<{
-    domainGenerationScore: number;
-    typosquattingScore: number;
-    homographScore: number;
-    entropyScore: number;
-    ngramAnalysis: {
-      bigramScore: number;
-      trigramScore: number;
-    };
-  }> {
+  private async performAlgorithmicAnalysis(_domain: string): Promise<any> {
     return {
       domainGenerationScore: 30,
       typosquattingScore: 20,
@@ -532,15 +512,11 @@ export class ThreatDetectors {
       ngramAnalysis: {
         bigramScore: 50,
         trigramScore: 60,
-        characterFrequency: {},
-        suspiciousNgrams: [],
       },
       lexicalAnalysis: {
         dictionaryScore: 70,
         randomnessScore: 30,
         pronounceabilityScore: 80,
-        languageDetection: 'en',
-        suspiciousTokens: [],
       },
     };
   }
