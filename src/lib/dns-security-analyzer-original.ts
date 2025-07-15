@@ -5,9 +5,9 @@
 
 import { createHash } from 'crypto';
 import { EventEmitter } from 'events';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import { promisify } from 'util';
+import { readFileSync as _readFileSync, existsSync as _existsSync } from 'fs';
+import { join as _join } from 'path';
+import { promisify as _promisify } from 'util';
 
 import { Logger } from './logger.js';
 import { PerformanceMetric } from './performance-monitor.js';

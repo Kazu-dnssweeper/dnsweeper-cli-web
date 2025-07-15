@@ -3,7 +3,7 @@
  * 機械学習とヒューリスティックを組み合わせた包括的DNS最適化
  */
 
-// import { RiskLevel } from '../types/index.js'; // unused import
+// import { RiskLevel } from '../types/index.js'; // unused import - removed
 
 import { Logger } from './logger.js';
 
@@ -508,7 +508,7 @@ export class AIDNSOptimizer {
 
   private adjustPriorityForBusinessContext(
     suggestion: OptimizationSuggestion,
-    businessContext: BusinessContext
+    _businessContext: BusinessContext
   ): OptimizationSuggestion['priority'] {
     // ビジネスコンテキストに基づく優先順位調整
     return suggestion.priority;
@@ -516,10 +516,10 @@ export class AIDNSOptimizer {
 
   private calculateTotalImpactScore(
     suggestion: OptimizationSuggestion,
-    businessContext: BusinessContext
+    _businessContext: BusinessContext
   ): number {
     // 総合影響スコア計算
-    const weights = this.getBusinessContextWeights(businessContext);
+    const weights = this.getBusinessContextWeights(_businessContext);
     return (
       suggestion.impact.performance * weights.performance +
       suggestion.impact.security * weights.security +
@@ -529,7 +529,7 @@ export class AIDNSOptimizer {
   }
 
   private getBusinessContextWeights(
-    businessContext: BusinessContext
+    _businessContext: BusinessContext
   ): Record<string, number> {
     // ビジネスコンテキストに基づく重み付け
     const baseWeights = {
@@ -539,8 +539,8 @@ export class AIDNSOptimizer {
       cost: 0.1,
     };
 
-    businessContext.priorities.forEach((priority, index) => {
-      const bonus = (businessContext.priorities.length - index) * 0.1;
+    _businessContext.priorities.forEach((priority, index) => {
+      const bonus = (_businessContext.priorities.length - index) * 0.1;
       baseWeights[priority] += bonus;
     });
 

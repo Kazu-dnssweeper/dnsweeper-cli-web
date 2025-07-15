@@ -188,19 +188,19 @@ export class DateFormatter extends EventEmitter {
         this.formatCache.get(locale) ||
         this.formatCache.get(this.fallbackLocale)!;
 
-      let formatString: string;
+      let _formatString: string;
       switch (options.format) {
         case 'short':
-          formatString = format.shortDateFormat;
+          _formatString = format.shortDateFormat;
           break;
         case 'long':
-          formatString = format.longDateFormat;
+          _formatString = format.longDateFormat;
           break;
         case 'custom':
-          formatString = options.customFormat || format.dateFormat;
+          _formatString = options.customFormat || format.dateFormat;
           break;
         default:
-          formatString = format.dateFormat;
+          _formatString = format.dateFormat;
       }
 
       // 実際の実装では、date-fns や moment.js などを使用

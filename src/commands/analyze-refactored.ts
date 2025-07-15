@@ -16,6 +16,7 @@ import type {
   OutputFormat,
   DNSRecordType,
 } from '../types/index.js';
+import type { Command } from 'commander';
 
 interface AnalyzeOptions {
   format?: string;
@@ -348,7 +349,7 @@ export class AnalyzeCommand extends BaseCommand {
 /**
  * analyzeコマンドを作成（後方互換性のため）
  */
-export function createAnalyzeCommand() {
+export function createAnalyzeCommand(): Command {
   const command = new AnalyzeCommand();
   return command.getCommand();
 }
