@@ -1,7 +1,7 @@
 /**
- * タイムゾーン・日付形式ローカライザー - メインクラス
+ * タイムゾーン・日付形式ローカライザー - リファクタリング版
  *
- * 分離された機能モジュールを統合する軽量なマネージャークラス
+ * 分離された機能モジュールを統合する軽量なコーディネータークラス
  */
 
 import { EventEmitter } from 'events';
@@ -11,6 +11,8 @@ import { DateFormatter } from './date-formatter.js';
 import { I18nManager } from './i18n-manager.js';
 import { Logger } from './logger.js';
 import { TimezoneDetector } from './timezone-detector.js';
+import { TimezoneUtilities } from './timezone-utilities.js';
+import { TimezoneAutoDetector } from './timezone-auto-detector.js';
 
 import type {
   DateTimeLocalizerOptions,
@@ -24,7 +26,7 @@ import type {
 } from './timezone-types.js';
 
 /**
- * タイムゾーン・日付形式ローカライザー
+ * タイムゾーン・日付形式ローカライザー - メインコーディネーター
  */
 export class TimezoneLocalizer extends EventEmitter {
   private logger: Logger;
@@ -38,6 +40,8 @@ export class TimezoneLocalizer extends EventEmitter {
   private timezoneDetector: TimezoneDetector;
   private dateFormatter: DateFormatter;
   private businessHoursManager: BusinessHoursManager;
+  private utilities: TimezoneUtilities;
+  private autoDetector: TimezoneAutoDetector;
 
   constructor(
     logger?: Logger,
@@ -48,45 +52,41 @@ export class TimezoneLocalizer extends EventEmitter {
 
     this.logger = logger || new Logger({ logLevel: 'info' });
     this.i18nManager = i18nManager || new I18nManager();
+
+    // デフォルトオプションの設定
     this.options = {
-      defaultTimezone: 'UTC',
-      autoDetectTimezone: true,
-      enableDST: true,
-      defaultLocale: 'en-US',
-      fallbackLocale: 'en-US',
       enableBusinessHours: true,
       enableHolidays: true,
-      enableRelativeTime: true,
+      enableAutoDetection: true,
+      autoUpdateInterval: 3600000, // 1時間
+      defaultTimezone: 'UTC',
+      defaultLocale: 'en-US',
       cacheSize: 100,
-      updateInterval: 3600000, // 1時間
+      enableCaching: true,
+      fallbackTimezone: 'UTC',
+      strictValidation: false,
       ...options,
-    } as Required<DateTimeLocalizerOptions>;
+    };
 
     this.currentTimezone = this.options.defaultTimezone;
     this.currentLocale = this.options.defaultLocale;
 
     // 機能モジュールの初期化
     this.timezoneDetector = new TimezoneDetector(this.logger);
-    this.dateFormatter = new DateFormatter(
-      this.logger,
-      this.options.fallbackLocale
-    );
+    this.dateFormatter = new DateFormatter(this.logger, this.options.fallbackTimezone);
     this.businessHoursManager = new BusinessHoursManager(this.logger);
+    this.utilities = new TimezoneUtilities(this.logger);
+    this.autoDetector = new TimezoneAutoDetector(this.logger);
 
     // イベント転送の設定
     this.setupEventForwarding();
 
-    // 自動検出の実行
-    if (this.options.autoDetectTimezone) {
-      this.detectTimezone();
+    // 自動検出の開始
+    if (this.options.enableAutoDetection) {
+      this.initializeAutoDetection();
     }
 
-    // 定期更新の開始
-    if (this.options.updateInterval) {
-      this.startPeriodicUpdate();
-    }
-
-    this.logger.info('TimezoneLocalizer初期化完了', {
+    this.logger.info('タイムゾーンローカライザー初期化完了', {
       timezone: this.currentTimezone,
       locale: this.currentLocale,
       options: this.options,
@@ -102,101 +102,71 @@ export class TimezoneLocalizer extends EventEmitter {
       this.emit('timezone-detected', data);
     });
 
-    this.timezoneDetector.on('dst-status-updated', data => {
-      this.emit('dst-status-updated', data);
+    this.timezoneDetector.on('detection-failed', data => {
+      this.emit('detection-failed', data);
     });
 
-    // 日付フォーマッターのイベント転送
-    this.dateFormatter.on('format-added', data => {
-      this.emit('format-added', data);
+    // 自動検出器のイベント転送
+    this.autoDetector.on('timezone-detected', data => {
+      this.emit('auto-timezone-detected', data);
+      
+      // 信頼度が高い場合は自動的に適用
+      if (data.confidence >= 0.8) {
+        this.setTimezone(data.timezone);
+      }
     });
 
-    // 業務時間管理のイベント転送
-    this.businessHoursManager.on('business-hours-updated', data => {
-      this.emit('business-hours-updated', data);
-    });
-
-    this.businessHoursManager.on('holiday-added', data => {
-      this.emit('holiday-added', data);
-    });
-  }
-
-  /**
-   * タイムゾーンの自動検出
-   */
-  private detectTimezone(): void {
-    const detectedTimezone = this.timezoneDetector.detectTimezone();
-    if (detectedTimezone) {
-      this.currentTimezone = detectedTimezone;
-      this.emit('timezone-changed', {
-        from: this.options.defaultTimezone,
-        to: detectedTimezone,
-      });
-    }
-  }
-
-  /**
-   * 定期更新の開始
-   */
-  private startPeriodicUpdate(): void {
-    this.updateInterval = setInterval(() => {
-      this.updateTimezoneInfo();
-    }, this.options.updateInterval);
-
-    this.logger.info('定期更新開始', {
-      interval: this.options.updateInterval,
+    this.autoDetector.on('auto-update', data => {
+      this.emit('timezone-auto-updated', data);
     });
   }
 
   /**
-   * タイムゾーン情報の更新
+   * 自動検出の初期化
    */
-  private updateTimezoneInfo(): void {
+  private async initializeAutoDetection(): Promise<void> {
     try {
-      // DST状態の更新
-      if (this.options.enableDST) {
-        this.timezoneDetector.updateDSTStatus();
+      const detection = await this.autoDetector.detectTimezone();
+      if (detection.confidence >= 0.7) {
+        this.setTimezone(detection.timezone);
       }
 
-      this.emit('timezone-updated', {
-        currentTimezone: this.currentTimezone,
-        timestamp: new Date(),
-      });
+      // 自動更新の開始
+      this.autoDetector.startAutoUpdate(this.options.autoUpdateInterval);
     } catch (error) {
-      this.logger.error(
-        'タイムゾーン情報更新エラー:',
-        error instanceof Error ? error : new Error(String(error))
-      );
+      this.logger.warn('自動検出の初期化に失敗しました', error as Error);
     }
   }
 
-  // 公開API - タイムゾーン管理
+  // ===== 公開API - 設定管理 =====
 
   /**
    * タイムゾーンの設定
    */
   setTimezone(timezone: string): void {
-    if (!this.timezoneDetector.hasTimezone(timezone)) {
-      throw new Error(`サポートされていないタイムゾーン: ${timezone}`);
+    const normalizedTimezone = this.utilities.normalizeTimezoneName(timezone);
+    
+    if (this.options.strictValidation && !this.utilities.isValidTimezone(normalizedTimezone)) {
+      throw new Error(`無効なタイムゾーン: ${timezone}`);
     }
 
     const oldTimezone = this.currentTimezone;
-    this.currentTimezone = timezone;
+    this.currentTimezone = normalizedTimezone;
 
-    this.logger.info(`タイムゾーン変更: ${oldTimezone} → ${timezone}`);
-    this.emit('timezone-changed', { from: oldTimezone, to: timezone });
+    this.logger.info(`タイムゾーン変更: ${oldTimezone} → ${normalizedTimezone}`);
+    this.emit('timezone-changed', { from: oldTimezone, to: normalizedTimezone });
   }
 
   /**
    * ロケールの設定
    */
   setLocale(locale: string): void {
-    if (!this.dateFormatter.hasLocale(locale)) {
-      // フォールバック処理
-      this.logger.warn(
-        `未対応のロケール: ${locale}、フォールバック: ${this.options.fallbackLocale}`
-      );
-      locale = this.options.fallbackLocale;
+    if (this.options.strictValidation) {
+      try {
+        new Intl.DateTimeFormat(locale);
+      } catch {
+        throw new Error(`無効なロケール: ${locale}`);
+      }
     }
 
     const oldLocale = this.currentLocale;
@@ -206,7 +176,7 @@ export class TimezoneLocalizer extends EventEmitter {
     this.emit('locale-changed', { from: oldLocale, to: locale });
   }
 
-  // 公開API - フォーマット機能
+  // ===== 公開API - フォーマット機能 =====
 
   /**
    * 日付のフォーマット
@@ -255,7 +225,7 @@ export class TimezoneLocalizer extends EventEmitter {
     );
   }
 
-  // 公開API - 業務時間管理
+  // ===== 公開API - 業務時間管理 =====
 
   /**
    * 業務時間の判定
@@ -298,205 +268,216 @@ export class TimezoneLocalizer extends EventEmitter {
       : false;
   }
 
-  /**
-   * 次の営業日の取得
-   */
-  getNextBusinessDay(date: Date = new Date(), timezone?: string): Date {
-    return this.businessHoursManager.getNextBusinessDay(
-      date,
-      timezone || this.currentTimezone
-    );
-  }
-
-  // 公開API - タイムゾーン変換
+  // ===== 公開API - タイムゾーン変換 =====
 
   /**
-   * タイムゾーン変換
+   * タイムゾーン間の変換
    */
   convertTimezone(date: Date, fromTimezone: string, toTimezone: string): Date {
-    return this.timezoneDetector.convertTimezone(
-      date,
-      fromTimezone,
-      toTimezone
+    return this.utilities.convertTimezone(date, fromTimezone, toTimezone);
+  }
+
+  /**
+   * 現在のタイムゾーンでの時刻を取得
+   */
+  getCurrentTime(): Date {
+    return this.utilities.convertTimezone(new Date(), 'UTC', this.currentTimezone);
+  }
+
+  /**
+   * 複数タイムゾーンでの現在時刻を取得
+   */
+  getCurrentTimeInTimezones(timezones: string[]): ReturnType<typeof this.utilities.getCurrentTimeInTimezones> {
+    return this.utilities.getCurrentTimeInTimezones(timezones);
+  }
+
+  /**
+   * 会議時間の最適化
+   */
+  findOptimalMeetingTime(
+    timezones: string[],
+    businessHoursStart?: number,
+    businessHoursEnd?: number,
+    durationMinutes?: number
+  ): ReturnType<typeof this.utilities.findOptimalMeetingTime> {
+    return this.utilities.findOptimalMeetingTime(
+      timezones,
+      businessHoursStart,
+      businessHoursEnd,
+      durationMinutes
     );
   }
 
-  // 公開API - 情報取得
+  // ===== 公開API - 情報取得 =====
 
   /**
-   * 現在のタイムゾーン取得
+   * タイムゾーン情報の取得
    */
-  getCurrentTimezone(): string {
-    return this.currentTimezone;
+  getTimezoneInfo(timezone?: string): TimezoneInfo | null {
+    return this.utilities.getTimezoneInfo(timezone || this.currentTimezone);
   }
 
   /**
-   * 現在のロケール取得
+   * サポートされているタイムゾーンの一覧を取得
    */
-  getCurrentLocale(): string {
-    return this.currentLocale;
+  getSupportedTimezones(): string[] {
+    return this.utilities.getSupportedTimezones();
   }
 
   /**
-   * タイムゾーン情報取得
+   * 現在の設定の取得
    */
-  getTimezoneInfo(timezone?: string): TimezoneInfo | undefined {
-    return this.timezoneDetector.getTimezoneInfo(
-      timezone || this.currentTimezone
-    );
+  getCurrentSettings(): {
+    timezone: string;
+    locale: string;
+    options: Required<DateTimeLocalizerOptions>;
+  } {
+    return {
+      timezone: this.currentTimezone,
+      locale: this.currentLocale,
+      options: { ...this.options },
+    };
   }
 
   /**
-   * 全タイムゾーン取得
-   */
-  getAllTimezones(): TimezoneInfo[] {
-    return this.timezoneDetector.getAllTimezones();
-  }
-
-  /**
-   * 日時フォーマット情報取得
+   * 日付フォーマットの取得
    */
   getDateTimeFormat(locale?: string): LocaleDateTimeFormat | undefined {
     return this.dateFormatter.getDateTimeFormat(locale || this.currentLocale);
   }
 
+  // ===== 公開API - 検出機能 =====
+
   /**
-   * 業務時間情報取得
+   * 手動タイムゾーン検出
    */
-  getBusinessHours(timezone?: string): BusinessHours | undefined {
-    return this.businessHoursManager.getBusinessHours(
-      timezone || this.currentTimezone
-    );
+  async detectTimezone(): Promise<ReturnType<typeof this.autoDetector.detectTimezone>> {
+    return this.autoDetector.detectTimezone();
   }
 
   /**
-   * 地域別タイムゾーン取得
+   * 検出履歴の取得
    */
-  getTimezonesByRegion(region: string): TimezoneInfo[] {
-    return this.timezoneDetector.getTimezonesByRegion(region);
+  getDetectionHistory(): ReturnType<typeof this.autoDetector.getDetectionHistory> {
+    return this.autoDetector.getDetectionHistory();
   }
 
   /**
-   * 国別タイムゾーン取得
+   * 検出統計の取得
    */
-  getTimezonesByCountry(country: string): TimezoneInfo[] {
-    return this.timezoneDetector.getTimezonesByCountry(country);
+  getDetectionStatistics(): ReturnType<typeof this.autoDetector.getDetectionStatistics> {
+    return this.autoDetector.getDetectionStatistics();
+  }
+
+  // ===== 公開API - 設定管理 =====
+
+  /**
+   * オプションの更新
+   */
+  updateOptions(newOptions: Partial<DateTimeLocalizerOptions>): void {
+    this.options = { ...this.options, ...newOptions };
+    
+    // 自動検出設定の更新
+    if (newOptions.enableAutoDetection !== undefined) {
+      if (newOptions.enableAutoDetection && !this.autoDetector) {
+        this.initializeAutoDetection();
+      } else if (!newOptions.enableAutoDetection) {
+        this.autoDetector.stopAutoUpdate();
+      }
+    }
+
+    // 自動更新間隔の更新
+    if (newOptions.autoUpdateInterval !== undefined) {
+      this.autoDetector.stopAutoUpdate();
+      this.autoDetector.startAutoUpdate(newOptions.autoUpdateInterval);
+    }
+
+    this.emit('options-updated', { newOptions, currentOptions: this.options });
+    this.logger.info('オプションを更新しました', newOptions);
+  }
+
+  // ===== 公開API - キャッシュ管理 =====
+
+  /**
+   * キャッシュ統計の取得
+   */
+  getCacheStatistics(): {
+    timezone: ReturnType<typeof this.utilities.getCacheStatistics>;
+    formatter: { supportedLocales: string[] };
+  } {
+    return {
+      timezone: this.utilities.getCacheStatistics(),
+      formatter: {
+        supportedLocales: this.dateFormatter.getAllSupportedLocales(),
+      },
+    };
   }
 
   /**
-   * サポート対象ロケール取得
+   * キャッシュのクリア
    */
-  getAllSupportedLocales(): string[] {
-    return this.dateFormatter.getAllSupportedLocales();
+  clearCache(): void {
+    this.utilities.clearCache();
+    this.autoDetector.clearHistory();
+    this.emit('cache-cleared');
+    this.logger.info('キャッシュをクリアしました');
+  }
+
+  // ===== 公開API - システム管理 =====
+
+  /**
+   * システムの健全性チェック
+   */
+  getHealthStatus(): {
+    status: 'healthy' | 'degraded' | 'error';
+    components: Record<string, { status: string; lastCheck: Date }>;
+    currentSettings: {
+      timezone: string;
+      locale: string;
+    };
+    statistics: {
+      detections: ReturnType<typeof this.autoDetector.getDetectionStatistics>;
+      cache: ReturnType<typeof this.getCacheStatistics>;
+    };
+  } {
+    const now = new Date();
+    
+    return {
+      status: 'healthy',
+      components: {
+        timezoneDetector: { status: 'healthy', lastCheck: now },
+        dateFormatter: { status: 'healthy', lastCheck: now },
+        businessHoursManager: { status: 'healthy', lastCheck: now },
+        utilities: { status: 'healthy', lastCheck: now },
+        autoDetector: { status: 'healthy', lastCheck: now },
+      },
+      currentSettings: {
+        timezone: this.currentTimezone,
+        locale: this.currentLocale,
+      },
+      statistics: {
+        detections: this.getDetectionStatistics(),
+        cache: this.getCacheStatistics(),
+      },
+    };
   }
 
   /**
-   * 営業時間の残り時間を計算
-   */
-  getTimeUntilClose(date: Date = new Date(), timezone?: string): number | null {
-    return this.businessHoursManager.getTimeUntilClose(
-      date,
-      timezone || this.currentTimezone
-    );
-  }
-
-  /**
-   * 次の営業開始時刻を計算
-   */
-  getTimeUntilOpen(date: Date = new Date(), timezone?: string): number | null {
-    return this.businessHoursManager.getTimeUntilOpen(
-      date,
-      timezone || this.currentTimezone
-    );
-  }
-
-  /**
-   * 営業日数を計算
-   */
-  getBusinessDaysBetween(
-    startDate: Date,
-    endDate: Date,
-    timezone?: string
-  ): number {
-    return this.businessHoursManager.getBusinessDaysBetween(
-      startDate,
-      endDate,
-      timezone || this.currentTimezone
-    );
-  }
-
-  // 公開API - カスタマイズ機能
-
-  /**
-   * カスタム日付フォーマット追加
-   */
-  addCustomFormat(locale: string, format: LocaleDateTimeFormat): void {
-    this.dateFormatter.addCustomFormat(locale, format);
-  }
-
-  /**
-   * 業務時間設定
-   */
-  setBusinessHours(timezone: string, hours: BusinessHours): void {
-    this.businessHoursManager.setBusinessHours(timezone, hours);
-  }
-
-  /**
-   * 祝日追加
-   */
-  addHoliday(timezone: string, holiday: BusinessHours['holidays'][0]): boolean {
-    return this.businessHoursManager.addHoliday(timezone, holiday);
-  }
-
-  /**
-   * 週の開始日取得
-   */
-  getWeekStartDay(locale?: string): 0 | 1 {
-    return this.dateFormatter.getWeekStartDay(locale || this.currentLocale);
-  }
-
-  /**
-   * 月名取得
-   */
-  getMonthNames(locale?: string): string[] {
-    return this.dateFormatter.getMonthNames(locale || this.currentLocale);
-  }
-
-  /**
-   * 曜日名取得
-   */
-  getDayNames(locale?: string): string[] {
-    return this.dateFormatter.getDayNames(locale || this.currentLocale);
-  }
-
-  /**
-   * タイムゾーンオフセット取得
-   */
-  getTimezoneOffset(date: Date, timezone?: string): number {
-    return this.timezoneDetector.getTimezoneOffset(
-      date,
-      timezone || this.currentTimezone
-    );
-  }
-
-  /**
-   * 正常終了処理
+   * システム終了処理
    */
   async shutdown(): Promise<void> {
     try {
       if (this.updateInterval) {
         clearInterval(this.updateInterval);
+        this.updateInterval = undefined;
       }
 
-      // イベントリスナーの削除
+      this.autoDetector.shutdown();
       this.removeAllListeners();
 
-      this.logger.info('TimezoneLocalizer正常終了');
+      this.logger.info('タイムゾーンローカライザーを終了しました');
     } catch (error) {
-      this.logger.error(
-        'TimezoneLocalizer終了エラー:',
-        error instanceof Error ? error : new Error(String(error))
-      );
+      this.logger.error('終了処理エラー', error as Error);
       throw error;
     }
   }
@@ -506,4 +487,13 @@ export class TimezoneLocalizer extends EventEmitter {
 export default TimezoneLocalizer;
 
 // 型定義の再エクスポート
-export type * from './timezone-types.js';
+export type {
+  DateTimeLocalizerOptions,
+  TimezoneInfo,
+  LocaleDateTimeFormat,
+  BusinessHours,
+  RelativeTimeOptions,
+  DateFormatOptions,
+  TimeFormatOptions,
+  DateTimeFormatOptions,
+} from './timezone-types.js';
