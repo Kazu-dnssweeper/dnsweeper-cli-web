@@ -15,7 +15,7 @@ import { createListCommand } from './list.js';
 import { createLookupCommand } from './lookup-refactored.js';
 import { createLookupCommand as createLookupCommandOld } from './lookup.js';
 import { createOptimizeCommand } from './optimize.js';
-import { createPerformanceCommand } from './performance.js';
+import { performanceCommand } from './performance.js';
 import { createSecurityCommand } from './security.js';
 import { createSweepCommand } from './sweep.js';
 import { createSyncCommand } from './sync.js';
@@ -90,7 +90,7 @@ export class CommandFactory {
   }
 
   createPerformanceCommand(): Command {
-    return createPerformanceCommand();
+    return performanceCommand;
   }
 
   createSweepCommand(): Command {

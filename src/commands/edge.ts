@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 
 import type { EdgeDNSQuery } from '@lib/edge-computing-dns-manager.js';
+import type { AnalysisResult } from '../types/index.js';
 
 const logger = new Logger();
 
@@ -66,7 +67,23 @@ edgeCommand
         最終確認: location.lastHealthCheck.toLocaleString('ja-JP'),
       }));
 
-      formatter.formatTable(tableData);
+      const analysisResult: AnalysisResult = {
+        summary: {
+          totalRecords: tableData.length,
+          highRiskCount: 0,
+          mediumRiskCount: 0,
+          lowRiskCount: 0,
+          averageRiskScore: 0
+        },
+        records: tableData.map(data => ({
+          domain: data.ID,
+          riskScore: 0,
+          riskLevel: 'low' as const,
+          riskFactors: [],
+          details: data
+        }))
+      };
+      console.log(formatter.format(analysisResult));
 
       await manager.shutdown();
     } catch (error) {

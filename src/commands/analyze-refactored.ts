@@ -95,13 +95,14 @@ export class AnalyzeCommand extends BaseCommand {
       timeout,
       servers: options.nameserver ? [options.nameserver] : undefined,
     });
-    this.riskCalculator = new RiskCalculator({ logger: this.logger });
+    this.riskCalculator = new RiskCalculator({});
 
     // CSVファイルの読み込み
     const domains = await this.executeWithSpinner(
       'CSVファイルを読み込み中...',
       async () => {
-        const records = await this.csvProcessor.read(filePath);
+        const parseResult = await this.csvProcessor.parseAuto(filePath);
+        const records = parseResult.records;
         return this.extractDomains(records);
       },
       `ドメインの読み込み完了`,
@@ -177,7 +178,7 @@ export class AnalyzeCommand extends BaseCommand {
       completed += batch.length;
 
       // 進捗表示
-      if (this.logger.verbose || completed % 50 === 0) {
+      if (completed % 50 === 0) {
         this.logger.info(
           `進捗: ${completed}/${total} (${Math.round((completed / total) * 100)}%)`
         );
@@ -218,19 +219,25 @@ export class AnalyzeCommand extends BaseCommand {
       // ステータスの判定
       const status = allRecords.length > 0 ? 'active' : 'inactive';
 
-      // リスク分析
-      const riskScore = await this.riskCalculator.calculateRiskScore(
-        domain,
-        allRecords
-      );
-      const factors = this.riskCalculator.identifyRiskFactors(allRecords);
+      // リスク分析（最初のレコードで代表してリスク計算）
+      const primaryRecord = allRecords[0] || {
+        id: domain,
+        name: domain,
+        type: 'A' as const,
+        value: 'unknown',
+        ttl: 3600,
+        created: new Date(),
+        updated: new Date()
+      };
+      const riskScore = this.riskCalculator.calculateRisk(primaryRecord);
+      const factors = riskScore.recommendations;
 
       return {
         domain,
         status,
         records,
-        riskScore,
-        riskLevel: this.getRiskLevel(riskScore),
+        riskScore: riskScore.total,
+        riskLevel: riskScore.level,
         factors,
       };
     } catch (error) {

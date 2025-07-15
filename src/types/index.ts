@@ -115,3 +115,27 @@ export interface ICSVRecord {
 }
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export type OutputFormat = 'table' | 'json' | 'yaml' | 'csv';
+
+export interface AnalysisResult {
+  summary: {
+    totalRecords: number;
+    highRiskCount: number;
+    mediumRiskCount: number;
+    lowRiskCount: number;
+    averageRiskScore: number;
+  };
+  records: Array<{
+    domain: string;
+    riskScore: number;
+    riskLevel: RiskLevel;
+    riskFactors: string[];
+    details?: any;
+  }>;
+  metadata?: {
+    analyzedAt: string;
+    analyzerVersion: string;
+    duration?: number;
+  };
+}

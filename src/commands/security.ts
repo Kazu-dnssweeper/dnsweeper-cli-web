@@ -98,7 +98,7 @@ export function createSecurityCommand(): Command {
       } catch (error) {
         logger.error(
           '❌ DNS セキュリティ脅威検出でエラーが発生しました:',
-          error
+          error instanceof Error ? error : new Error(String(error))
         );
         process.exit(1);
       }
@@ -163,8 +163,8 @@ async function getDNSRecords(domains: string[], options: any, logger: Logger) {
       file: options.records,
     });
 
-    const csvProcessor = new CSVProcessor(logger);
-    const csvData = await csvProcessor.processCSV(options.records);
+    const csvProcessor = new CSVProcessor({});
+    const csvData = await csvProcessor.parseAuto(options.records);
 
     return csvData.records;
   } else {
@@ -173,16 +173,19 @@ async function getDNSRecords(domains: string[], options: any, logger: Logger) {
       domainCount: domains.length,
     });
 
-    const resolver = new DNSResolver(logger);
+    const resolver = new DNSResolver({});
     const allRecords = [];
 
     // 並列処理で高速化
     const resolvePromises = domains.map(async domain => {
       try {
-        const records = await resolver.resolveAllRecords(domain);
+        const result = await resolver.resolve(domain, 'A');
+        const records = result.records;
         return records;
       } catch (error) {
-        logger.warn(`⚠️  ${domain} のDNS解決に失敗しました:`, error);
+        logger.warn(`⚠️  ${domain} のDNS解決に失敗しました:`, {
+          error: error instanceof Error ? error.message : String(error)
+        });
         return [];
       }
     });
@@ -524,7 +527,8 @@ async function startRealTimeMonitoring(
         displaySummaryResults(filteredThreats, logger);
       }
     } catch (error) {
-      logger.error('監視中にエラーが発生しました:', error);
+      logger.error('監視中にエラーが発生しました:', 
+        error instanceof Error ? error : new Error(String(error)));
     }
   }, parseInt(options.monitorInterval));
 

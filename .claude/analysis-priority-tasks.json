@@ -1,0 +1,98 @@
+{
+  "generated_at": "2025-07-15T11:30:00+09:00",
+  "total_score": 7.2,
+  "priority_tasks": [
+    {
+      "id": "fix-typescript-errors",
+      "title": "TypeScriptエラーの解消",
+      "description": "109件のビルドエラーを修正",
+      "priority": "high",
+      "error_count": 109,
+      "estimated_hours": 16,
+      "details": [
+        "型の不一致エラー",
+        "未定義プロパティへのアクセス",
+        "インポートエラー"
+      ]
+    },
+    {
+      "id": "fix-eslint-errors",
+      "title": "ESLintエラーの修正",
+      "description": "206件のエラーを解消（308件の警告は後回し）",
+      "priority": "high", 
+      "error_count": 206,
+      "estimated_hours": 8,
+      "auto_fixable": true
+    },
+    {
+      "id": "refactor-large-files",
+      "title": "大きなファイルのリファクタリング",
+      "description": "1,000行超の5ファイルを分割",
+      "priority": "medium",
+      "files": [
+        {
+          "path": "src/lib/enterprise-access-control.ts",
+          "lines": 1349,
+          "suggestion": "機能別に3-4ファイルに分割"
+        },
+        {
+          "path": "src/lib/regional-compliance-manager.ts", 
+          "lines": 1307,
+          "suggestion": "地域別に分割"
+        },
+        {
+          "path": "src/lib/timezone-localizer.ts",
+          "lines": 1240,
+          "suggestion": "ユーティリティとコアロジックを分離"
+        },
+        {
+          "path": "src/lib/dns-security-analyzer.ts",
+          "lines": 1230,
+          "suggestion": "脅威タイプ別にモジュール化"
+        },
+        {
+          "path": "src/lib/regional-dns-manager.ts",
+          "lines": 1030,
+          "suggestion": "リージョン処理を別クラスに"
+        }
+      ],
+      "estimated_hours": 40
+    },
+    {
+      "id": "reduce-any-types",
+      "title": "any型の削減",
+      "description": "108箇所を適切な型に置換",
+      "priority": "medium",
+      "any_count": 108,
+      "hotspots": [
+        {
+          "file": "src/lib/reports/generators/report-generator.ts",
+          "count": 19
+        },
+        {
+          "file": "src/lib/reports/exporters/excel-exporter.ts",
+          "count": 15
+        },
+        {
+          "file": "src/lib/enterprise-orchestrator.ts",
+          "count": 15
+        }
+      ],
+      "estimated_hours": 20
+    },
+    {
+      "id": "improve-test-coverage",
+      "title": "テストカバレッジ向上",
+      "description": "utils層のテスト作成",
+      "priority": "medium",
+      "current_coverage": 65,
+      "target_coverage": 85,
+      "estimated_hours": 24
+    }
+  ],
+  "next_actions": [
+    "npm run lint -- --fix でESLintエラーの自動修正",
+    "TypeScriptエラーの優先順位付けと段階的修正",
+    "Claude API (/a --refactor) でリファクタリング提案取得"
+  ]
+}

@@ -71,7 +71,8 @@ export function createOptimizeCommand(): Command {
 
         logger.info('✅ AI最適化分析が完了しました');
       } catch (error) {
-        logger.error('❌ AI最適化分析でエラーが発生しました:', error);
+        logger.error('❌ AI最適化分析でエラーが発生しました:', 
+          error instanceof Error ? error : new Error(String(error)));
         process.exit(1);
       }
     });
@@ -94,7 +95,8 @@ async function buildOptimizationContext(
   const performance = globalPerformanceMonitor
     .getMetrics()
     .filter(
-      m => m.metadata?.domain === domain || m.metadata?.domain?.endsWith(domain)
+      m => m.metadata?.domain === domain || 
+        (typeof m.metadata?.domain === 'string' && m.metadata.domain.endsWith(domain))
     );
 
   // トラフィックパターンの取得
@@ -124,29 +126,30 @@ async function getDNSRecords(domain: string, options: any, logger: Logger) {
       file: options.file,
     });
 
-    const csvProcessor = new CSVProcessor(logger);
-    const csvData = await csvProcessor.processCSV(options.file);
+    const csvProcessor = new CSVProcessor({});
+    const csvData = await csvProcessor.parseAuto(options.file);
 
     return csvData.records;
   } else {
     // ドメインからDNSレコードを解決
     logger.info('🔍 DNSレコードを解決しています...', { domain });
 
-    const resolver = new DNSResolver(logger);
+    const resolver = new DNSResolver({});
     const measure = globalPerformanceMonitor.startMeasurement(
       'dns',
       'bulk_resolve'
     );
 
     try {
-      const records = await resolver.resolveAllRecords(domain);
-      measure(true, { domain, recordCount: records.length });
+      const result = await resolver.resolve(domain, 'A');
+      const records = result.records;
+      measure();
       return records;
     } catch (error) {
-      measure(false, {
-        domain,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      measure();
+      logger.error('DNS解決に失敗しました', 
+        error instanceof Error ? error : new Error(String(error)),
+        { domain });
       throw error;
     }
   }
@@ -171,7 +174,8 @@ async function loadTrafficPatterns(filePath: string, logger: Logger) {
 
     return patterns;
   } catch (error) {
-    logger.error('トラフィックパターンファイルの読み込みエラー:', error);
+    logger.error('トラフィックパターンファイルの読み込みエラー:', 
+      error instanceof Error ? error : new Error(String(error)));
     return [];
   }
 }
@@ -188,7 +192,9 @@ function buildBusinessContext(options: any, logger: Logger): BusinessContext {
       logger.info('📋 ビジネスコンテキストファイルを読み込みました');
       return context;
     } catch (error) {
-      logger.warn('ビジネスコンテキストファイルの読み込みエラー:', error);
+      logger.warn('ビジネスコンテキストファイルの読み込みエラー:', {
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
@@ -227,7 +233,7 @@ function filterSuggestions(suggestions: any[], options: any) {
  * 結果の出力
  */
 async function outputResults(suggestions: any[], options: any, logger: Logger) {
-  const formatter = new OutputFormatter(logger);
+  const formatter = new OutputFormatter({});
 
   if (options.format === 'table') {
     displayTableResults(suggestions, logger);

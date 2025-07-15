@@ -86,7 +86,7 @@ async function handleSync(options: SyncOptions): Promise<void> {
     const config = await loadConfig();
 
     // APIクライアントを初期化
-    const client = await createApiClient(options.provider, config);
+    const client = await createApiClient(options.provider, config as ConfigData);
 
     if (!options.zone) {
       spinner.fail('ゾーンIDまたはドメイン名を指定してください');
@@ -95,10 +95,10 @@ async function handleSync(options: SyncOptions): Promise<void> {
 
     // 同期処理を実行
     switch (options.direction) {
-      case 'pull':
+      case 'download':
         await pullRecords(client, options, spinner);
         break;
-      case 'push':
+      case 'upload':
         await pushRecords(client, options, spinner);
         break;
       case 'both':
@@ -297,7 +297,7 @@ async function syncBidirectional(
  */
 async function checkSyncStatus(options: SyncOptions): Promise<void> {
   const config = await loadConfig();
-  const client = await createApiClient(options.provider, config);
+  const client = await createApiClient(options.provider, config as ConfigData);
 
   if (client instanceof CloudflareClient) {
     const response = await client.verifyToken();
@@ -328,7 +328,7 @@ async function listZones(options: SyncOptions): Promise<void> {
 
   try {
     const config = await loadConfig();
-    const client = await createApiClient(options.provider, config);
+    const client = await createApiClient(options.provider, config as ConfigData);
 
     let zones;
     if (client instanceof CloudflareClient) {

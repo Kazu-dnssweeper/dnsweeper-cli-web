@@ -196,11 +196,15 @@ export abstract class BaseCommand {
     }
 
     return lookupResult.records.map((record: any) => {
-      const baseRecord = {
+      const now = new Date();
+      const baseRecord: IDNSRecord = {
+        id: `${domain}-${recordType}-${record.value || record.data}`,
         name: domain,
         type: recordType,
+        value: record.value || record.data || '',
         ttl: record.ttl || 300,
-        class: 'IN' as const,
+        created: now,
+        updated: now
       };
 
       switch (recordType) {
@@ -269,7 +273,7 @@ export abstract class BaseCommand {
     options: BaseCommandOptions & { output?: string }
   ): Promise<void> {
     const formatter = createFormatter({
-      format,
+      format: format === 'yaml' ? 'json' : format as any,
       colors: options.colors !== false,
       verbose: options.verbose || false,
       compact: format === 'json' && !options.verbose,

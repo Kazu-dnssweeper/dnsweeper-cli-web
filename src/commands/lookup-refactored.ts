@@ -87,7 +87,7 @@ export class LookupCommand extends BaseCommand {
     });
 
     if (options.analyze) {
-      this.riskCalculator = new RiskCalculator({ logger: this.logger });
+      this.riskCalculator = new RiskCalculator({});
     }
 
     // DNS解決の実行
@@ -139,19 +139,33 @@ export class LookupCommand extends BaseCommand {
     domain: string,
     records: IDNSRecord[]
   ): Promise<AnalysisResult> {
-    const riskScore = await this.riskCalculator.calculateRiskScore(
-      domain,
-      records
-    );
-    const factors = this.riskCalculator.identifyRiskFactors(records);
+    const primaryRecord = records[0] || {
+      id: domain,
+      name: domain,
+      type: 'A' as const,
+      value: 'unknown',
+      ttl: 3600,
+      created: new Date(),
+      updated: new Date()
+    };
+    const riskScore = this.riskCalculator.calculateRisk(primaryRecord);
+    const factors = riskScore.recommendations;
 
     return {
-      domain,
-      riskScore,
-      riskLevel: this.getRiskLevel(riskScore),
-      factors,
-      recommendations: this.generateRecommendations(factors),
-      timestamp: new Date().toISOString(),
+      summary: {
+        totalRecords: records.length,
+        highRiskCount: riskScore.level === 'high' || riskScore.level === 'critical' ? 1 : 0,
+        mediumRiskCount: riskScore.level === 'medium' ? 1 : 0,
+        lowRiskCount: riskScore.level === 'low' ? 1 : 0,
+        averageRiskScore: riskScore.total
+      },
+      records: [{
+        domain,
+        riskScore: riskScore.total,
+        riskLevel: riskScore.level,
+        riskFactors: factors,
+        details: { records }
+      }]
     };
   }
 
