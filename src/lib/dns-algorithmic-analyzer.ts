@@ -26,6 +26,7 @@ export class DNSAlgorithmicAnalyzer {
       const analysis: AlgorithmicAnalysis = {
         domain,
         timestamp: new Date(),
+        domainGenerationScore: this.calculateRandomnessScore(domain),
         entropyScore: this.calculateEntropy(domain),
         randomnessScore: this.calculateRandomnessScore(domain),
         typosquattingScore: this.calculateTyposquattingScore(domain),

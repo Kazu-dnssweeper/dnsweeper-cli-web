@@ -64,7 +64,7 @@ export class TimezoneAutoDetector extends EventEmitter {
           highestConfidence = result.confidence;
         }
       } catch (error) {
-        this.logger.warn('検出メソッドでエラーが発生しました', error as Error);
+        this.logger.warn('検出メソッドでエラーが発生しました', { error: error as Error });
       }
     }
 
@@ -118,7 +118,7 @@ export class TimezoneAutoDetector extends EventEmitter {
 
       return null;
     } catch (error) {
-      this.logger.warn('ブラウザからのタイムゾーン検出エラー', error as Error);
+      this.logger.warn('ブラウザからのタイムゾーン検出エラー', { error: error as Error });
       return null;
     }
   }
@@ -153,7 +153,7 @@ export class TimezoneAutoDetector extends EventEmitter {
 
       return null;
     } catch (error) {
-      this.logger.warn('システムからのタイムゾーン検出エラー', error as Error);
+      this.logger.warn('システムからのタイムゾーン検出エラー', { error: error as Error });
       return null;
     }
   }
@@ -189,7 +189,7 @@ export class TimezoneAutoDetector extends EventEmitter {
         timestamp: new Date(),
       };
     } catch (error) {
-      this.logger.warn('地理的位置からのタイムゾーン検出エラー', error as Error);
+      this.logger.warn('地理的位置からのタイムゾーン検出エラー', { error: error as Error });
       return null;
     }
   }
@@ -222,7 +222,7 @@ export class TimezoneAutoDetector extends EventEmitter {
         timestamp: new Date(),
       };
     } catch (error) {
-      this.logger.warn('IPアドレスからのタイムゾーン検出エラー', error as Error);
+      this.logger.warn('IPアドレスからのタイムゾーン検出エラー', { error: error as Error });
       return null;
     }
   }
@@ -232,23 +232,22 @@ export class TimezoneAutoDetector extends EventEmitter {
    */
   private getTimezoneFromOffset(offsetMinutes: number): string {
     // 主要なタイムゾーンのオフセットマッピング
-    const offsetToTimezone: Record<number, string> = {
-      0: 'UTC',
-      60: 'Europe/London',
-      120: 'Europe/Paris',
-      300: 'America/New_York',
-      360: 'America/Chicago',
-      420: 'America/Denver',
-      480: 'America/Los_Angeles',
-      540: 'Asia/Tokyo',
-      480: 'Asia/Shanghai', // 注意: 同じオフセットを持つ複数のタイムゾーン
-      600: 'Australia/Sydney',
-      -60: 'Atlantic/Azores',
-      -120: 'America/Sao_Paulo',
-      -180: 'America/Buenos_Aires',
+    const offsetToTimezone: Record<string, string> = {
+      '0': 'UTC',
+      '60': 'Europe/London',
+      '120': 'Europe/Paris',
+      '300': 'America/New_York',
+      '360': 'America/Chicago',
+      '420': 'America/Denver',
+      '480': 'America/Los_Angeles', // 注意: Asia/Shanghaiも480分オフセット
+      '540': 'Asia/Tokyo',
+      '600': 'Australia/Sydney',
+      '-60': 'Atlantic/Azores',
+      '-120': 'America/Sao_Paulo',
+      '-180': 'America/Buenos_Aires',
     };
 
-    return offsetToTimezone[-offsetMinutes] || 'UTC';
+    return offsetToTimezone[(-offsetMinutes).toString()] || 'UTC';
   }
 
   /**
@@ -267,7 +266,7 @@ export class TimezoneAutoDetector extends EventEmitter {
           const result = await this.detectTimezone();
           this.emit('auto-update', result);
         } catch (error) {
-          this.logger.error('自動更新エラー', error as Error);
+          this.logger.error('自動更新エラー', { error: error as Error });
         } finally {
           this.isUpdating = false;
         }

@@ -134,7 +134,7 @@ export class TimezoneLocalizer extends EventEmitter {
       // 自動更新の開始
       this.autoDetector.startAutoUpdate(this.options.autoUpdateInterval);
     } catch (error) {
-      this.logger.warn('自動検出の初期化に失敗しました', error as Error);
+      this.logger.warn('自動検出の初期化に失敗しました', { error: error as Error });
     }
   }
 
@@ -402,7 +402,7 @@ export class TimezoneLocalizer extends EventEmitter {
    * キャッシュ統計の取得
    */
   getCacheStatistics(): {
-    timezone: ReturnType<typeof this.utilities.getCacheStatistics>;
+    timezone: ReturnType<TimezoneUtilities['getCacheStatistics']>;
     formatter: { supportedLocales: string[] };
   } {
     return {
@@ -436,8 +436,8 @@ export class TimezoneLocalizer extends EventEmitter {
       locale: string;
     };
     statistics: {
-      detections: ReturnType<typeof this.autoDetector.getDetectionStatistics>;
-      cache: ReturnType<typeof this.getCacheStatistics>;
+      detections: ReturnType<TimezoneAutoDetector['getDetectionStatistics']>;
+      cache: ReturnType<TimezoneLocalizer['getCacheStatistics']>;
     };
   } {
     const now = new Date();
@@ -477,7 +477,7 @@ export class TimezoneLocalizer extends EventEmitter {
 
       this.logger.info('タイムゾーンローカライザーを終了しました');
     } catch (error) {
-      this.logger.error('終了処理エラー', error as Error);
+      this.logger.error('終了処理エラー', { error: error as Error });
       throw error;
     }
   }

@@ -56,16 +56,8 @@ export class DNSSecurityAnalyzer extends EventEmitter {
           'dns_hijacking',
           'cache_poisoning',
         ],
-        confidence: {
-          minimum: 0.7,
-          malware: 0.8,
-          phishing: 0.9,
-          typosquatting: 0.6,
-          dga: 0.7,
-          fastflux: 0.8,
-          dns_hijacking: 0.9,
-          cache_poisoning: 0.9,
-        },
+        confidenceThreshold: 0.7,
+        realTimeMonitoring: false,
       },
       monitoring: {
         enabled: true,
@@ -83,16 +75,40 @@ export class DNSSecurityAnalyzer extends EventEmitter {
         notificationEnabled: true,
         logLevel: 'info',
       },
+      reputationChecking: {
+        enabledSources: ['virustotal', 'urlvoid'],
+        cacheTimeout: 3600,
+        parallelChecks: 5,
+      },
+      alerting: {
+        enabledChannels: ['console', 'log'],
+        severityThreshold: 'medium',
+        rateLimiting: true,
+        cooldownPeriod: 300,
+      },
+      responseActions: {
+        autoQuarantine: true,
+        autoBlock: false,
+        notifications: true,
+        logActions: true,
+      },
       ...config,
     };
 
     // 機能モジュールの初期化
-    this.threatDetectors = new ThreatDetectors(this.logger);
-    this.networkAnalyzer = new NetworkAnalyzer(this.logger);
-    this.reputationService = new ReputationService(this.logger);
+    this.threatDetectors = new ThreatDetectors(this.logger, this.config);
+    this.networkAnalyzer = new NetworkAnalyzer(this.logger, this.config);
+    this.reputationService = new ReputationService(this.logger, this.config);
     this.algorithmicAnalyzer = new DNSAlgorithmicAnalyzer(this.logger);
     this.statistics = new DNSSecurityStatistics(this.logger);
     this.ruleEngine = new DNSThreatRules(this.logger, this.config);
+
+    // 設定の検証
+    if (this.config.monitoring?.enabled) {
+      this.logger.info('リアルタイム監視が有効です', {
+        interval: this.config.monitoring.interval,
+      });
+    }
 
     // イベント転送の設定
     this.setupEventForwarding();
@@ -209,7 +225,7 @@ export class DNSSecurityAnalyzer extends EventEmitter {
       const algorithmicThreats = this.convertAlgorithmicAnalysisToThreats(algorithmicAnalysis);
       threats.push(...algorithmicThreats);
     } catch (error) {
-      this.logger.warn('アルゴリズム分析でエラーが発生しました', error as Error);
+      this.logger.warn('アルゴリズム分析でエラーが発生しました', { error: error as Error });
     }
 
     return threats;
@@ -249,7 +265,7 @@ export class DNSSecurityAnalyzer extends EventEmitter {
       const results = await Promise.all(analyzers);
       results.forEach(result => threats.push(...result));
     } catch (error) {
-      this.logger.error('脅威検出エンジン実行エラー', error as Error);
+      this.logger.error('脅威検出エンジン実行エラー', error as any);
     }
 
     return threats;
@@ -296,16 +312,30 @@ export class DNSSecurityAnalyzer extends EventEmitter {
           title: rule.name,
           description: rule.description,
           confidence: result.confidence,
-          detectedAt: new Date().toISOString(),
-          indicators: [`Rule: ${rule.name}`],
-          mitigation: 'Apply rule-based mitigation',
+          timestamp: Date.now(),
+          evidence: {
+            dnsRecords: [],
+            networkAnalysis: {} as NetworkAnalysis,
+            reputationData: {} as ReputationData,
+            algorithmicAnalysis: {} as AlgorithmicAnalysis,
+          },
+          indicators: {
+            technicalIndicators: [`Rule: ${rule.name}`],
+            behavioralIndicators: [],
+            reputationIndicators: [],
+          },
+          mitigation: {
+            immediateActions: ['Apply rule-based mitigation'],
+            longTermActions: [],
+            preventionMeasures: [],
+          },
           references: [],
           metadata: {
             ruleId: result.ruleId,
             matchedConditions: result.matchedConditions,
             totalConditions: result.totalConditions,
           },
-        };
+        } as SecurityThreat;
       })
       .filter(threat => threat !== null) as SecurityThreat[];
   }
@@ -322,33 +352,61 @@ export class DNSSecurityAnalyzer extends EventEmitter {
         id: `algo-entropy-${analysis.domain}-${Date.now()}`,
         type: 'dga',
         severity: 'medium',
-        domain: analysis.domain,
+        domain: analysis.domain || 'unknown',
         title: 'High Entropy Domain Detected',
         description: `Domain shows high entropy score (${analysis.entropyScore}%) indicating possible DGA`,
         confidence: analysis.entropyScore / 100,
-        detectedAt: new Date().toISOString(),
-        indicators: [`Entropy Score: ${analysis.entropyScore}%`],
-        mitigation: 'Verify domain legitimacy',
+        timestamp: Date.now(),
+        evidence: {
+          dnsRecords: [],
+          networkAnalysis: {} as NetworkAnalysis,
+          reputationData: {} as ReputationData,
+          algorithmicAnalysis: analysis,
+        },
+        indicators: {
+          technicalIndicators: [`Entropy Score: ${analysis.entropyScore}%`],
+          behavioralIndicators: [],
+          reputationIndicators: [],
+        },
+        mitigation: {
+          immediateActions: ['Verify domain legitimacy'],
+          longTermActions: [],
+          preventionMeasures: [],
+        },
         references: [],
         metadata: { entropyScore: analysis.entropyScore },
       });
     }
 
     // 高ランダム性スコア
-    if (analysis.randomnessScore > 70) {
+    if ((analysis.randomnessScore || 0) > 70) {
       threats.push({
         id: `algo-random-${analysis.domain}-${Date.now()}`,
         type: 'dga',
         severity: 'low',
-        domain: analysis.domain,
+        domain: analysis.domain || 'unknown',
         title: 'High Randomness Domain',
-        description: `Domain shows high randomness score (${analysis.randomnessScore}%)`,
-        confidence: analysis.randomnessScore / 100,
-        detectedAt: new Date().toISOString(),
-        indicators: [`Randomness Score: ${analysis.randomnessScore}%`],
-        mitigation: 'Investigate domain origin',
+        description: `Domain shows high randomness score (${analysis.randomnessScore || 0}%)`,
+        confidence: (analysis.randomnessScore || 0) / 100,
+        timestamp: Date.now(),
+        evidence: {
+          dnsRecords: [],
+          networkAnalysis: {} as NetworkAnalysis,
+          reputationData: {} as ReputationData,
+          algorithmicAnalysis: analysis,
+        },
+        indicators: {
+          technicalIndicators: [`Randomness Score: ${analysis.randomnessScore || 0}%`],
+          behavioralIndicators: [],
+          reputationIndicators: [],
+        },
+        mitigation: {
+          immediateActions: ['Investigate domain origin'],
+          longTermActions: [],
+          preventionMeasures: [],
+        },
         references: [],
-        metadata: { randomnessScore: analysis.randomnessScore },
+        metadata: { randomnessScore: analysis.randomnessScore || 0 },
       });
     }
 
@@ -358,13 +416,27 @@ export class DNSSecurityAnalyzer extends EventEmitter {
         id: `algo-homograph-${analysis.domain}-${Date.now()}`,
         type: 'phishing',
         severity: 'high',
-        domain: analysis.domain,
+        domain: analysis.domain || 'unknown',
         title: 'Homograph Attack Detected',
         description: `Domain contains homograph characters (${analysis.homographScore}% score)`,
         confidence: analysis.homographScore / 100,
-        detectedAt: new Date().toISOString(),
-        indicators: [`Homograph Score: ${analysis.homographScore}%`],
-        mitigation: 'Block homograph domain',
+        timestamp: Date.now(),
+        evidence: {
+          dnsRecords: [],
+          networkAnalysis: {} as NetworkAnalysis,
+          reputationData: {} as ReputationData,
+          algorithmicAnalysis: analysis,
+        },
+        indicators: {
+          technicalIndicators: [`Homograph Score: ${analysis.homographScore}%`],
+          behavioralIndicators: [],
+          reputationIndicators: [],
+        },
+        mitigation: {
+          immediateActions: ['Block homograph domain'],
+          longTermActions: [],
+          preventionMeasures: [],
+        },
         references: [],
         metadata: { homographScore: analysis.homographScore },
       });
@@ -427,7 +499,7 @@ export class DNSSecurityAnalyzer extends EventEmitter {
   }
 
   async performNetworkAnalysis(domain: string, records: DNSRecord[]): Promise<NetworkAnalysis> {
-    return this.networkAnalyzer.analyzeNetwork(domain, records);
+    return this.networkAnalyzer.performNetworkAnalysis(domain);
   }
 
   async getReputationData(domain: string): Promise<ReputationData> {
@@ -473,6 +545,21 @@ export class DNSSecurityAnalyzer extends EventEmitter {
       this.monitoringInterval = undefined;
       this.logger.info('脅威監視を停止しました');
     }
+  }
+
+  // ===== コマンド互換性メソッド =====
+  
+  startRealTimeMonitoring(intervalMs: number = 60000): void {
+    this.startMonitoring();
+  }
+
+  stopRealTimeMonitoring(): void {
+    this.stopMonitoring();
+  }
+
+  getThreatDatabase(): any[] {
+    // 脅威データベースの取得
+    return [];
   }
 
   private async performMonitoringCheck(): Promise<void> {

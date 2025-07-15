@@ -62,11 +62,16 @@ export interface DateTimeLocalizerOptions {
   enableDST?: boolean;
   defaultLocale?: string;
   fallbackLocale?: string;
+  fallbackTimezone?: string;
   enableBusinessHours?: boolean;
   enableHolidays?: boolean;
   enableRelativeTime?: boolean;
+  enableAutoDetection?: boolean;
+  enableCaching?: boolean;
+  strictValidation?: boolean;
   cacheSize?: number;
   updateInterval?: number;
+  autoUpdateInterval?: number;
 }
 
 export interface DateFormatOptions {

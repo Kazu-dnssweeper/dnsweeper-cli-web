@@ -1,9 +1,8 @@
 /**
- * マルチテナント DNS管理システムの型定義
+ * マルチテナントシステムの型定義
  */
 
-import type { Logger } from './logger.js';
-import type { IDNSRecord as DNSRecord, DNSRecordType } from '../types/index.js';
+import type { IDNSRecord as DNSRecord } from '../types/index.js';
 
 export interface Tenant {
   id: string;
@@ -85,28 +84,38 @@ export interface TenantResource {
   status: 'active' | 'pending' | 'error' | 'disabled';
   createdAt: Date;
   updatedAt: Date;
-  version: string;
-  lastModified: Date;
-  modifiedBy: string;
-  changeReason?: string;
+  createdBy: string;
+  tags: string[];
+  metadata: {
+    version: string;
+    size: number;
+    lastModified: Date;
+    checksum: string;
+  };
 }
 
 export interface TenantAuditLog {
   id: string;
   tenantId: string;
-  userId: string;
+  userId?: string;
   action: string;
   resource: {
     type: string;
     id: string;
-    name: string;
+    name?: string;
   };
   timestamp: Date;
-  ipAddress: string;
+  ip: string;
   userAgent: string;
-  details: Record<string, unknown>;
-  success: boolean;
-  errorMessage?: string;
+  metadata: {
+    changes?: Record<string, any>;
+    oldValue?: any;
+    newValue?: any;
+    reason?: string;
+    context?: Record<string, any>;
+  };
+  severity: 'info' | 'warning' | 'error' | 'critical';
+  category: 'auth' | 'data' | 'system' | 'security' | 'billing';
 }
 
 export interface TenantQuota {
@@ -115,77 +124,54 @@ export interface TenantQuota {
     dnsRecords: number;
     queriesPerMonth: number;
     users: number;
-    apiCallsPerMinute: number;
-    storage: number; // bytes
+    apiCallsPerHour: number;
+    storageGB: number;
+    bandwidth: number;
   };
   current: {
     dnsRecords: number;
     queriesThisMonth: number;
-    users: number;
-    apiCallsThisMinute: number;
-    storage: number;
+    activeUsers: number;
+    apiCallsThisHour: number;
+    storageUsedGB: number;
+    bandwidthUsed: number;
   };
   alerts: {
     enabled: boolean;
     thresholds: {
-      warning: number; // percentage
-      critical: number; // percentage
+      warning: number; // %
+      critical: number; // %
     };
-    contacts: string[];
+    notifications: string[];
   };
-  resetDates: {
-    queries: Date;
-    apiCalls: Date;
-  };
+  resetDate: Date;
+  lastUpdated: Date;
 }
 
 export interface TenantBilling {
   tenantId: string;
+  plan: {
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    interval: 'monthly' | 'yearly';
+    features: string[];
+  };
   subscription: {
     id: string;
     status: 'active' | 'past_due' | 'cancelled' | 'unpaid';
-    plan: {
-      id: string;
-      name: string;
-      price: number;
-      currency: string;
-      interval: 'month' | 'year';
-    };
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+    cancelAtPeriodEnd: boolean;
+    trialEnd?: Date;
   };
-  usage: {
-    period: {
-      start: Date;
-      end: Date;
-    };
-    metrics: {
-      dnsRecords: number;
-      queries: number;
-      apiCalls: number;
-      storage: number;
-      support: number;
-    };
-    overages: {
-      queries?: number;
-      apiCalls?: number;
-      storage?: number;
-    };
-  };
-  billing: {
-    address: {
-      company?: string;
-      line1: string;
-      line2?: string;
-      city: string;
-      state?: string;
-      postal_code: string;
-      country: string;
-    };
-    taxId?: string;
-    paymentMethod: {
-      type: 'card' | 'bank' | 'paypal';
-      last4?: string;
-      expiry?: string;
-    };
+  paymentMethod: {
+    type: 'card' | 'bank' | 'paypal';
+    last4?: string;
+    brand?: string;
+    expiryMonth?: number;
+    expiryYear?: number;
   };
   invoices: {
     id: string;
@@ -194,114 +180,107 @@ export interface TenantBilling {
     status: 'paid' | 'pending' | 'failed';
     dueDate: Date;
     paidAt?: Date;
+    url: string;
   }[];
+  usage: {
+    period: string;
+    charges: {
+      item: string;
+      quantity: number;
+      rate: number;
+      amount: number;
+    }[];
+    total: number;
+    currency: string;
+  };
 }
 
 export interface TenantIsolation {
   tenantId: string;
   network: {
-    vpcId?: string;
-    subnetIds?: string[];
-    securityGroupIds?: string[];
-    allowedIpRanges?: string[];
+    vpcId: string;
+    subnetIds: string[];
+    securityGroupIds: string[];
+    allowedIPs: string[];
   };
-  dns: {
-    nameservers: string[];
-    forwarders?: string[];
-    recursionAllowed: boolean;
-    zonesIsolated: boolean;
+  database: {
+    schema: string;
+    readOnlyReplicas: string[];
+    backupLocation: string;
   };
   storage: {
+    bucket: string;
+    region: string;
     encryption: {
       enabled: boolean;
-      algorithm?: string;
-      keyRotation?: boolean;
-    };
-    backup: {
-      enabled: boolean;
-      retention: number;
-      schedule: string;
+      keyId: string;
+      algorithm: string;
     };
   };
-  monitoring: {
+  compute: {
+    dedicated: boolean;
+    cpu: number;
+    memory: number;
+    instanceType: string;
+  };
+  compliance: {
+    certifications: string[];
+    dataResidency: string;
+    auditSchedule: string;
+    retentionPolicy: {
+      logs: number;
+      backups: number;
+      userData: number;
+    };
+  };
+}
+
+export interface TenantDNSZone {
+  id: string;
+  tenantId: string;
+  name: string;
+  type: 'primary' | 'secondary';
+  status: 'active' | 'pending' | 'error';
+  records: DNSRecord[];
+  nameservers: string[];
+  ttl: number;
+  createdAt: Date;
+  updatedAt: Date;
+  metadata: {
+    autoUpdate: boolean;
+    lastCheck: Date;
+    errorCount: number;
+    lastError?: string;
+  };
+}
+
+export interface MultiTenantConfig {
+  isolation: {
+    level: 'shared' | 'dedicated' | 'hybrid';
+    enforceStrictSeparation: boolean;
+  };
+  billing: {
     enabled: boolean;
-    logRetention: number;
-    alerting: boolean;
-    metricsExport?: boolean;
+    provider: 'stripe' | 'paddle' | 'manual';
+    defaultCurrency: string;
   };
-}
-
-export interface MultiTenantDNSManagerOptions {
-  logger: Logger;
-  isolationMode: 'strict' | 'standard' | 'basic';
-  quotaEnforcement: boolean;
-  billingEnabled: boolean;
-  auditLogging: boolean;
-  defaultLimits: Partial<TenantQuota['limits']>;
-}
-
-export interface TenantCreateOptions {
-  name: string;
-  domain: string;
-  plan: Tenant['plan'];
-  contactEmail: string;
-  metadata?: Partial<Tenant['metadata']>;
-  customLimits?: Partial<TenantQuota['limits']>;
-}
-
-export interface TenantUpdateOptions {
-  name?: string;
-  plan?: Tenant['plan'];
-  status?: Tenant['status'];
-  settings?: Partial<Tenant['settings']>;
-  metadata?: Partial<Tenant['metadata']>;
-}
-
-export interface TenantUserCreateOptions {
-  tenantId: string;
-  email: string;
-  role: TenantUser['role'];
-  profile: TenantUser['profile'];
-  permissions?: string[];
-}
-
-export interface TenantResourceCreateOptions {
-  tenantId: string;
-  type: TenantResource['type'];
-  name: string;
-  configuration: Record<string, unknown>;
-}
-
-// 型ガード関数
-export function isTenant(obj: unknown): obj is Tenant {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'id' in obj &&
-    'name' in obj &&
-    'domain' in obj &&
-    'plan' in obj
-  );
-}
-
-export function isTenantUser(obj: unknown): obj is TenantUser {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'id' in obj &&
-    'tenantId' in obj &&
-    'email' in obj &&
-    'role' in obj
-  );
-}
-
-export function isTenantResource(obj: unknown): obj is TenantResource {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'id' in obj &&
-    'tenantId' in obj &&
-    'type' in obj &&
-    'name' in obj
-  );
+  limits: {
+    maxTenantsPerInstance: number;
+    maxUsersPerTenant: number;
+    defaultQuotas: TenantQuota['limits'];
+  };
+  security: {
+    mfaRequired: boolean;
+    sessionTimeout: number;
+    passwordPolicy: {
+      minLength: number;
+      requireSpecialChars: boolean;
+      maxAge: number;
+    };
+  };
+  audit: {
+    enabled: boolean;
+    retentionDays: number;
+    realTimeAlerts: boolean;
+  };
 }

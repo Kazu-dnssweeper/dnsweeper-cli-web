@@ -20,6 +20,7 @@ export interface SecurityThreat {
   domain: string;
   record?: DNSRecord;
   timestamp: number;
+  title: string;
   description: string;
   indicators: {
     technicalIndicators: string[];
@@ -55,10 +56,13 @@ export interface ReputationData {
 }
 
 export interface AlgorithmicAnalysis {
+  domain?: string;
+  timestamp?: Date;
   domainGenerationScore: number;
   typosquattingScore: number;
   homographScore: number;
   entropyScore: number;
+  randomnessScore?: number;
   ngramAnalysis: NgramAnalysis;
   lexicalAnalysis: LexicalAnalysis;
 }
@@ -121,6 +125,22 @@ export interface SecurityConfig {
     enabledAnalyzers: string[];
     confidenceThreshold: number;
     realTimeMonitoring: boolean;
+  };
+  monitoring: {
+    enabled: boolean;
+    interval: number;
+    alertThresholds: {
+      critical: number;
+      high: number;
+      medium: number;
+      low: number;
+    };
+  };
+  response: {
+    autoBlock: boolean;
+    autoQuarantine: boolean;
+    notificationEnabled: boolean;
+    logLevel: string;
   };
   reputationChecking: {
     enabledSources: string[];

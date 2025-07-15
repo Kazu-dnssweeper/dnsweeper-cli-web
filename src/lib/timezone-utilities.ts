@@ -42,7 +42,7 @@ export class TimezoneUtilities {
       const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
       return (tzDate.getTime() - utcDate.getTime()) / (1000 * 60);
     } catch (error) {
-      this.logger.warn(`タイムゾーン ${timezone} のオフセット取得失敗`, error as Error);
+      this.logger.warn(`タイムゾーン ${timezone} のオフセット取得失敗`, { error: error as Error });
       return 0;
     }
   }
@@ -168,7 +168,10 @@ export class TimezoneUtilities {
       const info: TimezoneInfo = {
         timezone: normalizedTz,
         offset,
-        name: this.getTimezoneDisplayName(normalizedTz),
+        region: this.getTimezoneRegion(normalizedTz),
+        country: this.getTimezoneCountry(normalizedTz),
+        city: this.getTimezoneCity(normalizedTz),
+        utcOffset: this.formatUtcOffset(offset),
         abbreviation: this.getTimezoneAbbreviation(normalizedTz, now),
         supportsDST,
         isDST: supportsDST && (offset === Math.max(winterOffset, summerOffset)),
@@ -182,7 +185,7 @@ export class TimezoneUtilities {
 
       return info;
     } catch (error) {
-      this.logger.error(`タイムゾーン情報取得エラー: ${normalizedTz}`, error as Error);
+      this.logger.error(`タイムゾーン情報取得エラー: ${normalizedTz}`, { error: error as Error });
       return null;
     }
   }
@@ -402,5 +405,49 @@ export class TimezoneUtilities {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * タイムゾーンの地域を取得
+   */
+  private getTimezoneRegion(timezone: string): string {
+    const parts = timezone.split('/');
+    return parts[0] || 'Unknown';
+  }
+
+  /**
+   * タイムゾーンの国を取得
+   */
+  private getTimezoneCountry(timezone: string): string {
+    const parts = timezone.split('/');
+    if (parts.length >= 2) {
+      return parts[1].replace(/_/g, ' ');
+    }
+    return 'Unknown';
+  }
+
+  /**
+   * タイムゾーンの都市を取得
+   */
+  private getTimezoneCity(timezone: string): string {
+    const parts = timezone.split('/');
+    if (parts.length >= 3) {
+      return parts[2].replace(/_/g, ' ');
+    }
+    if (parts.length >= 2) {
+      return parts[1].replace(/_/g, ' ');
+    }
+    return 'Unknown';
+  }
+
+  /**
+   * UTCオフセットのフォーマット
+   */
+  private formatUtcOffset(offsetMinutes: number): string {
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absOffset = Math.abs(offsetMinutes);
+    const hours = Math.floor(absOffset / 60);
+    const minutes = absOffset % 60;
+    return `UTC${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
 }
