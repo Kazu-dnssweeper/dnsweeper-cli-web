@@ -1,0 +1,26 @@
+name: Scheduled Auto Push
+on:
+  schedule:
+    # 日本時間の朝9時、昼12時、夕方6時、夜11時
+    - cron: '0 0,3,9,14 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  auto-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Check and Push
+        run: |
+          # 未コミットの変更を確認
+          if [[ -n $(git status -s) ]]; then
+            git config user.name "Auto Push Bot"
+            git config user.email "bot@example.com"
+            git add .
+            git commit -m "🤖 auto: $(date '+%Y-%m-%d %H:%M') JST 定期自動保存"
+            git push origin main
+          fi

@@ -49,6 +49,7 @@ export class ThreatDetectors {
         confidence: 95,
         domain,
         timestamp: Date.now(),
+        title: 'マルウェアドメイン検出',
         description: `${domain} は既知のマルウェア配布ドメインです`,
         indicators: {
           technicalIndicators: ['既知のマルウェアドメイン'],
@@ -93,6 +94,7 @@ export class ThreatDetectors {
             confidence,
             domain,
             timestamp: Date.now(),
+            title: '疑わしいマルウェアパターン',
             description: `${domain} は疑わしいマルウェアパターンを持っています`,
             indicators: {
               technicalIndicators: [`パターンマッチ: ${pattern.source}`],
@@ -137,6 +139,7 @@ export class ThreatDetectors {
         confidence: 90,
         domain,
         timestamp: Date.now(),
+        title: 'フィッシングドメイン検出',
         description: `${domain} は既知のフィッシングドメインです`,
         indicators: {
           technicalIndicators: ['既知のフィッシングドメイン'],
@@ -168,6 +171,7 @@ export class ThreatDetectors {
           confidence: similarity.similarity * 100,
           domain,
           timestamp: Date.now(),
+          title: 'ブランド偽装の疑い',
           description: `${domain} は ${similarity.brand} を偽装している可能性があります`,
           indicators: {
             technicalIndicators: [`ブランド類似度: ${similarity.similarity}`],
@@ -211,6 +215,7 @@ export class ThreatDetectors {
         confidence: typosquattingScore,
         domain,
         timestamp: Date.now(),
+        title: 'タイポスクワッティング検出',
         description: `${domain} はタイポスクワッティングドメインの可能性があります`,
         indicators: {
           technicalIndicators: [
@@ -254,6 +259,7 @@ export class ThreatDetectors {
         confidence: dgaScore,
         domain,
         timestamp: Date.now(),
+        title: 'DGA生成ドメイン',
         description: `${domain} はDGA生成ドメインの可能性があります`,
         indicators: {
           technicalIndicators: [`DGAスコア: ${dgaScore}`],
@@ -297,6 +303,7 @@ export class ThreatDetectors {
           confidence: fastFluxScore,
           domain,
           timestamp: Date.now(),
+          title: 'Fast Fluxネットワーク検出',
           description: `${domain} はFast Fluxネットワークの可能性があります`,
           indicators: {
             technicalIndicators: [
@@ -345,6 +352,7 @@ export class ThreatDetectors {
         confidence: hijackingScore,
         domain,
         timestamp: Date.now(),
+        title: 'DNSハイジャック検出',
         description: `${domain} のDNSレコードがハイジャックされている可能性があります`,
         indicators: {
           technicalIndicators: [`DNSハイジャックスコア: ${hijackingScore}`],
@@ -389,6 +397,7 @@ export class ThreatDetectors {
         confidence: poisoningScore,
         domain,
         timestamp: Date.now(),
+        title: 'DNSキャッシュポイズニング',
         description: `${domain} のDNSキャッシュポイズニングの可能性があります`,
         indicators: {
           technicalIndicators: [
@@ -435,6 +444,7 @@ export class ThreatDetectors {
         confidence: takeoverScore,
         domain,
         timestamp: Date.now(),
+        title: 'サブドメイン乗っ取り検出',
         description: `${domain} のサブドメイン乗っ取りの可能性があります`,
         indicators: {
           technicalIndicators: [`サブドメイン乗っ取りスコア: ${takeoverScore}`],
