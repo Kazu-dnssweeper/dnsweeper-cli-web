@@ -2,7 +2,7 @@ name: Auto Fix Errors with Claude API
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master, main ]
     paths-ignore:
       - '**.md'
       - '.github/workflows/**'
