@@ -26,6 +26,13 @@
 - テストカバレッジ分析
 - 改善タスク自動生成
 
+### `/awa` - AI With Analysis (AI統合分析) 🤖 NEW!
+- Claude APIによる高度な分析
+- アーキテクチャ改善提案
+- リファクタリング計画
+- テスト生成戦略
+- コスト: 約$0.125/回
+
 ### `/p` - People Tasks (人がやるべきタスク)
 - GitHubリポジトリ作成・設定
 - npm公開準備・アカウント設定
@@ -49,6 +56,9 @@ claude-code -p "/u"
 
 # コードベース分析
 claude-code -p "/a"
+
+# AI統合分析（Claude API使用）
+claude-code -p "/awa"
 
 # 人がやるべきタスク確認
 claude-code -p "/p"
