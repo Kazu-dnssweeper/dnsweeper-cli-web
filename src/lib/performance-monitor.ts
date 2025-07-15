@@ -77,7 +77,7 @@ export class PerformanceMonitor extends EventEmitter {
   startMeasurement(
     category: PerformanceMetric['category'],
     operation: string
-  ): () => void {
+  ): (success?: boolean, metadata?: Record<string, unknown>) => void {
     const startTime = performance.now();
     const startMemory = process.memoryUsage().heapUsed;
 

@@ -25,6 +25,7 @@ export interface ReportSection {
   title: string;
   type: 'header' | 'text' | 'table' | 'chart' | 'list' | 'metrics' | 'summary';
   content: any;
+  data?: any;
   styling?: SectionStyling;
   conditions?: ReportCondition[];
   localization?: {
@@ -98,7 +99,7 @@ export interface ReportCondition {
     | 'not_contains'
     | 'greater_than'
     | 'less_than';
-  value: any;
+  value: unknown;
   action: 'show' | 'hide' | 'highlight';
 }
 
@@ -112,10 +113,7 @@ export interface ReportData {
     region: string;
     timezone: string;
   };
-  sections: Array<{
-    id: string;
-    data: any;
-  }>;
+  sections: Array<ReportSection>;
   summary?: {
     totalItems: number;
     highlights: string[];

@@ -17,6 +17,7 @@ import { Command } from 'commander';
 import { Logger } from '../lib/logger.js';
 import { createFormatter } from '../lib/output-formatter.js';
 
+import type { AnalysisResult } from '../lib/output-formatter.js';
 import type {
   DNSRecordType,
   IDNSRecord,
@@ -195,16 +196,17 @@ export abstract class BaseCommand {
       return [];
     }
 
-    return lookupResult.records.map((record: any) => {
+    return lookupResult.records.map((record: unknown) => {
+      const recordObj = record as Record<string, unknown>;
       const now = new Date();
       const baseRecord: IDNSRecord = {
-        id: `${domain}-${recordType}-${record.value || record.data}`,
+        id: `${domain}-${recordType}-${recordObj.value || recordObj.data}`,
         name: domain,
         type: recordType,
-        value: record.value || record.data || '',
-        ttl: record.ttl || 300,
+        value: String(recordObj.value || recordObj.data || ''),
+        ttl: Number(recordObj.ttl || 300),
         created: now,
-        updated: now
+        updated: now,
       };
 
       switch (recordType) {
@@ -212,53 +214,53 @@ export abstract class BaseCommand {
         case 'AAAA':
           return {
             ...baseRecord,
-            data: record.address || record.value || '',
+            data: recordObj.address || recordObj.value || '',
           };
         case 'CNAME':
         case 'NS':
         case 'PTR':
           return {
             ...baseRecord,
-            data: record.value || '',
+            data: recordObj.value || '',
           };
         case 'MX':
           return {
             ...baseRecord,
-            data: record.exchange || '',
-            priority: record.priority || 0,
+            data: recordObj.exchange || '',
+            priority: Number(recordObj.priority || 0),
           };
         case 'TXT':
           return {
             ...baseRecord,
-            data: Array.isArray(record.entries)
-              ? record.entries.join('')
-              : record.value || '',
+            data: Array.isArray(recordObj.entries)
+              ? (recordObj.entries as string[]).join('')
+              : recordObj.value || '',
           };
         case 'SOA':
           return {
             ...baseRecord,
             data: [
-              record.nsname || '',
-              record.hostmaster || '',
-              record.serial || 0,
-              record.refresh || 0,
-              record.retry || 0,
-              record.expire || 0,
-              record.minttl || 0,
+              recordObj.nsname || '',
+              recordObj.hostmaster || '',
+              recordObj.serial || 0,
+              recordObj.refresh || 0,
+              recordObj.retry || 0,
+              recordObj.expire || 0,
+              recordObj.minttl || 0,
             ].join(' '),
           };
         case 'SRV':
           return {
             ...baseRecord,
-            data: record.target || '',
-            priority: record.priority || 0,
-            weight: record.weight || 0,
-            port: record.port || 0,
+            data: recordObj.target || '',
+            priority: Number(recordObj.priority || 0),
+            weight: Number(recordObj.weight || 0),
+            port: Number(recordObj.port || 0),
           };
         default:
           return {
             ...baseRecord,
-            data: JSON.stringify(record),
+            data: JSON.stringify(recordObj),
           };
       }
     });
@@ -268,22 +270,22 @@ export abstract class BaseCommand {
    * 結果の出力（共通処理）
    */
   protected async outputResults(
-    result: any,
+    result: unknown,
     format: OutputFormat,
     options: BaseCommandOptions & { output?: string }
   ): Promise<void> {
     const formatter = createFormatter({
-      format: format === 'yaml' ? 'json' : format as any,
+      format: format === 'yaml' ? 'json' : format,
       colors: options.colors !== false,
       verbose: options.verbose || false,
       compact: format === 'json' && !options.verbose,
     });
 
     if (options.output) {
-      await formatter.writeToFile(result, options.output);
+      await formatter.writeToFile(result as AnalysisResult, options.output);
       this.logger.success(`結果を ${options.output} に保存しました`);
     } else {
-      const output = formatter.format(result);
+      const output = formatter.format(result as AnalysisResult);
       this.logger.info(output);
     }
   }
@@ -291,7 +293,7 @@ export abstract class BaseCommand {
   /**
    * コマンドのアクション設定
    */
-  public setAction(action: (...args: any[]) => Promise<void>): void {
+  public setAction(action: (...args: unknown[]) => Promise<void>): void {
     this.command.action(async (...args) => {
       await this.executeWithErrorHandling(async () => {
         await action(...args);
@@ -309,5 +311,5 @@ export abstract class BaseCommand {
   /**
    * 抽象メソッド - サブクラスで実装
    */
-  abstract execute(...args: any[]): Promise<void>;
+  abstract execute(...args: unknown[]): Promise<void>;
 }

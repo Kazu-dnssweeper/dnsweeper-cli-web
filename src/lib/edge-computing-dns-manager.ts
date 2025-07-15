@@ -12,7 +12,7 @@ import { EventEmitter } from 'events';
 
 import { Logger } from '@lib/logger.js';
 
-import type { DNSRecord, DNSRecordType } from '@types/index.js';
+import type { IDNSRecord as DNSRecord, DNSRecordType } from '../types/index.js';
 
 export interface EdgeLocation {
   id: string;
@@ -144,7 +144,7 @@ export class EdgeComputingDNSManager extends EventEmitter {
     aiPredictor?: EdgeAIPredictor;
   }) {
     super();
-    this.logger = new Logger({ context: 'EdgeComputingDNSManager' });
+    this.logger = new Logger({});
 
     this.loadBalancingStrategy = options?.loadBalancingStrategy || {
       algorithm: 'ai-predicted',
@@ -603,7 +603,6 @@ export class EdgeComputingDNSManager extends EventEmitter {
         type: query.type,
         value: `edge-resolved-${query.type.toLowerCase()}`,
         ttl: 300,
-        class: 'IN',
         created: new Date(),
         updated: new Date(),
       },
@@ -677,10 +676,9 @@ export class EdgeComputingDNSManager extends EventEmitter {
         edgeLocation: edgeLocation.id,
       });
     } catch (error) {
-      this.logger.warn(
-        'プリフェッチクエリの実行に失敗しました',
-        error as Error
-      );
+      this.logger.warn('プリフェッチクエリの実行に失敗しました', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -813,7 +811,7 @@ export class EdgeComputingDNSManager extends EventEmitter {
   private async collectTrainingData(): Promise<{
     queries: EdgeDNSQuery[];
     responses: EdgeDNSResponse[];
-    patterns: any[];
+    patterns: unknown[];
   }> {
     // 過去のクエリとレスポンスデータを収集
     return {
@@ -826,7 +824,7 @@ export class EdgeComputingDNSManager extends EventEmitter {
   /**
    * AIモデルの更新
    */
-  private async updateAIModel(trainingData: any): Promise<void> {
+  private async updateAIModel(trainingData: unknown): Promise<void> {
     // 機械学習モデルの更新処理
     // 実際の実装では、TensorFlow.jsやscikit-learnを使用
 

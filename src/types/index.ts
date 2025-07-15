@@ -131,7 +131,7 @@ export interface AnalysisResult {
     riskScore: number;
     riskLevel: RiskLevel;
     riskFactors: string[];
-    details?: any;
+    details?: Record<string, unknown>;
   }>;
   metadata?: {
     analyzedAt: string;

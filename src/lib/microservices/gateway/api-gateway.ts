@@ -66,7 +66,7 @@ export class APIGateway extends EventEmitter {
     options?: GatewayOptions
   ) {
     super();
-    this.logger = new Logger({ context: 'APIGateway' });
+    this.logger = new Logger({});
     this.registry = registry;
     this.circuitBreaker = circuitBreaker;
     this.options = {

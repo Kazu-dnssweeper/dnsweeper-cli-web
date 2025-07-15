@@ -10,11 +10,11 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 
-import { apiRouter } from './routes/index.js';
-import { errorHandler } from './middleware/error-handler.js';
-import { requestLogger } from './middleware/request-logger.js';
-import { logger } from './utils/logger.js';
-import { SocketServer } from './websocket/socket-server.js';
+import { apiRouter } from './routes/index';
+import { errorHandler } from './middleware/error-handler';
+import { requestLogger } from './middleware/request-logger';
+import { logger } from './utils/logger';
+import { SocketServer } from './websocket/socket-server';
 
 // 環境変数の読み込み
 dotenv.config();
@@ -50,7 +50,7 @@ app.use(requestLogger);
 app.use('/api', apiRouter);
 
 // ヘルスチェック
-app.get('/health', (req, res) => {
+app.get('/health', (req: express.Request, res: express.Response) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -59,7 +59,7 @@ app.get('/health', (req, res) => {
 });
 
 // 404ハンドラー
-app.use('*', (req, res) => {
+app.use('*', (req: express.Request, res: express.Response) => {
   res.status(404).json({
     error: 'Not Found',
     message: 'The requested resource was not found',

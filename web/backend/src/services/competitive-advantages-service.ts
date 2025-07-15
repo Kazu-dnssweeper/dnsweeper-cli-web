@@ -16,29 +16,36 @@ import {
   TechnologyRoadmap,
   CompetitiveAdvantageDashboard
 } from '../types/competitive-advantages';
+import { CompetitiveAnalysisCore } from './competitive-analysis-core';
+import { MarketPositioningService } from './market-positioning-service';
+import { CompetitorTrackingService } from './competitor-tracking-service';
+import { AdvantageMetricsService } from './advantage-metrics-service';
+import { ReportGenerationService } from './report-generation-service';
 
 /**
  * 競争優位性サービス
  */
 export class CompetitiveAdvantagesService {
   private patentPortfolios: Map<string, PatentPortfolio> = new Map();
-  private technologyStandards: Map<string, TechnologyStandards> = new Map();
   private rndStrategies: Map<string, RnDStrategy> = new Map();
   private innovationManagement: InnovationManagement;
   private ipManagement: IntellectualPropertyManagement;
-  private competitiveAnalyses: Map<string, CompetitiveAnalysis> = new Map();
-  private competitiveAdvantages: Map<string, CompetitiveAdvantage> = new Map();
-  private innovationMetrics: InnovationMetrics;
+  private competitiveAnalysisCore: CompetitiveAnalysisCore;
+  private marketPositioningService: MarketPositioningService;
+  private competitorTrackingService: CompetitorTrackingService;
+  private advantageMetricsService: AdvantageMetricsService;
+  private reportGenerationService: ReportGenerationService;
 
   constructor() {
+    this.competitiveAnalysisCore = new CompetitiveAnalysisCore();
+    this.marketPositioningService = new MarketPositioningService();
+    this.competitorTrackingService = new CompetitorTrackingService();
+    this.advantageMetricsService = new AdvantageMetricsService();
+    this.reportGenerationService = new ReportGenerationService();
     this.initializePatentPortfolios();
-    this.setupTechnologyStandards();
     this.createRnDStrategies();
     this.implementInnovationManagement();
     this.configureIPManagement();
-    this.performCompetitiveAnalysis();
-    this.buildCompetitiveAdvantages();
-    this.calculateInnovationMetrics();
   }
 
   // ===== 特許ポートフォリオ管理 =====
@@ -2482,99 +2489,319 @@ export class CompetitiveAdvantagesService {
   generateCompetitiveAdvantageDashboard(): CompetitiveAdvantageDashboard {
     const advantages = this.getAllCompetitiveAdvantages();
     const patents = this.getAllPatentPortfolios();
+    const innovationMetrics = this.getInnovationMetrics();
 
-    return {
-      overview: {
-        totalAdvantages: advantages.length,
-        sustainableAdvantages: advantages.filter(a => a.type === 'sustainable' || a.type === 'long-term').length,
-        patentPortfolioValue: patents.reduce((sum, p) => sum + (p.metrics.portfolioSize * 5000000), 0), // Estimated value
-        innovationIndex: this.innovationMetrics.overview.innovationIndex,
-        competitivePosition: 85, // Calculated competitive position score
-        lastUpdated: new Date()
-      },
-      portfolio: {
-        byType: {
-          'temporary': advantages.filter(a => a.type === 'temporary').length,
-          'sustainable': advantages.filter(a => a.type === 'sustainable').length,
-          'long-term': advantages.filter(a => a.type === 'long-term').length,
-          'permanent': advantages.filter(a => a.type === 'permanent').length
-        },
-        byCategory: advantages.reduce((acc, a) => {
-          acc[a.category] = (acc[a.category] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        bySustainability: {
-          'high': advantages.filter(a => a.value.defensibility > 80).length,
-          'medium': advantages.filter(a => a.value.defensibility >= 60 && a.value.defensibility <= 80).length,
-          'low': advantages.filter(a => a.value.defensibility < 60).length
-        },
-        byValue: {
-          'high': advantages.filter(a => a.value.revenue > 10000000).length,
-          'medium': advantages.filter(a => a.value.revenue >= 5000000 && a.value.revenue <= 10000000).length,
-          'low': advantages.filter(a => a.value.revenue < 5000000).length
-        }
-      },
-      trends: {
-        innovation: {
-          direction: 'improving',
-          rate: 0.15, // 15% improvement rate
-          drivers: ['AI/ML investment', 'R&D expansion', 'Strategic partnerships']
-        },
-        competition: {
-          intensity: 'increasing',
-          threats: ['Big tech expansion', 'New entrants', 'Technology disruption'],
-          opportunities: ['Niche specialization', 'Partnership alliances', 'Innovation leadership']
-        },
-        market: {
-          growth: 0.25, // 25% annual growth
-          disruption: ['Quantum computing', 'Edge computing', 'AI/ML adoption'],
-          positioning: 'Specialized leader with growth potential'
-        }
-      },
-      alerts: [
-        {
-          type: 'opportunity',
-          severity: 'high',
-          description: 'AI/ML patent application window closing soon',
-          action: ['Accelerate AI patent filings', 'Review patent strategy', 'Prioritize key innovations'],
-          deadline: new Date('2024-12-31')
-        },
-        {
-          type: 'threat',
-          severity: 'medium',
-          description: 'Competitor increasing R&D investment significantly',
-          action: ['Monitor competitive developments', 'Evaluate R&D budget increase', 'Strengthen partnerships'],
-          deadline: new Date('2024-09-30')
-        },
-        {
-          type: 'milestone',
-          severity: 'medium',
-          description: 'Quantum-resistant DNS security milestone due',
-          action: ['Review project progress', 'Ensure resource allocation', 'Prepare milestone deliverables'],
-          deadline: new Date('2024-12-15')
-        }
-      ],
-      performance: {
-        achievements: [
-          'Maintained UX leadership position',
-          'Filed 28 patents in 2024',
-          'Achieved 85/100 innovation index',
-          'Successful AI/ML capability development'
-        ],
-        gaps: [
-          'Global infrastructure coverage',
-          'Enterprise security certifications',
-          'Quantum computing readiness',
-          'Edge computing market presence'
-        ],
-        recommendations: [
-          'Accelerate quantum-safe security development',
-          'Expand strategic infrastructure partnerships',
-          'Increase AI/ML patent filing velocity',
-          'Strengthen enterprise security portfolio'
-        ],
-        nextReview: new Date('2024-12-31')
-      }
-    };
+    return this.reportGenerationService.generateCompetitiveAdvantageDashboard(
+      advantages,
+      patents,
+      innovationMetrics
+    );
+  }
+
+  // ===== 競争分析コア連携メソッド =====
+
+  /**
+   * 競争分析を取得
+   */
+  public getCompetitiveAnalysis(id: string): CompetitiveAnalysis | undefined {
+    return this.competitiveAnalysisCore.getCompetitiveAnalysis(id);
+  }
+
+  /**
+   * 競争優位性を取得
+   */
+  public getCompetitiveAdvantage(id: string): CompetitiveAdvantage | undefined {
+    return this.competitiveAnalysisCore.getCompetitiveAdvantage(id);
+  }
+
+  /**
+   * イノベーションメトリクスを取得
+   */
+  public getInnovationMetrics(): InnovationMetrics {
+    return this.advantageMetricsService.calculateInnovationMetrics();
+  }
+
+  /**
+   * 全ての競争分析を取得
+   */
+  public getAllCompetitiveAnalyses(): CompetitiveAnalysis[] {
+    return this.competitiveAnalysisCore.getAllCompetitiveAnalyses();
+  }
+
+  /**
+   * 全ての競争優位性を取得
+   */
+  public getAllCompetitiveAdvantages(): CompetitiveAdvantage[] {
+    return this.competitiveAnalysisCore.getAllCompetitiveAdvantages();
+  }
+
+  /**
+   * 競争優位性ダッシュボードを生成
+   */
+  public generateCompetitiveAdvantageDashboard(): CompetitiveAdvantageDashboard {
+    return this.competitiveAnalysisCore.generateCompetitiveAdvantageDashboard();
+  }
+
+  /**
+   * 競争分析を追加
+   */
+  public addCompetitiveAnalysis(analysis: CompetitiveAnalysis): void {
+    this.competitiveAnalysisCore.addCompetitiveAnalysis(analysis);
+  }
+
+  /**
+   * 競争優位性を追加
+   */
+  public addCompetitiveAdvantage(advantage: CompetitiveAdvantage): void {
+    this.competitiveAnalysisCore.addCompetitiveAdvantage(advantage);
+  }
+
+  // ===== 市場ポジショニング連携メソッド =====
+
+  /**
+   * 市場ポジショニング分析を取得
+   */
+  public getMarketPositioningAnalysis(id: string) {
+    return this.marketPositioningService.getMarketPositioningAnalysis(id);
+  }
+
+  /**
+   * 技術標準を取得
+   */
+  public getTechnologyStandards(id: string): TechnologyStandards | undefined {
+    return this.marketPositioningService.getTechnologyStandards(id);
+  }
+
+  /**
+   * 全ての市場ポジショニング分析を取得
+   */
+  public getAllMarketPositioningAnalyses() {
+    return this.marketPositioningService.getAllMarketPositioningAnalyses();
+  }
+
+  /**
+   * 全ての技術標準を取得
+   */
+  public getAllTechnologyStandards(): TechnologyStandards[] {
+    return this.marketPositioningService.getAllTechnologyStandards();
+  }
+
+  /**
+   * 市場セグメント分析を実行
+   */
+  public analyzeMarketSegments(analysisId: string) {
+    return this.marketPositioningService.analyzeMarketSegments(analysisId);
+  }
+
+  /**
+   * 成長機会の優先順位付け
+   */
+  public prioritizeGrowthOpportunities(analysisId: string) {
+    return this.marketPositioningService.prioritizeGrowthOpportunities(analysisId);
+  }
+
+  /**
+   * 市場ポジショニング分析を追加
+   */
+  public addMarketPositioningAnalysis(analysis: any): void {
+    this.marketPositioningService.addMarketPositioningAnalysis(analysis);
+  }
+
+  /**
+   * 技術標準を追加
+   */
+  public addTechnologyStandards(standards: TechnologyStandards): void {
+    this.marketPositioningService.addTechnologyStandards(standards);
+  }
+
+  // ===== 競合他社追跡連携メソッド =====
+
+  /**
+   * 競合他社を取得
+   */
+  public getCompetitor(id: string) {
+    return this.competitorTrackingService.getCompetitor(id);
+  }
+
+  /**
+   * 全ての競合他社を取得
+   */
+  public getAllCompetitors() {
+    return this.competitorTrackingService.getAllCompetitors();
+  }
+
+  /**
+   * 競合他社を追加
+   */
+  public addCompetitor(competitor: any): void {
+    this.competitorTrackingService.addCompetitor(competitor);
+  }
+
+  /**
+   * 競合他社を更新
+   */
+  public updateCompetitor(id: string, updates: any): void {
+    this.competitorTrackingService.updateCompetitor(id, updates);
+  }
+
+  /**
+   * 競合動向分析を実行
+   */
+  public analyzeCompetitorTrends(competitorId: string, period?: string) {
+    return this.competitorTrackingService.analyzeCompetitorTrends(competitorId, period);
+  }
+
+  /**
+   * 競合インテリジェンスレポートを生成
+   */
+  public generateIntelligenceReport() {
+    return this.competitorTrackingService.generateIntelligenceReport();
+  }
+
+  /**
+   * 競合他社のパフォーマンスを比較
+   */
+  public compareCompetitorPerformance(metricName: any) {
+    return this.competitorTrackingService.compareCompetitorPerformance(metricName);
+  }
+
+  /**
+   * 脅威アラートを生成
+   */
+  public generateThreatAlerts(severityThreshold?: 'high' | 'medium' | 'low') {
+    return this.competitorTrackingService.generateThreatAlerts(severityThreshold);
+  }
+
+  // ===== 競争優位性メトリクス連携メソッド =====
+
+  /**
+   * 現在のメトリクスを取得
+   */
+  public getCurrentMetrics() {
+    return this.advantageMetricsService.getCurrentMetrics();
+  }
+
+  /**
+   * 期間別メトリクスを取得
+   */
+  public getMetricsByPeriod(period: string) {
+    return this.advantageMetricsService.getMetricsByPeriod(period);
+  }
+
+  /**
+   * 全てのメトリクスを取得
+   */
+  public getAllMetrics() {
+    return this.advantageMetricsService.getAllMetrics();
+  }
+
+  /**
+   * メトリクスを追加
+   */
+  public addMetrics(metrics: any): void {
+    this.advantageMetricsService.addMetrics(metrics);
+  }
+
+  /**
+   * ROI分析を実行
+   */
+  public performROIAnalysis(projectId?: string) {
+    return this.advantageMetricsService.performROIAnalysis(projectId);
+  }
+
+  /**
+   * パイプライン分析を実行
+   */
+  public analyzePipeline() {
+    return this.advantageMetricsService.analyzePipeline();
+  }
+
+  /**
+   * メトリクストレンドを分析
+   */
+  public analyzeMetricTrends(metricName: any, periods?: number) {
+    return this.advantageMetricsService.analyzeMetricTrends(metricName, periods);
+  }
+
+  /**
+   * ベンチマーク分析を実行
+   */
+  public performBenchmarkAnalysis(competitorData?: Record<string, number>) {
+    return this.advantageMetricsService.performBenchmarkAnalysis(competitorData);
+  }
+
+  /**
+   * 推奨事項を生成
+   */
+  public generateMetricRecommendations() {
+    return this.advantageMetricsService.generateRecommendations();
+  }
+
+  // ===== レポート生成連携メソッド =====
+
+  /**
+   * エグゼクティブサマリーを生成
+   */
+  public generateExecutiveSummary(period: string) {
+    const dashboard = this.generateCompetitiveAdvantageDashboard();
+    const innovationMetrics = this.getInnovationMetrics();
+    return this.reportGenerationService.generateExecutiveSummary(period, dashboard, innovationMetrics);
+  }
+
+  /**
+   * 総合レポートを生成
+   */
+  public generateComprehensiveReport(period: string) {
+    const analyses = this.getAllCompetitiveAnalyses();
+    const advantages = this.getAllCompetitiveAdvantages();
+    const patents = this.getAllPatentPortfolios();
+    const innovationMetrics = this.getInnovationMetrics();
+    const standards = this.getAllTechnologyStandards();
+    const strategies = this.getAllRnDStrategies();
+
+    return this.reportGenerationService.generateComprehensiveReport(
+      period,
+      analyses,
+      advantages,
+      patents,
+      innovationMetrics,
+      standards,
+      strategies
+    );
+  }
+
+  /**
+   * レポートをエクスポート
+   */
+  public exportReport(reportId: string, format: any) {
+    return this.reportGenerationService.exportReport(reportId, format);
+  }
+
+  /**
+   * 最新のダッシュボードを取得
+   */
+  public getLatestDashboard() {
+    return this.reportGenerationService.getLatestDashboard();
+  }
+
+  /**
+   * エグゼクティブサマリーを取得
+   */
+  public getExecutiveSummary(id: string) {
+    return this.reportGenerationService.getExecutiveSummary(id);
+  }
+
+  /**
+   * 総合レポートを取得
+   */
+  public getComprehensiveReport(id: string) {
+    return this.reportGenerationService.getComprehensiveReport(id);
+  }
+
+  /**
+   * 全てのレポートを取得
+   */
+  public getAllReports() {
+    return this.reportGenerationService.getAllReports();
   }
 }

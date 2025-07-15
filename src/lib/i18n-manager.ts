@@ -169,7 +169,8 @@ export class I18nManager extends EventEmitter {
       rtl: currentLang?.direction === 'rtl',
       culturalPreferences: {
         firstDayOfWeek: this.currentRegion === 'US' ? 0 : 1, // 0=Sunday, 1=Monday
-        weekendDays: [0, 6], // Sunday, Saturday
+        weekendStart: 0, // Sunday
+        weekendEnd: 6, // Saturday
         hourFormat: currentLang?.timeFormat.includes('A') ? 12 : 24,
       },
     };

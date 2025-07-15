@@ -8,7 +8,7 @@ import ora, { type Ora } from 'ora';
 import { table } from 'table';
 
 import { CloudflareClient } from '../lib/api/cloudflare.js';
-import { loadConfig } from '../lib/config.js';
+import { loadConfig, type DnsSweeperConfig } from '../lib/config.js';
 import { CSVProcessor } from '../lib/csv-processor.js';
 import { Logger } from '../lib/logger.js';
 import { globalMetrics } from '../lib/metrics/metrics-collector.js';
@@ -27,6 +27,7 @@ interface SyncOptions {
   force?: boolean;
   format?: 'csv' | 'json';
   output?: string;
+  quiet?: boolean;
 }
 
 /**
@@ -45,7 +46,7 @@ export function createSyncCommand(): Command {
     .option('-o, --output <file>', '出力ファイル（CSV形式）')
     .option('--dry-run', 'ドライラン（実際の変更を行わない）')
     .option('--force', '確認なしで実行')
-    .action(async options => {
+    .action(async (options: SyncOptions) => {
       try {
         await handleSync(options);
       } catch (error) {
@@ -59,16 +60,16 @@ export function createSyncCommand(): Command {
     .command('status')
     .description('同期ステータスを確認')
     .option('-p, --provider <provider>', 'プロバイダー', 'cloudflare')
-    .action(async options => {
-      await checkSyncStatus(options);
+    .action(async (options: Pick<SyncOptions, 'provider'>) => {
+      await checkSyncStatus(options as SyncOptions);
     });
 
   cmd
     .command('zones')
     .description('利用可能なゾーン一覧を表示')
     .option('-p, --provider <provider>', 'プロバイダー', 'cloudflare')
-    .action(async options => {
-      await listZones(options);
+    .action(async (options: Pick<SyncOptions, 'provider'>) => {
+      await listZones(options as SyncOptions);
     });
 
   return cmd;
@@ -86,7 +87,10 @@ async function handleSync(options: SyncOptions): Promise<void> {
     const config = await loadConfig();
 
     // APIクライアントを初期化
-    const client = await createApiClient(options.provider, config as ConfigData);
+    const client = await createApiClient(
+      options.provider,
+      config as DnsSweeperConfig
+    );
 
     if (!options.zone) {
       spinner.fail('ゾーンIDまたはドメイン名を指定してください');
@@ -127,40 +131,32 @@ async function handleSync(options: SyncOptions): Promise<void> {
 /**
  * APIクライアントを作成
  */
-interface ConfigData {
-  cloudflare?: {
-    apiToken: string;
-  };
-  route53?: {
-    accessKeyId: string;
-    secretAccessKey: string;
-    region?: string;
-  };
-}
-
 async function createApiClient(
   provider: string,
-  config: ConfigData
+  config: DnsSweeperConfig
 ): Promise<CloudflareClient | Route53Client> {
   switch (provider) {
     case 'cloudflare':
-      if (!config.cloudflare?.apiToken) {
-        throw new Error('Cloudflare APIトークンが設定されていません');
+      if (!config.api?.cloudflare?.apiKey) {
+        throw new Error('Cloudflare APIキーが設定されていません');
       }
       return new CloudflareClient({
-        apiToken: config.cloudflare.apiToken,
-        email: config.cloudflare.email,
-        apiKey: config.cloudflare.apiKey,
+        apiToken: config.api.cloudflare.apiKey || '',
+        email: config.api.cloudflare.email || '',
+        apiKey: config.api.cloudflare.apiKey || '',
       });
 
     case 'route53':
-      if (!config.aws?.accessKeyId || !config.aws?.secretAccessKey) {
+      if (
+        !config.api?.route53?.accessKeyId ||
+        !config.api?.route53?.secretAccessKey
+      ) {
         throw new Error('AWS認証情報が設定されていません');
       }
       return new Route53Client({
-        accessKeyId: config.aws.accessKeyId,
-        secretAccessKey: config.aws.secretAccessKey,
-        region: config.aws.region || 'us-east-1',
+        accessKeyId: config.api.route53.accessKeyId,
+        secretAccessKey: config.api.route53.secretAccessKey,
+        region: config.api.route53.region || 'us-east-1',
       });
 
     default:
@@ -199,7 +195,7 @@ async function pullRecords(
 
   // ファイルに保存
   if (options.output) {
-    const _csvProcessor = new CSVProcessor();
+    // const _csvProcessor = new CSVProcessor();
     const outputPath = options.output;
 
     // TODO: CSV書き込み機能を実装
@@ -297,14 +293,14 @@ async function syncBidirectional(
  */
 async function checkSyncStatus(options: SyncOptions): Promise<void> {
   const config = await loadConfig();
-  const client = await createApiClient(options.provider, config as ConfigData);
+  const client = await createApiClient(options.provider, config);
 
   if (client instanceof CloudflareClient) {
     const response = await client.verifyToken();
     if (response.success) {
       logger.success('Cloudflare API接続: 正常');
       logger.info(`ユーザーID: ${response.result?.id}`);
-      logger.info(`メールアドレス: ${response.result?.email}`);
+      logger.info(`ステータス: ${response.result?.status}`);
     } else {
       logger.error('Cloudflare API接続: 失敗');
     }
@@ -328,7 +324,10 @@ async function listZones(options: SyncOptions): Promise<void> {
 
   try {
     const config = await loadConfig();
-    const client = await createApiClient(options.provider, config as ConfigData);
+    const client = await createApiClient(
+      options.provider,
+      config as DnsSweeperConfig
+    );
 
     let zones;
     if (client instanceof CloudflareClient) {

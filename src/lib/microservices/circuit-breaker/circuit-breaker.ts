@@ -40,7 +40,7 @@ export class CircuitBreakerImpl extends EventEmitter {
 
   constructor(options?: CircuitBreakerOptions) {
     super();
-    this.logger = new Logger({ context: 'CircuitBreaker' });
+    this.logger = new Logger({});
     if (options) {
       this.defaultOptions = { ...this.defaultOptions, ...options };
     }

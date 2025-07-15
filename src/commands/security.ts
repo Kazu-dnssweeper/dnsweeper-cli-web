@@ -14,6 +14,23 @@ import { Logger } from '../lib/logger.js';
 import { OutputFormatter } from '../lib/output-formatter.js';
 
 import type { SecurityThreat } from '../lib/dns-security-analyzer.js';
+import type { IDNSRecord } from '../types/index.js';
+
+// セキュリティコマンドオプション型定義
+interface SecurityCommandOptions {
+  file?: string;
+  records?: string;
+  output?: string;
+  format?: string;
+  severity?: string;
+  type?: string;
+  confidence?: string;
+  realTime?: boolean;
+  monitorInterval?: string;
+  exportThreats?: boolean;
+  verbose?: boolean;
+  dryRun?: boolean;
+}
 
 export function createSecurityCommand(): Command {
   const command = new Command('security');
@@ -33,76 +50,81 @@ export function createSecurityCommand(): Command {
     .option('--export-threats', '脅威データをエクスポート')
     .option('--verbose', '詳細ログ出力')
     .option('--dry-run', 'ドライラン（実際の検出のみ）')
-    .action(async (domain, options) => {
-      const logger = new Logger({ verbose: options.verbose });
+    .action(
+      async (domain: string | undefined, options: SecurityCommandOptions) => {
+        const logger = new Logger({ verbose: options.verbose });
 
-      try {
-        logger.info('🛡️  DNS セキュリティ脅威検出を開始します...');
+        try {
+          logger.info('🛡️  DNS セキュリティ脅威検出を開始します...');
 
-        // 分析対象ドメインの準備
-        const domains = await prepareDomains(domain, options, logger);
+          // 分析対象ドメインの準備
+          const domains = await prepareDomains(domain, options, logger);
 
-        // DNS レコードの取得
-        const records = await getDNSRecords(domains, options, logger);
+          // DNS レコードの取得
+          const records = await getDNSRecords(domains, options, logger);
 
-        // セキュリティ分析の実行
-        const analyzer = new DNSSecurityAnalyzer(logger, {
-          threatDetection: {
-            enabledAnalyzers: [
-              'malware',
-              'phishing',
-              'typosquatting',
-              'dga',
-              'fastflux',
-              'dns_hijacking',
-              'cache_poisoning',
-              'subdomain_takeover',
-            ],
-            confidenceThreshold: parseInt(options.confidence),
-            realTimeMonitoring: options.realTime,
-          },
-        });
+          // セキュリティ分析の実行
+          const analyzer = new DNSSecurityAnalyzer(logger, {
+            threatDetection: {
+              enabledAnalyzers: [
+                'malware',
+                'phishing',
+                'typosquatting',
+                'dga',
+                'fastflux',
+                'dns_hijacking',
+                'cache_poisoning',
+                'subdomain_takeover',
+              ],
+              confidenceThreshold: parseInt(options.confidence),
+              realTimeMonitoring: options.realTime,
+            },
+          });
 
-        // 脅威イベントリスナーの設定
-        setupThreatListeners(analyzer, logger, options);
+          // 脅威イベントリスナーの設定
+          setupThreatListeners(analyzer, logger, options);
 
-        // 脅威分析の実行
-        const threats = await analyzer.analyzeSecurityThreats(domains, records);
-
-        // 結果のフィルタリング
-        const filteredThreats = filterThreats(threats, options);
-
-        // 結果の出力
-        await outputResults(filteredThreats, options, logger);
-
-        // 統計情報の表示
-        displayStatistics(analyzer, filteredThreats, logger);
-
-        // リアルタイム監視モード
-        if (options.realTime) {
-          await startRealTimeMonitoring(
-            analyzer,
+          // 脅威分析の実行
+          const threats = await analyzer.analyzeSecurityThreats(
             domains,
-            records,
-            options,
-            logger
+            records
           );
-        }
 
-        // 脅威データのエクスポート
-        if (options.exportThreats) {
-          await exportThreatData(analyzer, options, logger);
-        }
+          // 結果のフィルタリング
+          const filteredThreats = filterThreats(threats, options);
 
-        logger.info('✅ DNS セキュリティ脅威検出が完了しました');
-      } catch (error) {
-        logger.error(
-          '❌ DNS セキュリティ脅威検出でエラーが発生しました:',
-          error instanceof Error ? error : new Error(String(error))
-        );
-        process.exit(1);
+          // 結果の出力
+          await outputResults(filteredThreats, options, logger);
+
+          // 統計情報の表示
+          displayStatistics(analyzer, filteredThreats, logger);
+
+          // リアルタイム監視モード
+          if (options.realTime) {
+            await startRealTimeMonitoring(
+              analyzer,
+              domains,
+              records,
+              options,
+              logger
+            );
+          }
+
+          // 脅威データのエクスポート
+          if (options.exportThreats) {
+            await exportThreatData(analyzer, options, logger);
+          }
+
+          logger.info('✅ DNS セキュリティ脅威検出が完了しました');
+        } catch (error) {
+          logger.error(
+            '❌ DNS セキュリティ脅威検出でエラーが発生しました:',
+            error instanceof Error ? error : new Error(String(error))
+          );
+          process.exit(1);
+        }
       }
-    });
+    );
 
   return command;
 }
@@ -112,7 +134,7 @@ export function createSecurityCommand(): Command {
  */
 async function prepareDomains(
   domain: string | undefined,
-  options: any,
+  options: SecurityCommandOptions,
   logger: Logger
 ): Promise<string[]> {
   const domains: string[] = [];
@@ -156,7 +178,11 @@ async function prepareDomains(
 /**
  * DNS レコードの取得
  */
-async function getDNSRecords(domains: string[], options: any, logger: Logger) {
+async function getDNSRecords(
+  domains: string[],
+  options: SecurityCommandOptions,
+  logger: Logger
+) {
   if (options.records) {
     // CSV ファイルからレコードを読み込み
     logger.info('📄 CSVファイルからDNSレコードを読み込んでいます...', {
@@ -184,7 +210,7 @@ async function getDNSRecords(domains: string[], options: any, logger: Logger) {
         return records;
       } catch (error) {
         logger.warn(`⚠️  ${domain} のDNS解決に失敗しました:`, {
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
         return [];
       }
@@ -204,7 +230,7 @@ async function getDNSRecords(domains: string[], options: any, logger: Logger) {
 function setupThreatListeners(
   analyzer: DNSSecurityAnalyzer,
   logger: Logger,
-  options: any
+  options: SecurityCommandOptions
 ) {
   // 脅威検出イベント
   analyzer.on('threat', (threat: SecurityThreat) => {
@@ -243,7 +269,7 @@ function setupThreatListeners(
  */
 function filterThreats(
   threats: SecurityThreat[],
-  options: any
+  options: SecurityCommandOptions
 ): SecurityThreat[] {
   let filtered = threats;
 
@@ -265,7 +291,7 @@ function filterThreats(
  */
 async function outputResults(
   threats: SecurityThreat[],
-  options: any,
+  options: SecurityCommandOptions,
   logger: Logger
 ) {
   if (options.format === 'table') {
@@ -500,8 +526,8 @@ function displayStatistics(
 async function startRealTimeMonitoring(
   analyzer: DNSSecurityAnalyzer,
   domains: string[],
-  records: any[],
-  options: any,
+  records: IDNSRecord[],
+  options: SecurityCommandOptions,
   logger: Logger
 ) {
   console.log(chalk.blue.bold('\\n🔄 リアルタイム監視を開始します...'));
@@ -527,8 +553,10 @@ async function startRealTimeMonitoring(
         displaySummaryResults(filteredThreats, logger);
       }
     } catch (error) {
-      logger.error('監視中にエラーが発生しました:', 
-        error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        '監視中にエラーが発生しました:',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }, parseInt(options.monitorInterval));
 
@@ -550,7 +578,7 @@ async function startRealTimeMonitoring(
  */
 async function exportThreatData(
   analyzer: DNSSecurityAnalyzer,
-  options: any,
+  options: SecurityCommandOptions,
   logger: Logger
 ) {
   logger.info('📤 脅威データをエクスポートしています...');

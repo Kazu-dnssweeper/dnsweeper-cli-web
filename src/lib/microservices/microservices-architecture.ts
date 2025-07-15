@@ -103,7 +103,7 @@ export class MicroservicesArchitecture extends EventEmitter {
 
   constructor() {
     super();
-    this.logger = new Logger({ context: 'MicroservicesArchitecture' });
+    this.logger = new Logger({});
 
     // コンポーネントを初期化
     this.registry = new ServiceRegistryImpl();

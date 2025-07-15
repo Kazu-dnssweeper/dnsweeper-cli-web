@@ -217,7 +217,7 @@ export class MultilingualReportGenerator extends EventEmitter {
   /**
    * CSV形式へのエクスポート
    */
-  private async exportToCSV(content: any): Promise<Buffer> {
+  private async exportToCSV(content: ReportData): Promise<Buffer> {
     const csv: string[] = [];
 
     // メタデータ
@@ -233,21 +233,23 @@ export class MultilingualReportGenerator extends EventEmitter {
         csv.push(`"${section.title}"`);
 
         // ヘッダー
-        const headers = section.content.columns
-          .map((col: any) => `"${col.label}"`)
-          .join(',');
+        const headers =
+          section.content.columns
+            ?.map((col: { label: string; key: string }) => `"${col.label}"`)
+            .join(',') || '';
         csv.push(headers);
 
         // データ行
-        for (const row of section.content.rows) {
-          const values = section.content.columns
-            .map((col: any) => {
-              const value = row[col.key] || '';
-              // CSVエスケープ
-              const escaped = String(value).replace(/"/g, '""');
-              return `"${escaped}"`;
-            })
-            .join(',');
+        for (const row of section.content.rows || []) {
+          const values =
+            section.content.columns
+              ?.map((col: { label: string; key: string }) => {
+                const value = row[col.key] || '';
+                // CSVエスケープ
+                const escaped = String(value).replace(/"/g, '""');
+                return `"${escaped}"`;
+              })
+              .join(',') || '';
           csv.push(values);
         }
 
@@ -379,7 +381,7 @@ export class MultilingualReportGenerator extends EventEmitter {
   /**
    * オブジェクトのハッシュ化
    */
-  private hashObject(obj: any): string {
+  private hashObject(obj: unknown): string {
     const str = JSON.stringify(obj);
     let hash = 0;
     for (let i = 0; i < str.length; i++) {

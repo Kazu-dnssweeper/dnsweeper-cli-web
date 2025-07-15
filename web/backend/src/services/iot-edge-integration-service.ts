@@ -910,7 +910,7 @@ export class IoTEdgeIntegrationService {
         segmentation: true,
         vlan: true,
         firewall: true,
-        intrusion Detection: true,
+        intrusionDetection: true,
         trafficMonitoring: true,
         allowedProtocols: ['https', 'mqtt', 'coap'],
         blockedPorts: [23, 135, 139, 445]

@@ -284,9 +284,7 @@ export class MetricsCollector extends EventEmitter {
     );
 
     const failedChecks = results.filter(r => r.status === 'fail').length;
-    const warnChecks = results.filter(
-      r => 'status' in r && r.status === 'warn'
-    ).length;
+    const warnChecks = 0; // Status can only be 'pass' or 'fail', no 'warn' status
 
     let status: HealthCheckResult['status'];
     if (failedChecks > 0) {
@@ -555,7 +553,5 @@ export function metric(
         );
       };
     }
-
-    return descriptor;
   };
 }

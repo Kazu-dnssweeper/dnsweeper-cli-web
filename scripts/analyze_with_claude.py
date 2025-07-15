@@ -144,6 +144,28 @@ class ClaudeCodeAnalyzer:
             'files': sorted(files_with_any, key=lambda x: x['count'], reverse=True)[:10]
         }
     
+    def _read_target_files(self) -> Dict[str, str]:
+        """テスト対象ファイルの内容を読み取り"""
+        target_files = {
+            'encoding-detector.ts': 'src/utils/encoding-detector.ts',
+            'logger.ts': 'src/lib/logger.ts', 
+            'config.ts': 'src/lib/config.ts'
+        }
+        
+        file_contents = {}
+        for key, path in target_files.items():
+            try:
+                file_path = self.project_root / path
+                if file_path.exists():
+                    content = file_path.read_text()[:2000]  # 最初の2000文字
+                    file_contents[key] = content
+                else:
+                    file_contents[key] = "ファイルが存在しません"
+            except Exception as e:
+                file_contents[key] = f"読み取りエラー: {str(e)}"
+        
+        return file_contents
+    
     def analyze_with_claude(self, analysis_data: Dict[str, Any], options: Dict[str, bool]) -> Dict[str, Any]:
         """Claude APIで高度な分析を実行 - 全ての分析を一度に実行"""
         
@@ -240,29 +262,73 @@ JSON形式で、実装可能な具体的な提案を含めてください。
             return {'refactoring': response.content[0].text}
     
     def _analyze_test_generation(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """テスト生成提案"""
+        """テスト生成提案 - 実際のテストコードを生成"""
+        
+        # 実際のファイルコードを読み取り
+        target_files_content = self._read_target_files()
+        
         prompt = f"""
-あなたはテスト設計の専門家です。以下のテストカバレッジ情報を基に、
-テスト改善計画を提案してください。
+あなたはTypeScript/Vitest専門のテスト設計者です。以下の情報を基に、
+実際に実行可能なテストコードを生成してください。
 
 現在のカバレッジ: {data['test_coverage']['overall']}%
 カバーされていないファイル:
 {json.dumps(data['test_coverage']['uncovered_files'], indent=2)}
 
-以下を提案してください:
-1. 優先的にテストすべきファイルとその理由
-2. 各ファイルの具体的なテストケース例（3つずつ）
-3. E2Eテストシナリオ（主要な5つのユーザーフロー）
-4. テストカバレッジを85%に上げるための段階的計画
-5. モックとスタブの戦略
+実際のファイル内容:
+{json.dumps(target_files_content, indent=2)}
 
-JSON形式で、実装可能なテストケースを含めてください。
+要件:
+1. 実際のファイル構造に基づく完全なテストファイル
+2. Vitestフレームワーク使用（import {{ describe, it, expect, vi }} from 'vitest'）
+3. 実際のimport文と型定義を含む
+4. エラーケースとエッジケースのテスト
+5. モック/スタブの適切な実装
+6. DNS機能のE2Eテスト1つ
+
+JSON形式で以下の構造で回答してください:
+{{
+  "test_files": [
+    {{
+      "file_path": "tests/unit/utils/encoding-detector.test.ts",
+      "test_code": "完全なテストコード（import文から全て）",
+      "test_cases_count": 数値,
+      "coverage_areas": ["機能1", "機能2"]
+    }},
+    {{
+      "file_path": "tests/unit/lib/logger.test.ts", 
+      "test_code": "完全なテストコード",
+      "test_cases_count": 数値,
+      "coverage_areas": ["機能1", "機能2"]
+    }},
+    {{
+      "file_path": "tests/unit/lib/config.test.ts",
+      "test_code": "完全なテストコード", 
+      "test_cases_count": 数値,
+      "coverage_areas": ["機能1", "機能2"]
+    }}
+  ],
+  "e2e_tests": [
+    {{
+      "file_path": "tests/e2e/dns-lookup-flow.test.ts",
+      "test_code": "DNS検索E2Eテストの完全なコード",
+      "description": "ドメイン検索からレポート生成までの完全フロー"
+    }}
+  ],
+  "mock_files": [
+    {{
+      "file_path": "tests/__mocks__/dns-resolver.mock.ts",
+      "mock_code": "DNSリゾルバーのモック実装",
+      "description": "DNS解決のモック"
+    }}
+  ]
+}}
 """
         
         response = self.client.messages.create(
-            model="claude-3-haiku-20240307",  # テスト生成は安価なモデルで十分
-            max_tokens=4000,
-            temperature=0.2,
+            model="claude-3-5-sonnet-20241022",  # テスト生成は高品質なモデルを使用
+            max_tokens=8000,
+            temperature=0.1,
             messages=[{"role": "user", "content": prompt}]
         )
         

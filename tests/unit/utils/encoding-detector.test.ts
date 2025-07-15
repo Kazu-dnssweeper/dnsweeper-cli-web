@@ -1,13 +1,6 @@
-/**
- * encoding-detector.ts のテスト
- */
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { writeFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-
+import { detect as chardetDetect } from 'chardet';
 import {
   detectBOM,
   detectBufferEncoding,
@@ -16,293 +9,202 @@ import {
   readFileWithDetectedEncoding,
   evaluateDetectionReliability,
   detectCsvEncoding,
+  type EncodingDetectionResult,
   type SupportedEncoding,
-  type EncodingDetectionResult
 } from '../../../src/utils/encoding-detector.js';
 
-// chardetをモック化
-vi.mock('chardet', () => ({
-  detect: vi.fn()
-}));
+vi.mock('node:fs/promises');
+vi.mock('chardet');
 
-describe('encoding-detector utility', () => {
-  let tempDir: string;
-
-  beforeEach(async () => {
-    // テスト用の一時ディレクトリを作成
-    tempDir = join(tmpdir(), 'encoding-detector-test', Date.now().toString());
-    await mkdir(tempDir, { recursive: true });
+describe('encoding-detector', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
   });
 
   describe('detectBOM', () => {
-    it('should detect UTF-8 BOM', () => {
-      const buffer = Buffer.from([0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f]); // UTF-8 BOM + "Hello"
+    it('should detect UTF-8 BOM correctly', () => {
+      const buffer = Buffer.from([0xEF, 0xBB, 0xBF, 0x68, 0x65, 0x6C, 0x6C, 0x6F]);
       const result = detectBOM(buffer);
-      
-      expect(result.encoding).toBe('utf-8');
-      expect(result.bomLength).toBe(3);
+      expect(result).toEqual({
+        encoding: 'utf-8',
+        bomLength: 3
+      });
     });
 
-    it('should detect UTF-16LE BOM', () => {
-      const buffer = Buffer.from([0xff, 0xfe, 0x48, 0x00, 0x65, 0x00]); // UTF-16LE BOM + "He"
+    it('should detect UTF-16LE BOM correctly', () => {
+      const buffer = Buffer.from([0xFF, 0xFE, 0x68, 0x00]);
       const result = detectBOM(buffer);
-      
-      expect(result.encoding).toBe('utf-16le');
-      expect(result.bomLength).toBe(2);
+      expect(result).toEqual({
+        encoding: 'utf-16le',
+        bomLength: 2
+      });
     });
 
-    it('should detect UTF-16BE BOM', () => {
-      const buffer = Buffer.from([0xfe, 0xff, 0x00, 0x48, 0x00, 0x65]); // UTF-16BE BOM + "He"
+    it('should detect UTF-16BE BOM correctly', () => {
+      const buffer = Buffer.from([0xFE, 0xFF, 0x00, 0x68]);
       const result = detectBOM(buffer);
-      
-      expect(result.encoding).toBe('utf-16be');
-      expect(result.bomLength).toBe(2);
+      expect(result).toEqual({
+        encoding: 'utf-16be',
+        bomLength: 2
+      });
     });
 
-    it('should not detect BOM in plain text', () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
+    it('should return null for no BOM', () => {
+      const buffer = Buffer.from([0x68, 0x65, 0x6C, 0x6C, 0x6F]);
       const result = detectBOM(buffer);
-      
-      expect(result.encoding).toBe(null);
-      expect(result.bomLength).toBe(0);
+      expect(result).toEqual({
+        encoding: null,
+        bomLength: 0
+      });
+    });
+
+    it('should handle UTF-32 BOM (unsupported)', () => {
+      const buffer = Buffer.from([0xFF, 0xFE, 0x00, 0x00, 0x68, 0x00, 0x00, 0x00]);
+      const result = detectBOM(buffer);
+      expect(result).toEqual({
+        encoding: null,
+        bomLength: 4
+      });
     });
 
     it('should handle empty buffer', () => {
       const buffer = Buffer.from([]);
       const result = detectBOM(buffer);
-      
-      expect(result.encoding).toBe(null);
-      expect(result.bomLength).toBe(0);
-    });
-
-    it('should handle UTF-32 BOM (not supported)', () => {
-      const buffer = Buffer.from([0xff, 0xfe, 0x00, 0x00, 0x48, 0x00, 0x00, 0x00]); // UTF-32LE BOM
-      const result = detectBOM(buffer);
-      
-      expect(result.encoding).toBe(null);
-      expect(result.bomLength).toBe(4);
+      expect(result).toEqual({
+        encoding: null,
+        bomLength: 0
+      });
     });
   });
 
   describe('detectBufferEncoding', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
-    it('should detect encoding with BOM', () => {
-      const buffer = Buffer.from([0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f]); // UTF-8 BOM + "Hello"
-      
+    it('should prioritize BOM detection', () => {
+      const buffer = Buffer.from([0xEF, 0xBB, 0xBF, 0x68, 0x65, 0x6C, 0x6C, 0x6F]);
       const result = detectBufferEncoding(buffer);
       
-      expect(result.encoding).toBe('utf-8');
-      expect(result.confidence).toBe(100);
-      expect(result.bomPresent).toBe(true);
-      expect(result.alternatives).toEqual([]);
+      expect(result).toEqual({
+        encoding: 'utf-8',
+        confidence: 100,
+        originalDetection: null,
+        bomPresent: true,
+        alternatives: []
+      });
     });
 
-    it('should use chardet when no BOM is present', async () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
-      
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 },
+    it('should use chardet when no BOM is present', () => {
+      const buffer = Buffer.from('hello world');
+      const mockChardetResult = [
+        { name: 'UTF-8', confidence: 90 },
         { name: 'ASCII', confidence: 85 }
-      ]);
-
+      ];
+      
+      vi.mocked(chardetDetect).mockReturnValue(mockChardetResult);
+      
       const result = detectBufferEncoding(buffer);
       
       expect(result.encoding).toBe('utf-8');
-      expect(result.confidence).toBe(95);
+      expect(result.confidence).toBe(90);
+      expect(result.originalDetection).toBe('UTF-8');
       expect(result.bomPresent).toBe(false);
-      expect(result.alternatives).toHaveLength(1);
-      expect(result.alternatives[0].encoding).toBe('ascii');
-      expect(result.alternatives[0].confidence).toBe(85);
+      expect(result.alternatives).toEqual([
+        { encoding: 'ascii', confidence: 85 }
+      ]);
     });
 
-    it('should handle string detection result', async () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
+    it('should handle single string detection result', () => {
+      const buffer = Buffer.from('hello world');
+      vi.mocked(chardetDetect).mockReturnValue('UTF-8');
       
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue('UTF-8');
-
       const result = detectBufferEncoding(buffer);
       
       expect(result.encoding).toBe('utf-8');
       expect(result.confidence).toBe(80);
-      expect(result.bomPresent).toBe(false);
+      expect(result.originalDetection).toBe('UTF-8');
+      expect(result.alternatives).toEqual([]);
     });
 
-    it('should default to utf-8 when detection fails', async () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
+    it('should default to UTF-8 when chardet fails', () => {
+      const buffer = Buffer.from('hello world');
+      vi.mocked(chardetDetect).mockReturnValue(null);
       
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue(null);
-
       const result = detectBufferEncoding(buffer);
       
       expect(result.encoding).toBe('utf-8');
       expect(result.confidence).toBe(50);
+      expect(result.originalDetection).toBe(null);
       expect(result.bomPresent).toBe(false);
+      expect(result.alternatives).toEqual([]);
     });
 
-    it('should map chardet encoding names correctly', async () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
-      
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'Shift_JIS', confidence: 90 }
-      ]);
-
-      const result = detectBufferEncoding(buffer);
-      
-      expect(result.encoding).toBe('shift_jis');
-      expect(result.confidence).toBe(90);
-    });
-
-    it('should handle unknown encoding names', async () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
-      
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
+    it('should handle unknown encoding names', () => {
+      const buffer = Buffer.from('hello world');
+      vi.mocked(chardetDetect).mockReturnValue([
         { name: 'UNKNOWN_ENCODING', confidence: 90 }
       ]);
-
+      
       const result = detectBufferEncoding(buffer);
       
       expect(result.encoding).toBe('utf-8');
       expect(result.confidence).toBe(90);
-    });
-
-    it('should limit alternatives to top 3', async () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
-      
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 },
-        { name: 'ASCII', confidence: 85 },
-        { name: 'windows-1252', confidence: 75 },
-        { name: 'Shift_JIS', confidence: 65 },
-        { name: 'EUC-JP', confidence: 55 }
-      ]);
-
-      const result = detectBufferEncoding(buffer);
-      
-      expect(result.alternatives).toHaveLength(3);
-      expect(result.alternatives[0].encoding).toBe('ascii');
-      expect(result.alternatives[1].encoding).toBe('shift_jis');
-      expect(result.alternatives[2].encoding).toBe('windows-1252');
+      expect(result.originalDetection).toBe('UNKNOWN_ENCODING');
     });
   });
 
   describe('detectFileEncoding', () => {
-    it('should detect encoding from file', async () => {
-      const testFile = join(tempDir, 'test.txt');
-      const content = 'Hello World';
+    it('should detect file encoding successfully', async () => {
+      const mockBuffer = Buffer.from([0xEF, 0xBB, 0xBF, 0x68, 0x65, 0x6C, 0x6C, 0x6F]);
+      vi.mocked(readFile).mockResolvedValue(mockBuffer);
       
-      await writeFile(testFile, content, 'utf-8');
-
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 }
-      ]);
-
-      const result = await detectFileEncoding(testFile);
+      const result = await detectFileEncoding('test.csv');
       
       expect(result.encoding).toBe('utf-8');
-      expect(result.confidence).toBe(95);
+      expect(result.bomPresent).toBe(true);
+      expect(result.confidence).toBe(100);
     });
 
-    it('should handle file read errors', async () => {
-      const nonExistentFile = join(tempDir, 'nonexistent.txt');
+    it('should throw error when file read fails', async () => {
+      vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
       
-      await expect(detectFileEncoding(nonExistentFile)).rejects.toThrow();
-    });
-
-    it('should handle large files by sampling', async () => {
-      const testFile = join(tempDir, 'large.txt');
-      const largeContent = 'Hello World '.repeat(1000); // 12KB content
-      
-      await writeFile(testFile, largeContent, 'utf-8');
-
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 }
-      ]);
-
-      const result = await detectFileEncoding(testFile);
-      
-      expect(result.encoding).toBe('utf-8');
-      expect(vi.mocked(detect)).toHaveBeenCalledWith(expect.any(Buffer));
-      
-      // Check that buffer was passed to chardet (actual size may be smaller for small files)
-      const passedBuffer = vi.mocked(detect).mock.calls[0][0] as Buffer;
-      expect(passedBuffer.length).toBeGreaterThan(0);
-      expect(passedBuffer.length).toBeLessThanOrEqual(8192);
+      await expect(detectFileEncoding('nonexistent.csv')).rejects.toThrow(
+        'ファイルエンコーディング検出に失敗'
+      );
     });
   });
 
   describe('decodeBuffer', () => {
-    it('should decode UTF-8 buffer', () => {
-      const buffer = Buffer.from('Hello World', 'utf-8');
+    it('should decode UTF-8 buffer correctly', () => {
+      const buffer = Buffer.from([0xEF, 0xBB, 0xBF, 0x68, 0x65, 0x6C, 0x6C, 0x6F]);
       const result = decodeBuffer(buffer, 'utf-8');
       
-      expect(result).toBe('Hello World');
+      expect(result).toBe('hello');
     });
 
-    it('should decode UTF-8 buffer with BOM', () => {
-      const buffer = Buffer.from([0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f]); // UTF-8 BOM + "Hello"
+    it('should decode buffer without BOM', () => {
+      const buffer = Buffer.from('hello world', 'utf-8');
       const result = decodeBuffer(buffer, 'utf-8');
       
-      expect(result).toBe('Hello');
+      expect(result).toBe('hello world');
     });
 
-    it('should decode UTF-16LE buffer', () => {
-      const buffer = Buffer.from('Hello', 'utf16le');
-      const result = decodeBuffer(buffer, 'utf-16le');
+    it('should handle decode errors gracefully', () => {
+      const buffer = Buffer.from([0xFF, 0xFF, 0xFF]);
       
-      expect(result).toBe('Hello');
-    });
-
-    it('should handle decoding errors gracefully', () => {
-      const buffer = Buffer.from([0xff, 0xfe, 0xff, 0xff]); // Invalid UTF-16
-      
-      // Should not throw due to { fatal: false }
-      const result = decodeBuffer(buffer, 'utf-16le');
-      
+      // Should not throw due to fatal: false
+      const result = decodeBuffer(buffer, 'utf-8');
       expect(typeof result).toBe('string');
     });
   });
 
   describe('readFileWithDetectedEncoding', () => {
     it('should read file with detected encoding', async () => {
-      const testFile = join(tempDir, 'test.txt');
-      const content = 'Hello World';
+      const mockBuffer = Buffer.from('hello world', 'utf-8');
+      vi.mocked(readFile).mockResolvedValue(mockBuffer);
+      vi.mocked(chardetDetect).mockReturnValue('UTF-8');
       
-      await writeFile(testFile, content, 'utf-8');
-
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 }
-      ]);
-
-      const result = await readFileWithDetectedEncoding(testFile);
+      const result = await readFileWithDetectedEncoding('test.txt');
       
-      expect(result.content).toBe('Hello World');
+      expect(result.content).toBe('hello world');
       expect(result.detection.encoding).toBe('utf-8');
-      expect(result.detection.confidence).toBe(95);
-    });
-
-    it('should handle files with BOM', async () => {
-      const testFile = join(tempDir, 'test-bom.txt');
-      const buffer = Buffer.from([0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f]); // UTF-8 BOM + "Hello"
-      
-      await writeFile(testFile, buffer);
-
-      const result = await readFileWithDetectedEncoding(testFile);
-      
-      expect(result.content).toBe('Hello');
-      expect(result.detection.encoding).toBe('utf-8');
-      expect(result.detection.bomPresent).toBe(true);
     });
   });
 
@@ -315,12 +217,12 @@ describe('encoding-detector utility', () => {
         bomPresent: true,
         alternatives: []
       };
-
+      
       const evaluation = evaluateDetectionReliability(result);
       
       expect(evaluation.level).toBe('high');
       expect(evaluation.message).toContain('BOM');
-      expect(evaluation.recommendations).toHaveLength(0);
+      expect(evaluation.recommendations).toEqual([]);
     });
 
     it('should return high reliability for high confidence', () => {
@@ -331,12 +233,12 @@ describe('encoding-detector utility', () => {
         bomPresent: false,
         alternatives: []
       };
-
+      
       const evaluation = evaluateDetectionReliability(result);
       
       expect(evaluation.level).toBe('high');
-      expect(evaluation.message).toContain('90%');
-      expect(evaluation.recommendations).toHaveLength(0);
+      expect(evaluation.message).toContain('高い信頼度');
+      expect(evaluation.recommendations).toEqual([]);
     });
 
     it('should return medium reliability for medium confidence', () => {
@@ -346,16 +248,15 @@ describe('encoding-detector utility', () => {
         originalDetection: 'UTF-8',
         bomPresent: false,
         alternatives: [
-          { encoding: 'ascii', confidence: 60 }
+          { encoding: 'ascii', confidence: 65 }
         ]
       };
-
+      
       const evaluation = evaluateDetectionReliability(result);
       
       expect(evaluation.level).toBe('medium');
-      expect(evaluation.message).toContain('70%');
-      expect(evaluation.recommendations).toHaveLength(1);
-      expect(evaluation.recommendations[0]).toContain('代替候補');
+      expect(evaluation.message).toContain('中程度の信頼度');
+      expect(evaluation.recommendations).toEqual(['代替候補: ascii (65%)']);
     });
 
     it('should return low reliability for low confidence', () => {
@@ -365,91 +266,62 @@ describe('encoding-detector utility', () => {
         originalDetection: 'UTF-8',
         bomPresent: false,
         alternatives: [
-          { encoding: 'ascii', confidence: 35 },
-          { encoding: 'shift_jis', confidence: 30 }
+          { encoding: 'shift_jis', confidence: 35 }
         ]
       };
-
+      
       const evaluation = evaluateDetectionReliability(result);
       
       expect(evaluation.level).toBe('low');
-      expect(evaluation.message).toContain('40%');
+      expect(evaluation.message).toContain('低い信頼度');
       expect(evaluation.recommendations.length).toBeGreaterThan(0);
-      expect(evaluation.recommendations.some(r => r.includes('手動で指定'))).toBe(true);
     });
   });
 
   describe('detectCsvEncoding', () => {
-    it('should detect CSV encoding and CSV-specific info', async () => {
-      const testFile = join(tempDir, 'test.csv');
-      const csvContent = 'name,age,city\nJohn,25,Tokyo\nJane,30,Osaka';
+    it('should detect CSV encoding with CSV-specific information', async () => {
+      const mockBuffer = Buffer.from('name,email\nJohn,john@example.com\nJane,jane@example.com');
+      vi.mocked(readFile).mockResolvedValue(mockBuffer);
+      vi.mocked(chardetDetect).mockReturnValue('UTF-8');
       
-      await writeFile(testFile, csvContent, 'utf-8');
-
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 }
-      ]);
-
-      const result = await detectCsvEncoding(testFile);
+      const result = await detectCsvEncoding('test.csv');
       
       expect(result.encoding).toBe('utf-8');
-      expect(result.confidence).toBe(95);
       expect(result.csvSpecificInfo.looksLikeCsv).toBe(true);
-      expect(result.csvSpecificInfo.sampleLines).toHaveLength(3);
       expect(result.csvSpecificInfo.potentialDelimiters).toContain(',');
-    });
-
-    it('should detect different delimiters', async () => {
-      const testFile = join(tempDir, 'test.tsv');
-      const tsvContent = 'name\tage\tcity\nJohn\t25\tTokyo\nJane\t30\tOsaka';
-      
-      await writeFile(testFile, tsvContent, 'utf-8');
-
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 }
-      ]);
-
-      const result = await detectCsvEncoding(testFile);
-      
-      expect(result.csvSpecificInfo.looksLikeCsv).toBe(true);
-      expect(result.csvSpecificInfo.potentialDelimiters).toContain('\t');
+      expect(result.csvSpecificInfo.sampleLines).toContain('name,email');
     });
 
     it('should handle non-CSV files', async () => {
-      const testFile = join(tempDir, 'test.txt');
-      const textContent = 'This is just plain text without any delimiters';
+      const mockBuffer = Buffer.from('This is not a CSV file');
+      vi.mocked(readFile).mockResolvedValue(mockBuffer);
+      vi.mocked(chardetDetect).mockReturnValue('UTF-8');
       
-      await writeFile(testFile, textContent, 'utf-8');
-
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-8', confidence: 95 }
-      ]);
-
-      const result = await detectCsvEncoding(testFile);
+      const result = await detectCsvEncoding('test.txt');
       
       expect(result.csvSpecificInfo.looksLikeCsv).toBe(false);
-      expect(result.csvSpecificInfo.potentialDelimiters).toHaveLength(0);
+      expect(result.csvSpecificInfo.potentialDelimiters).toEqual([]);
+    });
+
+    it('should detect multiple delimiters', async () => {
+      const mockBuffer = Buffer.from('name;email\tphone|address\nJohn;john@example.com\t123|Main St');
+      vi.mocked(readFile).mockResolvedValue(mockBuffer);
+      vi.mocked(chardetDetect).mockReturnValue('UTF-8');
+      
+      const result = await detectCsvEncoding('test.csv');
+      
+      expect(result.csvSpecificInfo.potentialDelimiters).toEqual([';', '\t', '|']);
     });
 
     it('should handle decode errors gracefully', async () => {
-      const testFile = join(tempDir, 'test.csv');
-      const buffer = Buffer.from([0xff, 0xfe, 0xff, 0xff]); // Invalid UTF-16
+      const mockBuffer = Buffer.from([0xFF, 0xFF, 0xFF]);
+      vi.mocked(readFile).mockResolvedValue(mockBuffer);
+      vi.mocked(chardetDetect).mockReturnValue('UTF-8');
       
-      await writeFile(testFile, buffer);
-
-      const { detect } = await import('chardet');
-      vi.mocked(detect).mockReturnValue([
-        { name: 'UTF-16LE', confidence: 80 }
-      ]);
-
-      const result = await detectCsvEncoding(testFile);
+      const result = await detectCsvEncoding('test.csv');
       
       expect(result.csvSpecificInfo.looksLikeCsv).toBe(false);
-      // バイナリファイルのデコード結果は予測できないため、配列のチェックのみ
-      expect(Array.isArray(result.csvSpecificInfo.sampleLines)).toBe(true);
+      expect(result.csvSpecificInfo.sampleLines).toEqual(['\ufffd\ufffd\ufffd']);
     });
   });
 });

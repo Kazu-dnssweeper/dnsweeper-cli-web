@@ -567,7 +567,7 @@ export interface IoTNetwork {
     encryptionEnabled: boolean;
     authenticationMethod: 'none' | 'psk' | 'certificate' | 'wpa2' | 'wpa3';
     accessControlEnabled: boolean;
-    intrusion DetectionEnabled: boolean;
+    intrusionDetectionEnabled: boolean;
     lastSecurityAudit?: Date;
   };
   
@@ -1274,7 +1274,7 @@ export interface IoTSecurityPolicy {
     segmentation: boolean;
     vlan: boolean;
     firewall: boolean;
-    intrusion Detection: boolean;
+    intrusionDetection: boolean;
     trafficMonitoring: boolean;
     allowedProtocols: CommunicationProtocol[];
     blockedPorts: number[];

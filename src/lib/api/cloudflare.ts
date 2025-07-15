@@ -324,7 +324,9 @@ export class CloudflareClient {
         results.created++;
       } catch (error) {
         results.failed++;
-        results.errors.push(error);
+        results.errors.push(
+          error instanceof Error ? error.message : String(error)
+        );
         results.success = false;
       }
     }

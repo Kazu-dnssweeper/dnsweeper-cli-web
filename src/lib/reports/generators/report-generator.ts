@@ -106,10 +106,15 @@ export class ReportGenerator extends EventEmitter {
       this.emit('report:generated', report);
       return report;
     } catch (error) {
-      this.logger.error('レポート生成エラー', {
-        reportId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      this.logger.error(
+        'レポート生成エラー',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          reportId,
+          errorMessage:
+            error instanceof Error ? error.message : 'Unknown error',
+        }
+      );
       throw error;
     }
   }
@@ -166,7 +171,7 @@ export class ReportGenerator extends EventEmitter {
   /**
    * オブジェクトのローカライズ
    */
-  private localizeObject(obj: any, language: string): any {
+  private localizeObject(obj: unknown, language: string): unknown {
     if (typeof obj === 'string') {
       // 翻訳キーの場合は翻訳
       if (obj.startsWith('i18n:')) {
@@ -191,7 +196,7 @@ export class ReportGenerator extends EventEmitter {
     }
 
     if (typeof obj === 'object' && obj !== null) {
-      const localized: any = {};
+      const localized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         localized[key] = this.localizeObject(value, language);
       }
@@ -243,7 +248,7 @@ export class ReportGenerator extends EventEmitter {
     conditions: Array<{
       field: string;
       operator: string;
-      value: any;
+      value: unknown;
       action: string;
     }>,
     data: ReportData
@@ -270,7 +275,7 @@ export class ReportGenerator extends EventEmitter {
   /**
    * フィールド値の取得
    */
-  private getFieldValue(data: any, fieldPath: string): any {
+  private getFieldValue(data: unknown, fieldPath: string): unknown {
     const parts = fieldPath.split('.');
     let value = data;
 
@@ -289,9 +294,9 @@ export class ReportGenerator extends EventEmitter {
    * 値の比較
    */
   private compareValues(
-    value: any,
+    value: unknown,
     operator: string,
-    compareValue: any
+    compareValue: unknown
   ): boolean {
     switch (operator) {
       case 'equals':
@@ -314,7 +319,7 @@ export class ReportGenerator extends EventEmitter {
   /**
    * セクションデータの取得
    */
-  private getSectionData(section: ReportSection, data: ReportData): any {
+  private getSectionData(section: ReportSection, data: ReportData): unknown {
     const sectionData = data.sections.find(s => s.id === section.id);
     return sectionData?.data || {};
   }
@@ -324,9 +329,9 @@ export class ReportGenerator extends EventEmitter {
    */
   private processContent(
     section: ReportSection,
-    data: any,
+    data: unknown,
     options: ReportOptions
-  ): any {
+  ): unknown {
     switch (section.type) {
       case 'table':
         return this.processTableContent(section, data);
@@ -346,9 +351,9 @@ export class ReportGenerator extends EventEmitter {
   /**
    * テーブルコンテンツの処理
    */
-  private processTableContent(section: ReportSection, data: any): any {
+  private processTableContent(section: ReportSection, data: unknown): unknown {
     const columns = section.content.columns || [];
-    const rows = Array.isArray(data) ? data : data.rows || [];
+    const rows = Array.isArray(data) ? data : (data as any)?.rows || [];
 
     return {
       columns: columns.map((col: string) => ({
@@ -356,7 +361,7 @@ export class ReportGenerator extends EventEmitter {
         label: this.i18nManager.translate(`column.${col}`, 'reports'),
       })),
       rows: rows.map((row: any) => {
-        const processedRow: any = {};
+        const processedRow: Record<string, string> = {};
         for (const col of columns) {
           processedRow[col] = this.formatCellValue(row[col], col);
         }
@@ -368,7 +373,7 @@ export class ReportGenerator extends EventEmitter {
   /**
    * チャートコンテンツの処理
    */
-  private processChartContent(section: ReportSection, data: any): any {
+  private processChartContent(section: ReportSection, data: unknown): unknown {
     return {
       type: section.content.chartType,
       data: data,
@@ -382,12 +387,12 @@ export class ReportGenerator extends EventEmitter {
   /**
    * メトリクスコンテンツの処理
    */
-  private processMetricsContent(section: ReportSection, data: any): any {
+  private processMetricsContent(section: ReportSection, data: unknown): unknown {
     const metrics = section.content.metrics || [];
-    const processedMetrics: any[] = [];
+    const processedMetrics: Array<{key: string; label: string; value: string}> = [];
 
     for (const metric of metrics) {
-      const value = data[metric];
+      const value = (data as any)?.[metric];
       if (value !== undefined) {
         processedMetrics.push({
           key: metric,
@@ -403,8 +408,8 @@ export class ReportGenerator extends EventEmitter {
   /**
    * リストコンテンツの処理
    */
-  private processListContent(section: ReportSection, data: any): any {
-    const items = Array.isArray(data) ? data : data.items || [];
+  private processListContent(section: ReportSection, data: unknown): unknown {
+    const items = Array.isArray(data) ? data : (data as any)?.items || [];
 
     return {
       ordered: section.content.ordered || false,
@@ -417,7 +422,7 @@ export class ReportGenerator extends EventEmitter {
   /**
    * セル値のフォーマット
    */
-  private formatCellValue(value: any, column: string): string {
+  private formatCellValue(value: unknown, column: string): string {
     if (value === null || value === undefined) {
       return '-';
     }
@@ -442,7 +447,7 @@ export class ReportGenerator extends EventEmitter {
   /**
    * メトリクス値のフォーマット
    */
-  private formatMetricValue(value: any, metric: string): string {
+  private formatMetricValue(value: unknown, metric: string): string {
     if (metric.includes('time')) {
       return `${this.i18nManager.formatNumber(value)} ms`;
     }

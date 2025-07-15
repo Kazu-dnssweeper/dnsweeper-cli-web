@@ -11,7 +11,7 @@ export interface ErrorContext {
   domain?: string;
   file?: string;
   operation?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export class ErrorHandler {
@@ -27,6 +27,7 @@ export class ErrorHandler {
    * エラーを処理
    */
   handle(error: unknown, customMessage?: string): void {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
     // スピナーを停止
     if (this.logger.stopSpinner) {
       this.logger.stopSpinner(false, customMessage || 'エラーが発生しました');
@@ -36,16 +37,19 @@ export class ErrorHandler {
     const message = this.formatError(error);
 
     // エラーログ出力
-    this.logger.error(message);
+    this.logger.error(message, error instanceof Error ? error : undefined);
 
     // デバッグ情報の出力（verboseモード時）
     if (this.context && Object.keys(this.context).length > 0) {
-      this.logger.debug('エラーコンテキスト:', this.context);
+      this.logger.debug(
+        'エラーコンテキスト',
+        this.context as Record<string, unknown>
+      );
     }
 
     // スタックトレースの出力（verboseモード時）
     if (error instanceof Error && error.stack) {
-      this.logger.debug('スタックトレース:', error.stack);
+      this.logger.debug('スタックトレース', { stack: error.stack });
     }
   }
 

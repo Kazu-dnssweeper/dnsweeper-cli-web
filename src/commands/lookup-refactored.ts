@@ -9,7 +9,6 @@ import { validateRecordType, validateDNSServer } from '../lib/validators.js';
 import { BaseCommand } from './base-command.js';
 
 import type {
-  DNSRecordType,
   IDNSRecord,
   OutputFormat,
   AnalysisResult,
@@ -62,7 +61,8 @@ export class LookupCommand extends BaseCommand {
     this.setAction(this.execute.bind(this));
   }
 
-  async execute(domain: string, options: LookupOptions): Promise<void> {
+  async execute(...args: unknown[]): Promise<void> {
+    const [domain, options] = args as [string, LookupOptions];
     // Loggerを初期化
     this.initLogger(options);
 
@@ -146,7 +146,7 @@ export class LookupCommand extends BaseCommand {
       value: 'unknown',
       ttl: 3600,
       created: new Date(),
-      updated: new Date()
+      updated: new Date(),
     };
     const riskScore = this.riskCalculator.calculateRisk(primaryRecord);
     const factors = riskScore.recommendations;
@@ -154,18 +154,21 @@ export class LookupCommand extends BaseCommand {
     return {
       summary: {
         totalRecords: records.length,
-        highRiskCount: riskScore.level === 'high' || riskScore.level === 'critical' ? 1 : 0,
+        highRiskCount:
+          riskScore.level === 'high' || riskScore.level === 'critical' ? 1 : 0,
         mediumRiskCount: riskScore.level === 'medium' ? 1 : 0,
         lowRiskCount: riskScore.level === 'low' ? 1 : 0,
-        averageRiskScore: riskScore.total
+        averageRiskScore: riskScore.total,
       },
-      records: [{
-        domain,
-        riskScore: riskScore.total,
-        riskLevel: riskScore.level,
-        riskFactors: factors,
-        details: { records }
-      }]
+      records: [
+        {
+          domain,
+          riskScore: riskScore.total,
+          riskLevel: riskScore.level,
+          riskFactors: factors,
+          details: { records },
+        },
+      ],
     };
   }
 

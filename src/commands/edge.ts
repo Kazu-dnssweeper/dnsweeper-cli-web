@@ -1,11 +1,15 @@
-import EdgeComputingDNSManager from '@lib/edge-computing-dns-manager.js';
-import { Logger } from '@lib/logger.js';
-import { OutputFormatter } from '@lib/output-formatter.js';
 import chalk from 'chalk';
 import { Command } from 'commander';
 
-import type { EdgeDNSQuery } from '@lib/edge-computing-dns-manager.js';
-import type { AnalysisResult } from '../types/index.js';
+import EdgeComputingDNSManager from '../lib/edge-computing-dns-manager.js';
+import { Logger } from '../lib/logger.js';
+import {
+  OutputFormatter,
+  type AnalysisResult,
+} from '../lib/output-formatter.js';
+
+import type { EdgeDNSQuery } from '../lib/edge-computing-dns-manager.js';
+import type { DNSRecordType } from '../types/index.js';
 
 const logger = new Logger();
 
@@ -69,19 +73,28 @@ edgeCommand
 
       const analysisResult: AnalysisResult = {
         summary: {
-          totalRecords: tableData.length,
-          highRiskCount: 0,
-          mediumRiskCount: 0,
-          lowRiskCount: 0,
-          averageRiskScore: 0
+          total: tableData.length,
+          byType: {} as Record<DNSRecordType, number>,
+          byRisk: { low: tableData.length, medium: 0, high: 0, critical: 0 },
+          duration: 0,
         },
-        records: tableData.map(data => ({
-          domain: data.ID,
-          riskScore: 0,
+        records: tableData.map((data, index) => ({
+          id: `edge-${index}`,
+          name: data.ID,
+          type: 'A' as DNSRecordType,
+          value: data.地域,
+          ttl: 300,
+          created: new Date(),
+          updated: new Date(),
           riskLevel: 'low' as const,
-          riskFactors: [],
-          details: data
-        }))
+          riskScore: 0,
+          recommendations: [],
+        })),
+        metadata: {
+          scannedAt: new Date(),
+          source: 'edge-locations',
+          version: '1.0',
+        },
       };
       console.log(formatter.format(analysisResult));
 
@@ -196,7 +209,7 @@ edgeCommand
         console.log('\n📝 DNSレコード:');
         response.records.forEach(record => {
           console.log(
-            `  ${record.name} ${record.ttl} ${record.class} ${record.type} ${record.value}`
+            `  ${record.name} ${record.ttl} ${record.type} ${record.value}`
           );
         });
       });
@@ -231,7 +244,7 @@ edgeCommand
           console.log(`  ${locationId}: ${chalk.yellow(count)}回`);
         });
 
-        const globalMetrics = manager.getGlobalMetrics();
+        const _globalMetrics = manager.getGlobalMetrics();
         const aiStats = manager.getAIPredictionStats();
 
         console.log(chalk.bold('\n🤖 AI予測統計'));

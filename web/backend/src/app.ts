@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { uploadRouter } from './routes/upload';
-import { dnsRouter } from './routes/dns';
+import dnsRouter from './routes/dns';
 import { analysisRouter } from './routes/analysis';
-import { statsRouter } from './routes/stats';
+import statsRouter from './routes/stats';
 import { settingsRouter } from './routes/settings';
 import { historyRouter } from './routes/history';
 import { exportRouter } from './routes/export';
@@ -47,7 +47,7 @@ export const createApp = async (): Promise<express.Application> => {
   app.use(requestLogger);
 
   // ヘルスチェック
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', (req: express.Request, res: express.Response) => {
     res.json({
       success: true,
       data: {
@@ -74,7 +74,7 @@ export const createApp = async (): Promise<express.Application> => {
   app.use('/api/pricing', pricingStrategyRouter);
 
   // 404 ハンドラー
-  app.use('*', (req, res) => {
+  app.use('*', (req: express.Request, res: express.Response) => {
     res.status(404).json({
       success: false,
       error: 'Route not found',

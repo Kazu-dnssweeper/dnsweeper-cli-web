@@ -11,13 +11,16 @@ import { AIDNSOptimizer } from '../lib/ai-dns-optimizer.js';
 import { CSVProcessor } from '../lib/csv-processor.js';
 import { DNSResolver } from '../lib/dns-resolver.js';
 import { Logger } from '../lib/logger.js';
-import { OutputFormatter } from '../lib/output-formatter.js';
+// import { OutputFormatter } from '../lib/output-formatter.js';
 import { globalPerformanceMonitor } from '../lib/performance-monitor.js';
 
 import type {
   OptimizationContext,
   BusinessContext,
+  OptimizationSuggestion,
+  TrafficPattern,
 } from '../lib/ai-dns-optimizer.js';
+import type { IDNSRecord } from '../types/index.js';
 
 export function createOptimizeCommand(): Command {
   const command = new Command('optimize');
@@ -47,8 +50,8 @@ export function createOptimizeCommand(): Command {
     .option('--timeout <ms>', 'タイムアウト（ミリ秒）', '5000')
     .option('--verbose', '詳細ログ出力')
     .option('--dry-run', 'ドライラン（実際の変更は行わない）')
-    .action(async (domain, options) => {
-      const logger = new Logger({ verbose: options.verbose });
+    .action(async (domain: string, options: Record<string, unknown>) => {
+      const logger = new Logger({ verbose: Boolean(options.verbose) });
 
       try {
         logger.info('🤖 AI駆動DNS最適化分析を開始します...', { domain });
@@ -71,8 +74,10 @@ export function createOptimizeCommand(): Command {
 
         logger.info('✅ AI最適化分析が完了しました');
       } catch (error) {
-        logger.error('❌ AI最適化分析でエラーが発生しました:', 
-          error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          '❌ AI最適化分析でエラーが発生しました:',
+          error instanceof Error ? error : new Error(String(error))
+        );
         process.exit(1);
       }
     });
@@ -85,7 +90,7 @@ export function createOptimizeCommand(): Command {
  */
 async function buildOptimizationContext(
   domain: string,
-  options: any,
+  options: Record<string, unknown>,
   logger: Logger
 ): Promise<OptimizationContext> {
   // DNSレコードの取得
@@ -95,13 +100,15 @@ async function buildOptimizationContext(
   const performance = globalPerformanceMonitor
     .getMetrics()
     .filter(
-      m => m.metadata?.domain === domain || 
-        (typeof m.metadata?.domain === 'string' && m.metadata.domain.endsWith(domain))
+      m =>
+        m.metadata?.domain === domain ||
+        (typeof m.metadata?.domain === 'string' &&
+          m.metadata.domain.endsWith(domain))
     );
 
   // トラフィックパターンの取得
   const trafficPatterns = options.trafficFile
-    ? await loadTrafficPatterns(options.trafficFile, logger)
+    ? await loadTrafficPatterns(String(options.trafficFile), logger)
     : [];
 
   // ビジネスコンテキストの構築
@@ -119,7 +126,11 @@ async function buildOptimizationContext(
 /**
  * DNSレコードの取得
  */
-async function getDNSRecords(domain: string, options: any, logger: Logger) {
+async function getDNSRecords(
+  domain: string,
+  options: Record<string, unknown>,
+  logger: Logger
+): Promise<IDNSRecord[]> {
   if (options.file) {
     // CSVファイルからレコードを読み込み
     logger.info('📄 CSVファイルからDNSレコードを読み込んでいます...', {
@@ -127,9 +138,30 @@ async function getDNSRecords(domain: string, options: any, logger: Logger) {
     });
 
     const csvProcessor = new CSVProcessor({});
-    const csvData = await csvProcessor.parseAuto(options.file);
+    const csvData = await csvProcessor.parseAuto(String(options.file));
 
-    return csvData.records;
+    // Convert ICSVRecord[] to IDNSRecord[]
+    return csvData.records.map((record, index) => ({
+      id: `csv-${index}`,
+      name: record.name,
+      type: record.type as
+        | 'A'
+        | 'AAAA'
+        | 'CNAME'
+        | 'MX'
+        | 'TXT'
+        | 'NS'
+        | 'PTR'
+        | 'SRV'
+        | 'SOA',
+      value: record.value,
+      ttl: record.ttl || 300,
+      priority: record.priority,
+      weight: record.weight,
+      port: record.port,
+      created: new Date(),
+      updated: new Date(),
+    }));
   } else {
     // ドメインからDNSレコードを解決
     logger.info('🔍 DNSレコードを解決しています...', { domain });
@@ -144,12 +176,27 @@ async function getDNSRecords(domain: string, options: any, logger: Logger) {
       const result = await resolver.resolve(domain, 'A');
       const records = result.records;
       measure();
-      return records;
+
+      // Convert dns-resolver's IDNSRecord[] to types' IDNSRecord[]
+      return records.map((record, index) => ({
+        id: `dns-${index}`,
+        name: domain,
+        type: record.type,
+        value: record.value,
+        ttl: record.ttl || 300,
+        priority: record.priority,
+        weight: record.weight,
+        port: record.port,
+        created: new Date(),
+        updated: new Date(),
+      }));
     } catch (error) {
       measure();
-      logger.error('DNS解決に失敗しました', 
+      logger.error(
+        'DNS解決に失敗しました',
         error instanceof Error ? error : new Error(String(error)),
-        { domain });
+        { domain }
+      );
       throw error;
     }
   }
@@ -158,9 +205,12 @@ async function getDNSRecords(domain: string, options: any, logger: Logger) {
 /**
  * トラフィックパターンの読み込み
  */
-async function loadTrafficPatterns(filePath: string, logger: Logger) {
+async function loadTrafficPatterns(
+  filePath: string,
+  logger: Logger
+): Promise<TrafficPattern[]> {
   if (!existsSync(filePath)) {
-    logger.warn('トラフィックパターンファイルが見つかりません:', filePath);
+    logger.warn('トラフィックパターンファイルが見つかりません', { filePath });
     return [];
   }
 
@@ -174,8 +224,10 @@ async function loadTrafficPatterns(filePath: string, logger: Logger) {
 
     return patterns;
   } catch (error) {
-    logger.error('トラフィックパターンファイルの読み込みエラー:', 
-      error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'トラフィックパターンファイルの読み込みエラー:',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return [];
   }
 }
@@ -183,37 +235,55 @@ async function loadTrafficPatterns(filePath: string, logger: Logger) {
 /**
  * ビジネスコンテキストの構築
  */
-function buildBusinessContext(options: any, logger: Logger): BusinessContext {
+function buildBusinessContext(
+  options: Record<string, unknown>,
+  logger: Logger
+): BusinessContext {
   if (options.businessContext) {
     try {
-      const fileContent = readFileSync(options.businessContext, 'utf-8');
+      const fileContent = readFileSync(
+        String(options.businessContext),
+        'utf-8'
+      );
       const context = JSON.parse(fileContent);
 
       logger.info('📋 ビジネスコンテキストファイルを読み込みました');
       return context;
     } catch (error) {
       logger.warn('ビジネスコンテキストファイルの読み込みエラー:', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   // コマンドラインオプションからビジネスコンテキストを構築
-  const priorities = options.priorities.split(',').map((p: string) => p.trim());
+  const priorities = String(options.priorities || 'performance')
+    .split(',')
+    .map((p: string) => p.trim())
+    .filter((p): p is 'performance' | 'security' | 'reliability' | 'cost' =>
+      ['performance', 'security', 'reliability', 'cost'].includes(p)
+    );
 
   return {
-    industry: options.industry,
-    scale: options.scale,
+    industry: String(options.industry),
+    scale: String(options.scale) as
+      | 'startup'
+      | 'small'
+      | 'medium'
+      | 'enterprise',
     compliance: [], // デフォルトは空
-    budget: options.budget,
-    priorities,
+    budget: String(options.budget) as 'low' | 'medium' | 'high',
+    priorities: priorities.length > 0 ? priorities : ['performance'],
   };
 }
 
 /**
  * 提案のフィルタリング
  */
-function filterSuggestions(suggestions: any[], options: any) {
+function filterSuggestions(
+  suggestions: OptimizationSuggestion[],
+  options: Record<string, unknown>
+): OptimizationSuggestion[] {
   let filtered = suggestions;
 
   // 優先度フィルタ
@@ -232,15 +302,21 @@ function filterSuggestions(suggestions: any[], options: any) {
 /**
  * 結果の出力
  */
-async function outputResults(suggestions: any[], options: any, logger: Logger) {
-  const formatter = new OutputFormatter({});
+async function outputResults(
+  suggestions: OptimizationSuggestion[],
+  options: Record<string, unknown>,
+  logger: Logger
+): Promise<void> {
+  // Output formatter is not used in this implementation
 
   if (options.format === 'table') {
     displayTableResults(suggestions, logger);
   } else if (options.format === 'json') {
     const jsonOutput = JSON.stringify(suggestions, null, 2);
     if (options.output) {
-      await formatter.writeToFile(options.output, jsonOutput);
+      // Use fs.writeFileSync directly
+      const fs = await import('fs');
+      fs.writeFileSync(String(options.output), jsonOutput, 'utf-8');
     } else {
       console.log(jsonOutput);
     }
@@ -252,7 +328,10 @@ async function outputResults(suggestions: any[], options: any, logger: Logger) {
 /**
  * テーブル形式での結果表示
  */
-function displayTableResults(suggestions: any[], logger: Logger) {
+function displayTableResults(
+  suggestions: OptimizationSuggestion[],
+  _logger: Logger
+): void {
   if (suggestions.length === 0) {
     console.log(chalk.yellow('📋 最適化提案は見つかりませんでした'));
     return;
@@ -294,7 +373,10 @@ function displayTableResults(suggestions: any[], logger: Logger) {
 /**
  * 詳細結果の表示
  */
-function displayDetailedResults(suggestions: any[], logger: Logger) {
+function displayDetailedResults(
+  suggestions: OptimizationSuggestion[],
+  _logger: Logger
+): void {
   if (suggestions.length === 0) {
     console.log(chalk.yellow('📋 最適化提案は見つかりませんでした'));
     return;
@@ -370,7 +452,10 @@ function displayDetailedResults(suggestions: any[], logger: Logger) {
 /**
  * サマリーの表示
  */
-function displaySummary(suggestions: any[], logger: Logger) {
+function displaySummary(
+  suggestions: OptimizationSuggestion[],
+  _logger: Logger
+): void {
   if (suggestions.length === 0) return;
 
   console.log(chalk.blue.bold('📈 最適化提案サマリー'));

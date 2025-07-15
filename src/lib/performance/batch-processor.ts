@@ -3,7 +3,7 @@
  * DNS解決やCSV処理の大量データを効率的に処理
  */
 
-export interface BatchProcessorOptions {
+export interface BatchProcessorOptions<T> {
   batchSize: number;
   concurrency: number;
   retries: number;
@@ -20,9 +20,9 @@ export interface BatchResult<T, R> {
 }
 
 export class BatchProcessor<T, R> {
-  private options: BatchProcessorOptions;
+  private options: BatchProcessorOptions<T>;
 
-  constructor(options: Partial<BatchProcessorOptions> = {}) {
+  constructor(options: Partial<BatchProcessorOptions<T>> = {}) {
     this.options = {
       batchSize: 50,
       concurrency: 10,
@@ -180,7 +180,7 @@ class Semaphore {
  * DNS解決専用のバッチプロセッサー
  */
 export class DNSBatchProcessor extends BatchProcessor<string, unknown> {
-  constructor(options: Partial<BatchProcessorOptions> = {}) {
+  constructor(options: Partial<BatchProcessorOptions<string>> = {}) {
     super({
       batchSize: 100,
       concurrency: 20,
@@ -195,7 +195,7 @@ export class DNSBatchProcessor extends BatchProcessor<string, unknown> {
  * CSV処理専用のバッチプロセッサー
  */
 export class CSVBatchProcessor<T> extends BatchProcessor<T, T> {
-  constructor(options: Partial<BatchProcessorOptions> = {}) {
+  constructor(options: Partial<BatchProcessorOptions<T>> = {}) {
     super({
       batchSize: 1000,
       concurrency: 4,

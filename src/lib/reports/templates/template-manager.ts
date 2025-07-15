@@ -4,13 +4,8 @@
 
 import { EventEmitter } from 'events';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
 
-import type {
-  ReportTemplate,
-  ReportSection,
-  ReportStyling,
-} from '../core/types.js';
+import type { ReportTemplate, ReportStyling } from '../core/types.js';
 
 export class TemplateManager extends EventEmitter {
   private templates: Map<string, ReportTemplate> = new Map();

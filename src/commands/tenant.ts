@@ -1,8 +1,39 @@
 import { Logger } from '@lib/logger.js';
 import MultiTenantDNSManager from '@lib/multi-tenant-dns-manager.js';
-import { OutputFormatter } from '@lib/output-formatter.js';
 import chalk from 'chalk';
 import { Command } from 'commander';
+import { table } from 'table';
+
+// テナント更新用の型定義
+interface TenantUpdateOptions {
+  name?: string;
+  plan?: 'free' | 'basic' | 'professional' | 'enterprise';
+  status?: 'active' | 'suspended' | 'cancelled';
+  settings?: {
+    maxDNSRecords?: number;
+    maxQueriesPerMonth?: number;
+    maxUsers?: number;
+    apiRateLimit?: number;
+    allowedFeatures?: string[];
+    retention?: {
+      logs?: number;
+      metrics?: number;
+      backups?: number;
+    };
+  };
+  limits?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// 監査ログフィルター用の型定義
+interface AuditLogFilterOptions {
+  limit?: number;
+  action?: string;
+  userId?: string;
+  risk?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
 
 const logger = new Logger();
 
@@ -33,8 +64,6 @@ tenantCommand
       if (options.status) {
         tenants = tenants.filter(t => t.status === options.status);
       }
-
-      const formatter = new OutputFormatter();
 
       if (options.stats) {
         const systemStats = manager.getSystemStats();
@@ -81,20 +110,30 @@ tenantCommand
       if (options.format === 'json') {
         console.log(JSON.stringify(tenants, null, 2));
       } else {
-        const tableData = tenants.map(tenant => ({
-          ID: tenant.id,
-          名前: tenant.name,
-          ドメイン: tenant.domain,
-          プラン: tenant.plan,
-          ステータス:
+        const tableData = [
+          [
+            'ID',
+            '名前',
+            'ドメイン',
+            'プラン',
+            'ステータス',
+            '作成日',
+            '連絡先',
+          ],
+          ...tenants.map(tenant => [
+            tenant.id,
+            tenant.name,
+            tenant.domain,
+            tenant.plan,
             tenant.status === 'active'
               ? chalk.green('アクティブ')
               : chalk.red('非アクティブ'),
-          作成日: tenant.createdAt.toLocaleDateString('ja-JP'),
-          連絡先: tenant.metadata.contactEmail,
-        }));
+            tenant.createdAt.toLocaleDateString('ja-JP'),
+            tenant.metadata.contactEmail,
+          ]),
+        ];
 
-        formatter.formatTable(tableData);
+        console.log(table(tableData));
       }
 
       await manager.shutdown();
@@ -451,7 +490,7 @@ tenantCommand
         return;
       }
 
-      const updates: any = {};
+      const updates: TenantUpdateOptions = {};
 
       if (options.name) {
         updates.name = options.name;
@@ -489,6 +528,7 @@ tenantCommand
 
         const planConfig =
           planConfigs[options.plan as keyof typeof planConfigs];
+        updates.plan = options.plan;
         updates.settings = {
           ...tenant.settings,
           ...planConfig,
@@ -496,7 +536,7 @@ tenantCommand
       }
 
       if (options.status) {
-        updates.status = options.status;
+        updates.status = options.status as 'active' | 'suspended' | 'cancelled';
       }
 
       if (options.email) {
@@ -506,7 +546,10 @@ tenantCommand
         };
       }
 
-      const updatedTenant = await manager.updateTenant(tenantId, updates);
+      const updatedTenant = await manager.updateTenant(
+        tenantId,
+        updates as any
+      );
 
       console.log(chalk.bold('\n✅ テナント更新完了'));
       console.log(chalk.gray('─'.repeat(50)));
@@ -647,23 +690,32 @@ tenantCommand
         if (users.length === 0) {
           console.log(chalk.yellow('ユーザーが見つかりません'));
         } else {
-          const formatter = new OutputFormatter();
-          const tableData = users.map(user => ({
-            ID: user.id,
-            メールアドレス: user.email,
-            名前: user.profile.name,
-            役割: user.role,
-            ステータス:
+          const tableData = [
+            [
+              'ID',
+              'メールアドレス',
+              '名前',
+              '役割',
+              'ステータス',
+              '作成日',
+              '最終ログイン',
+            ],
+            ...users.map(user => [
+              user.id,
+              user.email,
+              user.profile.name,
+              user.role,
               user.status === 'active'
                 ? chalk.green('アクティブ')
                 : chalk.red('非アクティブ'),
-            作成日: user.createdAt.toLocaleDateString('ja-JP'),
-            最終ログイン: user.lastLoginAt
-              ? user.lastLoginAt.toLocaleDateString('ja-JP')
-              : 'なし',
-          }));
+              user.createdAt.toLocaleDateString('ja-JP'),
+              user.lastLoginAt
+                ? user.lastLoginAt.toLocaleDateString('ja-JP')
+                : 'なし',
+            ]),
+          ];
 
-          formatter.formatTable(tableData);
+          console.log(table(tableData));
         }
       }
 
@@ -696,7 +748,7 @@ tenantCommand
 
       logger.info(`監査ログを取得中: ${tenantId}`);
 
-      const filterOptions: any = {
+      const filterOptions: AuditLogFilterOptions = {
         limit: parseInt(options.limit) || 20,
       };
 
@@ -714,30 +766,39 @@ tenantCommand
       if (auditLogs.length === 0) {
         console.log(chalk.yellow('監査ログが見つかりません'));
       } else {
-        const formatter = new OutputFormatter();
-        const tableData = auditLogs.map(log => {
-          const riskColor =
-            log.risk === 'high'
-              ? chalk.red
-              : log.risk === 'medium'
-                ? chalk.yellow
-                : chalk.green;
+        const tableData = [
+          [
+            '時刻',
+            'アクション',
+            'リソース',
+            'ユーザー',
+            '結果',
+            'リスク',
+            'IPアドレス',
+          ],
+          ...auditLogs.map(log => {
+            const riskColor =
+              log.risk === 'high'
+                ? chalk.red
+                : log.risk === 'medium'
+                  ? chalk.yellow
+                  : chalk.green;
 
-          return {
-            時刻: log.timestamp.toLocaleString('ja-JP'),
-            アクション: log.action,
-            リソース: `${log.resource.type}:${log.resource.name}`,
-            ユーザー: log.userId,
-            結果:
+            return [
+              log.timestamp.toLocaleString('ja-JP'),
+              log.action,
+              `${log.resource.type}:${log.resource.name}`,
+              log.userId,
               log.result === 'success'
                 ? chalk.green('成功')
                 : chalk.red('失敗'),
-            リスク: riskColor(log.risk),
-            IPアドレス: log.ipAddress,
-          };
-        });
+              riskColor(log.risk),
+              log.ipAddress,
+            ];
+          }),
+        ];
 
-        formatter.formatTable(tableData);
+        console.log(table(tableData));
       }
 
       await manager.shutdown();

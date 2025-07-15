@@ -1,132 +1,55 @@
 /**
- * 地域別DNS設定管理システム
+ * 地域別DNS設定管理システム - メインクラス
  *
- * グローバル展開に対応した地域別DNS最適化機能
- * - 地域別DNSサーバー設定
- * - コンプライアンス要件対応
- * - パフォーマンス最適化
- * - 規制要件対応
+ * 分離された機能モジュールを統合する軽量なマネージャークラス
  */
 
 import { EventEmitter } from 'events';
 
-import { DNSRecord } from './dns-resolver.js';
+import { IDNSRecord as DNSRecord } from './dns-resolver.js';
 import { I18nManager, RegionalSettings } from './i18n-manager.js';
 import { Logger } from './logger.js';
 
-export interface RegionalDNSConfig {
-  region: string;
-  name: string;
-  primaryDNS: string[];
-  secondaryDNS: string[];
-  localDNS: string[];
-  cdnPreferences: string[];
-  optimizationTargets: string[];
-  securityFeatures: string[];
-  performanceTargets: {
-    responseTime: number;
-    uptime: number;
-    throughput: number;
-  };
-  complianceRequirements: {
-    dataLocalization: boolean;
-    encryptionRequired: boolean;
-    auditLogging: boolean;
-    retentionPeriod: number;
-  };
-  businessHours: {
-    timezone: string;
-    start: string;
-    end: string;
-    days: string[];
-  };
-  supportedLanguages: string[];
-}
+// 機能モジュール
+import { RegionalComplianceChecker } from './regional-compliance-checker.js';
+import { RegionalConfigManager } from './regional-config-manager.js';
+import { RegionalDNSOptimizer } from './regional-dns-optimizer.js';
+import { RegionalPerformanceMonitor } from './regional-performance-monitor.js';
 
-export interface DNSOptimizationStrategy {
-  strategy: string;
-  description: string;
-  applicableRegions: string[];
-  performanceImpact: {
-    responseTime: number;
-    uptime: number;
-    throughput: number;
-  };
-  implementationComplexity: 'low' | 'medium' | 'high';
-  estimatedCost: 'low' | 'medium' | 'high';
-  riskLevel: 'low' | 'medium' | 'high';
-  prerequisites: string[];
-}
-
-export interface ComplianceCheck {
-  requirement: string;
-  status: 'compliant' | 'non-compliant' | 'partially-compliant';
-  details: string;
-  actionRequired: string[];
-  riskLevel: 'low' | 'medium' | 'high';
-  deadline?: Date;
-}
-
-export interface RegionalPerformanceMetrics {
-  region: string;
-  averageResponseTime: number;
-  uptime: number;
-  throughput: number;
-  errorRate: number;
-  complianceScore: number;
-  lastUpdated: Date;
-  trends: {
-    responseTime: number[];
-    uptime: number[];
-    throughput: number[];
-  };
-}
-
-export interface RegionalDNSManagerOptions {
-  defaultRegion?: string;
-  autoDetectRegion?: boolean;
-  enablePerformanceMonitoring?: boolean;
-  enableComplianceChecking?: boolean;
-  enableAutomaticOptimization?: boolean;
-  optimizationInterval?: number;
-  performanceThresholds?: {
-    responseTime: number;
-    uptime: number;
-    throughput: number;
-  };
-  complianceCheckInterval?: number;
-  enableAlerts?: boolean;
-  alertThresholds?: {
-    responseTime: number;
-    uptime: number;
-    complianceScore: number;
-  };
-}
+// 型定義
+import type {
+  RegionalDNSConfig,
+  RegionalDNSManagerOptions,
+  RegionalPerformanceMetrics,
+  ComplianceCheck,
+  DNSOptimizationResult,
+  RegionalStatistics,
+  RegionalAlert,
+  RegionalComplianceReport,
+  DNSPerformanceReport,
+} from './regional-dns-types.js';
 
 /**
  * 地域別DNS管理システム
  */
 export class RegionalDNSManager extends EventEmitter {
   private logger: Logger;
-  private i18nManager: I18nManager;
-  private regionalConfigs: Map<string, RegionalDNSConfig>;
-  private optimizationStrategies: Map<string, DNSOptimizationStrategy>;
-  private performanceMetrics: Map<string, RegionalPerformanceMetrics>;
-  private complianceChecks: Map<string, ComplianceCheck[]>;
-  private currentRegion: string;
   private options: RegionalDNSManagerOptions;
-  private monitoringIntervals: Map<string, NodeJS.Timeout>;
+  private i18nManager: I18nManager;
+  private currentRegion: string;
 
-  constructor(
-    logger?: Logger,
-    i18nManager?: I18nManager,
-    options: RegionalDNSManagerOptions = {}
-  ) {
+  // 機能モジュール
+  private configManager: RegionalConfigManager;
+  private performanceMonitor: RegionalPerformanceMonitor;
+  private complianceChecker: RegionalComplianceChecker;
+  private dnsOptimizer: RegionalDNSOptimizer;
+
+  constructor(options: RegionalDNSManagerOptions = {}, logger?: Logger) {
     super();
-    this.logger = logger || new Logger({ level: 'info' });
-    this.i18nManager = i18nManager || new I18nManager();
+
+    this.logger = logger || new Logger({ verbose: false });
     this.options = {
-      defaultRegion: 'global',
+      defaultRegion: 'north-america',
       autoDetectRegion: true,
       enablePerformanceMonitoring: true,
       enableComplianceChecking: true,
@@ -134,447 +57,431 @@ export class RegionalDNSManager extends EventEmitter {
       optimizationInterval: 300000, // 5分
       performanceThresholds: {
         responseTime: 100,
-        uptime: 99.9,
-        throughput: 1000,
+        uptime: 99.0,
+        throughput: 5000,
       },
-      complianceCheckInterval: 3600000, // 1時間
+      complianceCheckInterval: 86400000, // 24時間
       enableAlerts: true,
       alertThresholds: {
         responseTime: 200,
-        uptime: 99.0,
-        complianceScore: 80,
+        uptime: 98.0,
+        errorRate: 5.0,
       },
       ...options,
     };
 
-    this.regionalConfigs = new Map();
-    this.optimizationStrategies = new Map();
-    this.performanceMetrics = new Map();
-    this.complianceChecks = new Map();
-    this.monitoringIntervals = new Map();
-
     this.currentRegion = this.options.defaultRegion!;
+    this.i18nManager = new I18nManager();
 
-    this.initializeRegionalConfigs();
-    this.initializeOptimizationStrategies();
-    this.initializePerformanceMetrics();
-    this.initializeComplianceChecks();
+    // 機能モジュールの初期化
+    this.configManager = new RegionalConfigManager(this.logger);
+    this.performanceMonitor = new RegionalPerformanceMonitor(
+      this.logger,
+      this.options
+    );
+    this.complianceChecker = new RegionalComplianceChecker(
+      this.logger,
+      this.options
+    );
+    this.dnsOptimizer = new RegionalDNSOptimizer(this.logger, this.options);
 
+    // イベント転送の設定
+    this.setupEventForwarding();
+
+    // 自動検出の実行
     if (this.options.autoDetectRegion) {
       this.detectRegion();
     }
 
-    if (this.options.enablePerformanceMonitoring) {
-      this.startPerformanceMonitoring();
+    // 監視とチェックの開始
+    this.startServices();
+
+    this.logger.info('地域別DNS管理システムが初期化されました', {
+      currentRegion: this.currentRegion,
+      availableRegions: this.configManager.getAvailableRegions(),
+      options: this.options,
+    });
+  }
+
+  // 公開API - 設定管理
+
+  /**
+   * 現在の地域設定取得
+   */
+  getCurrentRegion(): string {
+    return this.currentRegion;
+  }
+
+  /**
+   * 地域の切り替え
+   */
+  setCurrentRegion(region: string): void {
+    const config = this.configManager.getRegionalConfig(region);
+    if (config) {
+      const previousRegion = this.currentRegion;
+      this.currentRegion = region;
+
+      this.emit('region-changed', { previousRegion, newRegion: region });
+
+      this.logger.info('地域を切り替えました', {
+        previousRegion,
+        newRegion: region,
+      });
+    } else {
+      this.logger.warn('存在しない地域への切り替えを試行しました', { region });
+      throw new Error(`地域 '${region}' は存在しません`);
+    }
+  }
+
+  /**
+   * 地域設定の取得
+   */
+  getRegionalConfig(region?: string): RegionalDNSConfig | undefined {
+    const targetRegion = region || this.currentRegion;
+    return this.configManager.getRegionalConfig(targetRegion);
+  }
+
+  /**
+   * すべての地域設定の取得
+   */
+  getAllRegionalConfigs(): Map<string, RegionalDNSConfig> {
+    return this.configManager.getAllRegionalConfigs();
+  }
+
+  /**
+   * 利用可能な地域リスト取得
+   */
+  getAvailableRegions(): string[] {
+    return this.configManager.getAvailableRegions();
+  }
+
+  /**
+   * 地域設定の更新
+   */
+  updateRegionalConfig(
+    region: string,
+    config: Partial<RegionalDNSConfig>
+  ): void {
+    this.configManager.updateRegionalConfig(region, config);
+    this.emit('config-updated', { region, config });
+  }
+
+  // 公開API - パフォーマンス監視
+
+  /**
+   * パフォーマンスメトリクス取得
+   */
+  getPerformanceMetrics(
+    region?: string
+  ): RegionalPerformanceMetrics | undefined {
+    const targetRegion = region || this.currentRegion;
+    return this.performanceMonitor.getPerformanceMetrics(targetRegion);
+  }
+
+  /**
+   * すべての地域のパフォーマンスメトリクス取得
+   */
+  getAllPerformanceMetrics(): Map<string, RegionalPerformanceMetrics> {
+    return this.performanceMonitor.getAllPerformanceMetrics();
+  }
+
+  /**
+   * パフォーマンスレポート生成
+   */
+  generatePerformanceReport(region?: string): DNSPerformanceReport | null {
+    const targetRegion = region || this.currentRegion;
+    return this.performanceMonitor.generatePerformanceReport(targetRegion);
+  }
+
+  /**
+   * パフォーマンス統計取得
+   */
+  getPerformanceStatistics(): ReturnType<
+    RegionalPerformanceMonitor['getPerformanceStatistics']
+  > {
+    return this.performanceMonitor.getPerformanceStatistics();
+  }
+
+  // 公開API - コンプライアンス
+
+  /**
+   * コンプライアンスチェック結果取得
+   */
+  getComplianceChecks(region?: string): ComplianceCheck[] {
+    const targetRegion = region || this.currentRegion;
+    return this.complianceChecker.getComplianceChecks(targetRegion);
+  }
+
+  /**
+   * コンプライアンスレポート生成
+   */
+  generateComplianceReport(region?: string): RegionalComplianceReport | null {
+    const targetRegion = region || this.currentRegion;
+    return this.complianceChecker.generateComplianceReport(targetRegion);
+  }
+
+  /**
+   * コンプライアンス統計取得
+   */
+  getComplianceStatistics(): ReturnType<
+    RegionalComplianceChecker['getComplianceStatistics']
+  > {
+    return this.complianceChecker.getComplianceStatistics();
+  }
+
+  /**
+   * 手動コンプライアンスチェック実行
+   */
+  async runComplianceCheck(region?: string): Promise<ComplianceCheck[]> {
+    const targetRegion = region || this.currentRegion;
+    const config = this.configManager.getRegionalConfig(targetRegion);
+
+    if (!config) {
+      throw new Error(`地域 '${targetRegion}' の設定が見つかりません`);
     }
 
-    if (this.options.enableComplianceChecking) {
-      this.startComplianceChecking();
+    return await this.complianceChecker.runComplianceCheck(
+      targetRegion,
+      config
+    );
+  }
+
+  // 公開API - 最適化
+
+  /**
+   * 地域DNS最適化実行
+   */
+  async optimizeRegion(region?: string): Promise<DNSOptimizationResult[]> {
+    const targetRegion = region || this.currentRegion;
+    const config = this.configManager.getRegionalConfig(targetRegion);
+    const metrics = this.performanceMonitor.getPerformanceMetrics(targetRegion);
+
+    if (!config) {
+      throw new Error(`地域 '${targetRegion}' の設定が見つかりません`);
     }
+
+    if (!metrics) {
+      throw new Error(
+        `地域 '${targetRegion}' のパフォーマンスメトリクスが見つかりません`
+      );
+    }
+
+    return await this.dnsOptimizer.optimizeRegion(
+      targetRegion,
+      config,
+      metrics
+    );
   }
 
   /**
-   * 地域別DNS設定の初期化
+   * 最適化推奨事項取得
    */
-  private initializeRegionalConfigs(): void {
-    const configs: RegionalDNSConfig[] = [
-      {
-        region: 'north-america',
-        name: 'North America',
-        primaryDNS: ['8.8.8.8', '8.8.4.4'],
-        secondaryDNS: ['1.1.1.1', '1.0.0.1'],
-        localDNS: ['208.67.222.222', '208.67.220.220'],
-        cdnPreferences: ['cloudflare', 'aws-cloudfront', 'fastly'],
-        optimizationTargets: ['performance', 'availability', 'security'],
-        securityFeatures: ['dnssec', 'doh', 'dot'],
-        performanceTargets: {
-          responseTime: 50,
-          uptime: 99.9,
-          throughput: 10000,
-        },
-        complianceRequirements: {
-          dataLocalization: false,
-          encryptionRequired: true,
-          auditLogging: true,
-          retentionPeriod: 365,
-        },
-        businessHours: {
-          timezone: 'America/New_York',
-          start: '09:00',
-          end: '17:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        },
-        supportedLanguages: ['en', 'es', 'fr'],
-      },
-      {
-        region: 'europe',
-        name: 'Europe',
-        primaryDNS: ['1.1.1.1', '1.0.0.1'],
-        secondaryDNS: ['8.8.8.8', '8.8.4.4'],
-        localDNS: ['185.228.168.9', '185.228.169.9'],
-        cdnPreferences: ['cloudflare', 'aws-cloudfront', 'azure-cdn'],
-        optimizationTargets: [
-          'gdpr-compliance',
-          'performance',
-          'data-sovereignty',
-        ],
-        securityFeatures: ['dnssec', 'doh', 'dot', 'gdpr-compliance'],
-        performanceTargets: {
-          responseTime: 30,
-          uptime: 99.95,
-          throughput: 15000,
-        },
-        complianceRequirements: {
-          dataLocalization: true,
-          encryptionRequired: true,
-          auditLogging: true,
-          retentionPeriod: 730,
-        },
-        businessHours: {
-          timezone: 'Europe/London',
-          start: '09:00',
-          end: '17:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        },
-        supportedLanguages: [
-          'en',
-          'de',
-          'fr',
-          'es',
-          'it',
-          'nl',
-          'sv',
-          'da',
-          'no',
-          'fi',
-          'pl',
-          'cs',
-        ],
-      },
-      {
-        region: 'asia-pacific',
-        name: 'Asia Pacific',
-        primaryDNS: ['8.8.8.8', '8.8.4.4'],
-        secondaryDNS: ['1.1.1.1', '1.0.0.1'],
-        localDNS: ['210.2.4.8', '168.95.1.1'],
-        cdnPreferences: ['cloudflare', 'aws-cloudfront', 'alibaba-cloud'],
-        optimizationTargets: [
-          'performance',
-          'regional-compliance',
-          'cost-optimization',
-        ],
-        securityFeatures: ['dnssec', 'doh', 'regional-filtering'],
-        performanceTargets: {
-          responseTime: 40,
-          uptime: 99.9,
-          throughput: 20000,
-        },
-        complianceRequirements: {
-          dataLocalization: true,
-          encryptionRequired: true,
-          auditLogging: true,
-          retentionPeriod: 1095,
-        },
-        businessHours: {
-          timezone: 'Asia/Tokyo',
-          start: '09:00',
-          end: '18:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        },
-        supportedLanguages: [
-          'en',
-          'ja',
-          'zh',
-          'ko',
-          'hi',
-          'th',
-          'vi',
-          'id',
-          'ms',
-          'tl',
-        ],
-      },
-      {
-        region: 'middle-east',
-        name: 'Middle East',
-        primaryDNS: ['8.8.8.8', '8.8.4.4'],
-        secondaryDNS: ['1.1.1.1', '1.0.0.1'],
-        localDNS: ['8.26.56.26', '8.20.247.20'],
-        cdnPreferences: ['cloudflare', 'aws-cloudfront', 'azure-cdn'],
-        optimizationTargets: [
-          'regional-compliance',
-          'performance',
-          'content-filtering',
-        ],
-        securityFeatures: [
-          'dnssec',
-          'content-filtering',
-          'regional-compliance',
-        ],
-        performanceTargets: {
-          responseTime: 60,
-          uptime: 99.8,
-          throughput: 8000,
-        },
-        complianceRequirements: {
-          dataLocalization: true,
-          encryptionRequired: true,
-          auditLogging: true,
-          retentionPeriod: 2190,
-        },
-        businessHours: {
-          timezone: 'Asia/Dubai',
-          start: '08:00',
-          end: '16:00',
-          days: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'],
-        },
-        supportedLanguages: ['ar', 'en', 'he'],
-      },
-      {
-        region: 'americas',
-        name: 'Americas',
-        primaryDNS: ['8.8.8.8', '8.8.4.4'],
-        secondaryDNS: ['1.1.1.1', '1.0.0.1'],
-        localDNS: ['200.160.7.186', '200.160.0.186'],
-        cdnPreferences: ['cloudflare', 'aws-cloudfront', 'google-cloud-cdn'],
-        optimizationTargets: [
-          'cost-optimization',
-          'performance',
-          'regional-availability',
-        ],
-        securityFeatures: ['dnssec', 'doh'],
-        performanceTargets: {
-          responseTime: 80,
-          uptime: 99.5,
-          throughput: 5000,
-        },
-        complianceRequirements: {
-          dataLocalization: false,
-          encryptionRequired: false,
-          auditLogging: true,
-          retentionPeriod: 1095,
-        },
-        businessHours: {
-          timezone: 'America/Mexico_City',
-          start: '08:00',
-          end: '17:00',
-          days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        },
-        supportedLanguages: ['es', 'pt', 'en'],
-      },
-      {
-        region: 'global',
-        name: 'Global',
-        primaryDNS: ['8.8.8.8', '8.8.4.4'],
-        secondaryDNS: ['1.1.1.1', '1.0.0.1'],
-        localDNS: ['8.8.8.8', '8.8.4.4'],
-        cdnPreferences: ['cloudflare', 'aws-cloudfront', 'google-cloud-cdn'],
-        optimizationTargets: [
-          'global-availability',
-          'performance',
-          'cost-optimization',
-        ],
-        securityFeatures: ['dnssec', 'doh', 'dot'],
-        performanceTargets: {
-          responseTime: 100,
-          uptime: 99.9,
-          throughput: 50000,
-        },
-        complianceRequirements: {
-          dataLocalization: false,
-          encryptionRequired: false,
-          auditLogging: false,
-          retentionPeriod: 365,
-        },
-        businessHours: {
-          timezone: 'UTC',
-          start: '00:00',
-          end: '23:59',
-          days: [
-            'monday',
-            'tuesday',
-            'wednesday',
-            'thursday',
-            'friday',
-            'saturday',
-            'sunday',
-          ],
-        },
-        supportedLanguages: ['en'],
-      },
-    ];
+  getOptimizationRecommendations(
+    region?: string
+  ): ReturnType<RegionalDNSOptimizer['generateOptimizationRecommendations']> {
+    const targetRegion = region || this.currentRegion;
+    const metrics = this.performanceMonitor.getPerformanceMetrics(targetRegion);
 
-    configs.forEach(config => {
-      this.regionalConfigs.set(config.region, config);
-    });
+    if (!metrics) {
+      throw new Error(
+        `地域 '${targetRegion}' のパフォーマンスメトリクスが見つかりません`
+      );
+    }
+
+    return this.dnsOptimizer.generateOptimizationRecommendations(
+      targetRegion,
+      metrics
+    );
   }
 
   /**
-   * 最適化戦略の初期化
+   * 最適化統計取得
    */
-  private initializeOptimizationStrategies(): void {
-    const strategies: DNSOptimizationStrategy[] = [
-      {
-        strategy: 'latency-optimization',
-        description: 'レイテンシー最適化による応答時間改善',
-        applicableRegions: ['all'],
-        performanceImpact: {
-          responseTime: -30,
-          uptime: 0,
-          throughput: 10,
-        },
-        implementationComplexity: 'medium',
-        estimatedCost: 'medium',
-        riskLevel: 'low',
-        prerequisites: ['regional-dns-servers', 'performance-monitoring'],
-      },
-      {
-        strategy: 'geo-dns-routing',
-        description: '地理的DNS ルーティングによる最適化',
-        applicableRegions: ['all'],
-        performanceImpact: {
-          responseTime: -50,
-          uptime: 2,
-          throughput: 25,
-        },
-        implementationComplexity: 'high',
-        estimatedCost: 'high',
-        riskLevel: 'medium',
-        prerequisites: ['multiple-regions', 'traffic-management'],
-      },
-      {
-        strategy: 'cdn-integration',
-        description: 'CDN統合による配信最適化',
-        applicableRegions: ['all'],
-        performanceImpact: {
-          responseTime: -40,
-          uptime: 5,
-          throughput: 50,
-        },
-        implementationComplexity: 'high',
-        estimatedCost: 'high',
-        riskLevel: 'low',
-        prerequisites: ['cdn-service', 'cache-management'],
-      },
-      {
-        strategy: 'dnssec-implementation',
-        description: 'DNSSEC実装によるセキュリティ強化',
-        applicableRegions: ['europe', 'north-america', 'asia-pacific'],
-        performanceImpact: {
-          responseTime: 10,
-          uptime: 1,
-          throughput: -5,
-        },
-        implementationComplexity: 'high',
-        estimatedCost: 'medium',
-        riskLevel: 'medium',
-        prerequisites: ['dns-management', 'key-management'],
-      },
-      {
-        strategy: 'anycast-deployment',
-        description: 'Anycast展開による可用性向上',
-        applicableRegions: ['all'],
-        performanceImpact: {
-          responseTime: -60,
-          uptime: 10,
-          throughput: 100,
-        },
-        implementationComplexity: 'high',
-        estimatedCost: 'high',
-        riskLevel: 'medium',
-        prerequisites: ['multiple-datacenters', 'bgp-routing'],
-      },
-    ];
+  getOptimizationStatistics(): ReturnType<
+    RegionalDNSOptimizer['getOptimizationStatistics']
+  > {
+    return this.dnsOptimizer.getOptimizationStatistics();
+  }
 
-    strategies.forEach(strategy => {
-      this.optimizationStrategies.set(strategy.strategy, strategy);
-    });
+  // 公開API - アラート
+
+  /**
+   * アクティブアラート取得
+   */
+  getActiveAlerts(): RegionalAlert[] {
+    return this.performanceMonitor.getActiveAlerts();
   }
 
   /**
-   * パフォーマンス監視の初期化
+   * アラート履歴取得
    */
-  private initializePerformanceMetrics(): void {
-    this.regionalConfigs.forEach((config, region) => {
-      const metrics: RegionalPerformanceMetrics = {
-        region,
-        averageResponseTime: config.performanceTargets.responseTime,
-        uptime: config.performanceTargets.uptime,
-        throughput: config.performanceTargets.throughput,
-        errorRate: 0,
-        complianceScore: 100,
-        lastUpdated: new Date(),
-        trends: {
-          responseTime: [],
-          uptime: [],
-          throughput: [],
-        },
-      };
+  getAlertHistory(region?: string): RegionalAlert[] {
+    return this.performanceMonitor.getAlertHistory(region);
+  }
 
-      this.performanceMetrics.set(region, metrics);
-    });
+  // 公開API - 統計とレポート
+
+  /**
+   * 地域統計の取得
+   */
+  getRegionalStatistics(): RegionalStatistics {
+    const performanceStats = this.performanceMonitor.getPerformanceStatistics();
+    const complianceStats = this.complianceChecker.getComplianceStatistics();
+    const optimizationStats = this.dnsOptimizer.getOptimizationStatistics();
+    const configStats = this.configManager.getConfigStatistics();
+    const activeAlerts = this.performanceMonitor.getActiveAlerts();
+
+    return {
+      totalRegions: configStats.totalRegions,
+      activeRegions: performanceStats.totalRegions,
+      averagePerformance: performanceStats.averageMetrics,
+      complianceOverview: complianceStats.complianceDistribution,
+      alertSummary: {
+        active: activeAlerts.length,
+        critical: activeAlerts.filter(a => a.severity === 'critical').length,
+        acknowledged: activeAlerts.filter(a => a.status === 'acknowledged')
+          .length,
+      },
+      optimizationOpportunities: optimizationStats.totalOptimizations,
+    };
   }
 
   /**
-   * コンプライアンスチェックの初期化
+   * 包括的システムレポート生成
    */
-  private initializeComplianceChecks(): void {
-    this.regionalConfigs.forEach((config, region) => {
-      const checks: ComplianceCheck[] = [];
+  generateSystemReport(): {
+    overview: RegionalStatistics;
+    performanceReports: Map<string, DNSPerformanceReport>;
+    complianceReports: Map<string, RegionalComplianceReport>;
+    activeAlerts: RegionalAlert[];
+    recommendations: Array<{
+      region: string;
+      type: 'performance' | 'compliance' | 'optimization';
+      priority: 'high' | 'medium' | 'low';
+      description: string;
+    }>;
+  } {
+    const overview = this.getRegionalStatistics();
+    const performanceReports = new Map<string, DNSPerformanceReport>();
+    const complianceReports = new Map<string, RegionalComplianceReport>();
+    const recommendations: Array<{
+      region: string;
+      type: 'performance' | 'compliance' | 'optimization';
+      priority: 'high' | 'medium' | 'low';
+      description: string;
+    }> = [];
 
-      // GDPR対応チェック (ヨーロッパ)
-      if (region === 'europe') {
-        checks.push({
-          requirement: 'GDPR Data Localization',
-          status: config.complianceRequirements.dataLocalization
-            ? 'compliant'
-            : 'non-compliant',
-          details: 'EU内でのデータ処理・保存要件',
-          actionRequired: config.complianceRequirements.dataLocalization
-            ? []
-            : ['データ処理をEU内に移転', 'データ保護影響評価の実施'],
-          riskLevel: 'high',
-        });
+    // 各地域のレポート生成
+    this.configManager.getAvailableRegions().forEach(region => {
+      const perfReport =
+        this.performanceMonitor.generatePerformanceReport(region);
+      if (perfReport) {
+        performanceReports.set(region, perfReport);
 
-        checks.push({
-          requirement: 'GDPR Encryption',
-          status: config.complianceRequirements.encryptionRequired
-            ? 'compliant'
-            : 'non-compliant',
-          details: '保存時および転送時の暗号化要件',
-          actionRequired: config.complianceRequirements.encryptionRequired
-            ? []
-            : ['暗号化の実装', '暗号化ポリシーの策定'],
-          riskLevel: 'high',
+        // パフォーマンス推奨事項
+        perfReport.recommendations.forEach(rec => {
+          recommendations.push({
+            region,
+            type: 'performance',
+            priority: 'medium',
+            description: rec,
+          });
         });
       }
 
-      // 一般的なセキュリティチェック
-      checks.push({
-        requirement: 'DNS Security',
-        status: config.securityFeatures.includes('dnssec')
-          ? 'compliant'
-          : 'partially-compliant',
-        details: 'DNS セキュリティ機能の実装状況',
-        actionRequired: config.securityFeatures.includes('dnssec')
-          ? []
-          : ['DNSSEC実装', 'DNS over HTTPS設定'],
-        riskLevel: 'medium',
-      });
+      const compReport =
+        this.complianceChecker.generateComplianceReport(region);
+      if (compReport) {
+        complianceReports.set(region, compReport);
 
-      checks.push({
-        requirement: 'Audit Logging',
-        status: config.complianceRequirements.auditLogging
-          ? 'compliant'
-          : 'non-compliant',
-        details: '監査ログの実装・保存要件',
-        actionRequired: config.complianceRequirements.auditLogging
-          ? []
-          : ['監査ログシステム実装', 'ログ保存ポリシー策定'],
-        riskLevel: 'medium',
-      });
+        // コンプライアンス推奨事項
+        compReport.recommendations.forEach(rec => {
+          recommendations.push({
+            region,
+            type: 'compliance',
+            priority: compReport.overallScore < 80 ? 'high' : 'medium',
+            description: rec,
+          });
+        });
+      }
 
-      this.complianceChecks.set(region, checks);
+      // 最適化推奨事項
+      const metrics = this.performanceMonitor.getPerformanceMetrics(region);
+      if (metrics) {
+        const optRecommendations =
+          this.dnsOptimizer.generateOptimizationRecommendations(
+            region,
+            metrics
+          );
+        optRecommendations.forEach(rec => {
+          recommendations.push({
+            region,
+            type: 'optimization',
+            priority: rec.priority,
+            description: `${rec.strategy}: ${rec.expectedImprovement}`,
+          });
+        });
+      }
+    });
+
+    return {
+      overview,
+      performanceReports,
+      complianceReports,
+      activeAlerts: this.getActiveAlerts(),
+      recommendations: recommendations.sort((a, b) => {
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      }),
+    };
+  }
+
+  // システム管理
+
+  /**
+   * システムの停止
+   */
+  shutdown(): void {
+    this.performanceMonitor.stopMonitoring();
+    this.complianceChecker.stopComplianceChecking();
+    this.dnsOptimizer.stopAutomaticOptimization();
+
+    this.logger.info('地域別DNS管理システムを停止しました');
+  }
+
+  /**
+   * システムの再起動
+   */
+  restart(): void {
+    this.shutdown();
+    this.startServices();
+
+    this.logger.info('地域別DNS管理システムを再起動しました');
+  }
+
+  // プライベートメソッド
+
+  /**
+   * イベント転送の設定
+   */
+  private setupEventForwarding(): void {
+    // パフォーマンス監視のイベント転送
+    this.performanceMonitor.on('metrics-updated', data => {
+      this.emit('metrics-updated', data);
+    });
+
+    this.performanceMonitor.on('alert', alert => {
+      this.emit('alert', alert);
+    });
+
+    // コンプライアンスチェックのイベント転送
+    this.complianceChecker.on('compliance-check-completed', data => {
+      this.emit('compliance-check-completed', data);
+    });
+
+    // 最適化のイベント転送
+    this.dnsOptimizer.on('optimization-completed', data => {
+      this.emit('optimization-completed', data);
     });
   }
 
@@ -582,449 +489,58 @@ export class RegionalDNSManager extends EventEmitter {
    * 地域の自動検出
    */
   private detectRegion(): void {
-    const detectedRegion = this.i18nManager.getCurrentRegion();
-    if (this.regionalConfigs.has(detectedRegion)) {
-      this.currentRegion = detectedRegion;
-      this.logger.info(`地域を自動検出: ${detectedRegion}`);
-    }
-  }
-
-  /**
-   * パフォーマンス監視の開始
-   */
-  private startPerformanceMonitoring(): void {
-    this.regionalConfigs.forEach((config, region) => {
-      const interval = setInterval(() => {
-        this.updatePerformanceMetrics(region);
-      }, this.options.optimizationInterval);
-
-      this.monitoringIntervals.set(region, interval);
-    });
-  }
-
-  /**
-   * コンプライアンスチェックの開始
-   */
-  private startComplianceChecking(): void {
-    const interval = setInterval(() => {
-      this.performComplianceChecks();
-    }, this.options.complianceCheckInterval);
-
-    this.monitoringIntervals.set('compliance', interval);
-  }
-
-  /**
-   * パフォーマンスメトリクスの更新
-   */
-  private async updatePerformanceMetrics(region: string): Promise<void> {
     try {
-      const config = this.regionalConfigs.get(region);
-      if (!config) return;
-
-      const metrics = this.performanceMetrics.get(region);
-      if (!metrics) return;
-
-      // 実際のDNSパフォーマンス測定 (シミュレーション)
-      const responseTime = this.measureResponseTime(config.primaryDNS);
-      const uptime = this.measureUptime(config.primaryDNS);
-      const throughput = this.measureThroughput(config.primaryDNS);
-
-      // メトリクスの更新
-      metrics.averageResponseTime = responseTime;
-      metrics.uptime = uptime;
-      metrics.throughput = throughput;
-      metrics.lastUpdated = new Date();
-
-      // トレンドデータの更新
-      metrics.trends.responseTime.push(responseTime);
-      metrics.trends.uptime.push(uptime);
-      metrics.trends.throughput.push(throughput);
-
-      // 履歴データの制限 (最新100件)
-      if (metrics.trends.responseTime.length > 100) {
-        metrics.trends.responseTime.shift();
+      const detectedRegion = this.i18nManager.getCurrentRegion();
+      if (this.configManager.getAvailableRegions().includes(detectedRegion)) {
+        this.currentRegion = detectedRegion;
+        this.logger.info(`地域を自動検出しました: ${detectedRegion}`);
+      } else {
+        this.logger.warn(
+          `検出された地域 '${detectedRegion}' は設定されていません。デフォルト地域を使用します: ${this.currentRegion}`
+        );
       }
-      if (metrics.trends.uptime.length > 100) {
-        metrics.trends.uptime.shift();
-      }
-      if (metrics.trends.throughput.length > 100) {
-        metrics.trends.throughput.shift();
-      }
-
-      this.performanceMetrics.set(region, metrics);
-
-      // アラートチェック
-      this.checkPerformanceAlerts(region, metrics);
-
-      this.emit('performance-updated', { region, metrics });
     } catch (error) {
-      this.logger.error(
-        `パフォーマンスメトリクス更新エラー (${region}):`,
-        error
+      this.logger.warn(
+        '地域の自動検出に失敗しました。デフォルト地域を使用します',
+        {
+          defaultRegion: this.currentRegion,
+          error: (error as Error).message,
+        }
       );
     }
   }
 
   /**
-   * 応答時間測定 (シミュレーション)
+   * サービスの開始
    */
-  private measureResponseTime(dnsServers: string[]): number {
-    // 実際の実装では、DNSクエリの応答時間を測定
-    return Math.random() * 100 + 20;
-  }
+  private startServices(): void {
+    const regions = this.configManager.getAvailableRegions();
+    const configs = this.configManager.getAllRegionalConfigs();
 
-  /**
-   * 稼働時間測定 (シミュレーション)
-   */
-  private measureUptime(dnsServers: string[]): number {
-    // 実際の実装では、DNSサーバーの稼働状況を確認
-    return Math.random() * 1 + 99;
-  }
+    // パフォーマンス監視の開始
+    this.performanceMonitor.startMonitoring(regions);
 
-  /**
-   * スループット測定 (シミュレーション)
-   */
-  private measureThroughput(dnsServers: string[]): number {
-    // 実際の実装では、DNSクエリのスループットを測定
-    return Math.random() * 1000 + 5000;
-  }
+    // コンプライアンスチェックの開始
+    this.complianceChecker.startComplianceChecking(configs);
 
-  /**
-   * パフォーマンスアラートのチェック
-   */
-  private checkPerformanceAlerts(
-    region: string,
-    metrics: RegionalPerformanceMetrics
-  ): void {
-    const thresholds = this.options.alertThresholds!;
-
-    if (metrics.averageResponseTime > thresholds.responseTime) {
-      this.emit('performance-alert', {
-        region,
-        type: 'response-time',
-        value: metrics.averageResponseTime,
-        threshold: thresholds.responseTime,
-        severity: 'warning',
-      });
+    // 自動最適化の開始（有効な場合）
+    if (this.options.enableAutomaticOptimization) {
+      this.dnsOptimizer.startAutomaticOptimization(regions);
     }
 
-    if (metrics.uptime < thresholds.uptime) {
-      this.emit('performance-alert', {
-        region,
-        type: 'uptime',
-        value: metrics.uptime,
-        threshold: thresholds.uptime,
-        severity: 'critical',
-      });
-    }
-
-    if (metrics.complianceScore < thresholds.complianceScore) {
-      this.emit('performance-alert', {
-        region,
-        type: 'compliance',
-        value: metrics.complianceScore,
-        threshold: thresholds.complianceScore,
-        severity: 'warning',
-      });
-    }
-  }
-
-  /**
-   * コンプライアンスチェックの実行
-   */
-  private performComplianceChecks(): void {
-    this.complianceChecks.forEach((checks, region) => {
-      const config = this.regionalConfigs.get(region);
-      if (!config) return;
-
-      checks.forEach(check => {
-        // 動的なコンプライアンスチェック
-        this.updateComplianceStatus(region, check);
-      });
-
-      // コンプライアンススコアの計算
-      const totalChecks = checks.length;
-      const compliantChecks = checks.filter(
-        c => c.status === 'compliant'
-      ).length;
-      const partiallyCompliantChecks = checks.filter(
-        c => c.status === 'partially-compliant'
-      ).length;
-
-      const complianceScore =
-        ((compliantChecks + partiallyCompliantChecks * 0.5) / totalChecks) *
-        100;
-
-      const metrics = this.performanceMetrics.get(region);
-      if (metrics) {
-        metrics.complianceScore = complianceScore;
-        this.performanceMetrics.set(region, metrics);
-      }
-
-      this.emit('compliance-updated', {
-        region,
-        score: complianceScore,
-        checks,
-      });
+    this.logger.info('すべてのサービスを開始しました', {
+      regions,
+      services: {
+        performanceMonitoring: this.options.enablePerformanceMonitoring,
+        complianceChecking: this.options.enableComplianceChecking,
+        automaticOptimization: this.options.enableAutomaticOptimization,
+      },
     });
-  }
-
-  /**
-   * コンプライアンス状態の更新
-   */
-  private updateComplianceStatus(region: string, check: ComplianceCheck): void {
-    const config = this.regionalConfigs.get(region);
-    if (!config) return;
-
-    // 実際の実装では、各要件の実装状況を動的にチェック
-    switch (check.requirement) {
-      case 'GDPR Data Localization':
-        check.status = config.complianceRequirements.dataLocalization
-          ? 'compliant'
-          : 'non-compliant';
-        break;
-      case 'GDPR Encryption':
-        check.status = config.complianceRequirements.encryptionRequired
-          ? 'compliant'
-          : 'non-compliant';
-        break;
-      case 'DNS Security':
-        check.status = config.securityFeatures.includes('dnssec')
-          ? 'compliant'
-          : 'partially-compliant';
-        break;
-      case 'Audit Logging':
-        check.status = config.complianceRequirements.auditLogging
-          ? 'compliant'
-          : 'non-compliant';
-        break;
-    }
-  }
-
-  // 公開メソッド
-
-  /**
-   * 地域の設定
-   */
-  setRegion(region: string): void {
-    if (!this.regionalConfigs.has(region)) {
-      throw new Error(`サポートされていない地域: ${region}`);
-    }
-
-    const oldRegion = this.currentRegion;
-    this.currentRegion = region;
-
-    this.logger.info(`地域変更: ${oldRegion} → ${region}`);
-    this.emit('region-changed', { from: oldRegion, to: region });
-  }
-
-  /**
-   * 現在の地域の取得
-   */
-  getCurrentRegion(): string {
-    return this.currentRegion;
-  }
-
-  /**
-   * 地域設定の取得
-   */
-  getRegionalConfig(region?: string): RegionalDNSConfig | undefined {
-    return this.regionalConfigs.get(region || this.currentRegion);
-  }
-
-  /**
-   * 全地域設定の取得
-   */
-  getAllRegionalConfigs(): RegionalDNSConfig[] {
-    return Array.from(this.regionalConfigs.values());
-  }
-
-  /**
-   * 最適化戦略の取得
-   */
-  getOptimizationStrategies(region?: string): DNSOptimizationStrategy[] {
-    const targetRegion = region || this.currentRegion;
-    return Array.from(this.optimizationStrategies.values()).filter(
-      strategy =>
-        strategy.applicableRegions.includes('all') ||
-        strategy.applicableRegions.includes(targetRegion)
-    );
-  }
-
-  /**
-   * パフォーマンスメトリクスの取得
-   */
-  getPerformanceMetrics(
-    region?: string
-  ): RegionalPerformanceMetrics | undefined {
-    return this.performanceMetrics.get(region || this.currentRegion);
-  }
-
-  /**
-   * 全地域のパフォーマンスメトリクスの取得
-   */
-  getAllPerformanceMetrics(): RegionalPerformanceMetrics[] {
-    return Array.from(this.performanceMetrics.values());
-  }
-
-  /**
-   * コンプライアンスチェック結果の取得
-   */
-  getComplianceChecks(region?: string): ComplianceCheck[] {
-    return this.complianceChecks.get(region || this.currentRegion) || [];
-  }
-
-  /**
-   * 地域別DNS最適化の実行
-   */
-  async optimizeRegionalDNS(region?: string): Promise<{
-    region: string;
-    appliedStrategies: string[];
-    expectedImpact: any;
-    recommendations: string[];
-  }> {
-    const targetRegion = region || this.currentRegion;
-    const config = this.regionalConfigs.get(targetRegion);
-
-    if (!config) {
-      throw new Error(`地域設定が見つかりません: ${targetRegion}`);
-    }
-
-    const strategies = this.getOptimizationStrategies(targetRegion);
-    const metrics = this.performanceMetrics.get(targetRegion);
-
-    if (!metrics) {
-      throw new Error(
-        `パフォーマンスメトリクスが見つかりません: ${targetRegion}`
-      );
-    }
-
-    const appliedStrategies: string[] = [];
-    const expectedImpact = {
-      responseTime: 0,
-      uptime: 0,
-      throughput: 0,
-    };
-    const recommendations: string[] = [];
-
-    // 最適化戦略の適用
-    for (const strategy of strategies) {
-      if (this.shouldApplyStrategy(strategy, metrics, config)) {
-        appliedStrategies.push(strategy.strategy);
-
-        expectedImpact.responseTime += strategy.performanceImpact.responseTime;
-        expectedImpact.uptime += strategy.performanceImpact.uptime;
-        expectedImpact.throughput += strategy.performanceImpact.throughput;
-
-        recommendations.push(strategy.description);
-      }
-    }
-
-    this.logger.info(`地域別DNS最適化実行: ${targetRegion}`, {
-      appliedStrategies,
-      expectedImpact,
-    });
-
-    this.emit('optimization-completed', {
-      region: targetRegion,
-      appliedStrategies,
-      expectedImpact,
-      recommendations,
-    });
-
-    return {
-      region: targetRegion,
-      appliedStrategies,
-      expectedImpact,
-      recommendations,
-    };
-  }
-
-  /**
-   * 最適化戦略の適用判定
-   */
-  private shouldApplyStrategy(
-    strategy: DNSOptimizationStrategy,
-    metrics: RegionalPerformanceMetrics,
-    config: RegionalDNSConfig
-  ): boolean {
-    // パフォーマンスしきい値のチェック
-    if (metrics.averageResponseTime > config.performanceTargets.responseTime) {
-      return strategy.performanceImpact.responseTime < 0; // 応答時間改善
-    }
-
-    if (metrics.uptime < config.performanceTargets.uptime) {
-      return strategy.performanceImpact.uptime > 0; // 稼働時間改善
-    }
-
-    if (metrics.throughput < config.performanceTargets.throughput) {
-      return strategy.performanceImpact.throughput > 0; // スループット改善
-    }
-
-    return false;
-  }
-
-  /**
-   * 地域別コンプライアンスレポートの生成
-   */
-  generateComplianceReport(region?: string): {
-    region: string;
-    overallScore: number;
-    checks: ComplianceCheck[];
-    recommendations: string[];
-    riskAssessment: string;
-  } {
-    const targetRegion = region || this.currentRegion;
-    const checks = this.getComplianceChecks(targetRegion);
-    const metrics = this.getPerformanceMetrics(targetRegion);
-
-    const overallScore = metrics?.complianceScore || 0;
-    const highRiskChecks = checks.filter(
-      c => c.riskLevel === 'high' && c.status !== 'compliant'
-    );
-
-    const recommendations: string[] = [];
-    checks.forEach(check => {
-      if (check.status !== 'compliant') {
-        recommendations.push(...check.actionRequired);
-      }
-    });
-
-    const riskAssessment =
-      highRiskChecks.length > 0
-        ? 'High Risk: 重要なコンプライアンス要件が未対応です'
-        : overallScore < 80
-          ? 'Medium Risk: 一部のコンプライアンス要件の改善が必要です'
-          : 'Low Risk: コンプライアンス要件をおおむね満たしています';
-
-    return {
-      region: targetRegion,
-      overallScore,
-      checks,
-      recommendations,
-      riskAssessment,
-    };
-  }
-
-  /**
-   * 正常終了処理
-   */
-  async shutdown(): Promise<void> {
-    try {
-      // 監視インターバルの停止
-      this.monitoringIntervals.forEach((interval, key) => {
-        clearInterval(interval);
-        this.logger.info(`監視停止: ${key}`);
-      });
-      this.monitoringIntervals.clear();
-
-      // イベントリスナーの削除
-      this.removeAllListeners();
-
-      this.logger.info('RegionalDNSManager正常終了');
-    } catch (error) {
-      this.logger.error('RegionalDNSManager終了エラー:', error);
-      throw error;
-    }
   }
 }
+
+// 後方互換性のためのエクスポート
+export default RegionalDNSManager;
+
+// 型定義の再エクスポート
+export type * from './regional-dns-types.js';

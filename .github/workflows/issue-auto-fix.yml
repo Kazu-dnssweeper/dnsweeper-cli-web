@@ -1,0 +1,97 @@
+name: Auto Fix GitHub Issues
+
+on:
+  issues:
+    types: [opened, labeled]
+  schedule:
+    # 毎日9時（JST）にIssueを確認 = UTC 0:00
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  auto-fix-issues:
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.issue.labels.*.name, 'auto-fix') ||
+      contains(github.event.issue.labels.*.name, 'typescript') ||
+      contains(github.event.issue.labels.*.name, 'bug') ||
+      contains(github.event.issue.labels.*.name, 'auto-generated') ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        npm ci
+        pip install anthropic
+
+    - name: List open issues
+      id: issues
+      run: |
+        echo "Fetching open issues..."
+        gh issue list --state open --label "auto-fix,typescript,bug,auto-generated" --json number,title,body,labels --limit 5 > open_issues.json
+        echo "issue_count=$(jq length open_issues.json)" >> $GITHUB_OUTPUT
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Fix issues with Claude API
+      if: steps.issues.outputs.issue_count > 0
+      run: |
+        python scripts/fix_github_issues.py \
+          --issues open_issues.json \
+          --max-fixes 3 \
+          --output fixes.json
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Apply fixes and close issues
+      if: steps.issues.outputs.issue_count > 0
+      run: |
+        python scripts/apply_issue_fixes.py fixes.json
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Commit and push fixes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🤖 Auto-fix GitHub Issues [skip ci]
+
+        Fixed issues:
+        $(jq -r '.fixes[] | "- #\(.issue_number): \(.title)"' fixes.json)
+
+        Co-Authored-By: Claude API <noreply@anthropic.com>"
+          git push
+        fi
+
+    - name: Update cost tracking
+      if: always()
+      run: |
+        python scripts/cost_optimizer.py update-usage \
+          --tokens-used ${{ steps.fix_issues.outputs.tokens_used || 0 }} \
+          --model "claude-3-haiku-20240307" \
+          --operation "issue-fixing"
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

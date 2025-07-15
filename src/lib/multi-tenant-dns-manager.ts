@@ -12,7 +12,7 @@ import { EventEmitter } from 'events';
 
 import { Logger } from '@lib/logger.js';
 
-import type { DNSRecord, DNSRecordType } from '@types/index.js';
+import type { IDNSRecord as DNSRecord, DNSRecordType } from '../types/index.js';
 
 export interface Tenant {
   id: string;
@@ -248,7 +248,7 @@ export class MultiTenantDNSManager extends EventEmitter {
 
   constructor() {
     super();
-    this.logger = new Logger({ context: 'MultiTenantDNSManager' });
+    this.logger = new Logger({});
     this.initializeDefaultTenants();
     this.startQuotaMonitoring();
     this.startBillingUpdates();

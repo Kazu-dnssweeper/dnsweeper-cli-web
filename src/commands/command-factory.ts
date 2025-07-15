@@ -6,8 +6,6 @@
 
 import { createAddCommand } from './add.js';
 import { createAnalyzeCommand } from './analyze.js';
-import { BaseCommand } from './base-command.js';
-
 // 既存のコマンドインポート（段階的に置き換え）
 import { createDeleteCommand } from './delete.js';
 import { createImportCommand } from './import.js';

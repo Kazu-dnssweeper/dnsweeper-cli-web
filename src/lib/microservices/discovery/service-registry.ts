@@ -30,7 +30,7 @@ export class ServiceRegistryImpl
 
   constructor() {
     super();
-    this.logger = new Logger({ context: 'ServiceRegistry' });
+    this.logger = new Logger({});
   }
 
   /**

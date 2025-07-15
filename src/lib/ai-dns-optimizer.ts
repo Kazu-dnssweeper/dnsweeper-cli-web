@@ -3,12 +3,12 @@
  * 機械学習とヒューリスティックを組み合わせた包括的DNS最適化
  */
 
-import { RiskLevel } from '../types/dns.js';
+// import { RiskLevel } from '../types/index.js'; // unused import
 
 import { Logger } from './logger.js';
 
 import type { PerformanceMetric } from './performance-monitor.js';
-import type { DNSRecord } from '../types/dns.js';
+import type { IDNSRecord as DNSRecord } from '../types/index.js';
 
 export interface OptimizationSuggestion {
   id: string;
@@ -448,44 +448,44 @@ export class AIDNSOptimizer {
    * 補助メソッド群
    */
   private isFrequentlyChangingRecord(
-    record: DNSRecord,
-    context: OptimizationContext
+    _record: DNSRecord,
+    _context: OptimizationContext
   ): boolean {
     // 実装：変更履歴やパフォーマンスメトリクスから判断
     return false; // 簡略化
   }
 
   private isStableRecord(
-    record: DNSRecord,
-    context: OptimizationContext
+    _record: DNSRecord,
+    _context: OptimizationContext
   ): boolean {
     // 実装：安定性指標から判断
     return true; // 簡略化
   }
 
   private analyzeCDNOptimizations(
-    context: OptimizationContext
+    _context: OptimizationContext
   ): OptimizationSuggestion[] {
     // CDN最適化の詳細分析
     return [];
   }
 
   private analyzeSPFOptimizations(
-    context: OptimizationContext
+    _context: OptimizationContext
   ): OptimizationSuggestion[] {
     // SPF最適化の詳細分析
     return [];
   }
 
   private analyzeRecordConsolidation(
-    context: OptimizationContext
+    _context: OptimizationContext
   ): OptimizationSuggestion[] {
     // レコード統合最適化
     return [];
   }
 
   private analyzeGeographicOptimization(
-    context: OptimizationContext
+    _context: OptimizationContext
   ): OptimizationSuggestion[] {
     // 地理的分散最適化
     return [];
@@ -558,15 +558,15 @@ export class AIDNSOptimizer {
  */
 class AIModel {
   async analyzePatterns(
-    context: OptimizationContext,
-    existingSuggestions: OptimizationSuggestion[]
+    _context: OptimizationContext,
+    _existingSuggestions: OptimizationSuggestion[]
   ): Promise<OptimizationSuggestion[]> {
     // パターン認識による最適化提案
     return [];
   }
 
   async predictiveAnalysis(
-    context: OptimizationContext
+    _context: OptimizationContext
   ): Promise<OptimizationSuggestion[]> {
     // 予測分析による最適化提案
     return [];

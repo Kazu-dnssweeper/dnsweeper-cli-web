@@ -2,6 +2,8 @@
  * analyzeコマンド - ドメインリストの詳細分析（リファクタリング版）
  */
 
+// import * as dns from 'dns'; // unused import
+
 import { CSVProcessor } from '../lib/csv-processor.js';
 import { DNSResolver } from '../lib/dns-resolver.js';
 import { RiskCalculator } from '../lib/risk-calculator.js';
@@ -12,7 +14,7 @@ import { BaseCommand } from './base-command.js';
 import type {
   IDNSRecord,
   OutputFormat,
-  AnalysisResult,
+  DNSRecordType,
 } from '../types/index.js';
 
 interface AnalyzeOptions {
@@ -69,7 +71,8 @@ export class AnalyzeCommand extends BaseCommand {
     this.setAction(this.execute.bind(this));
   }
 
-  async execute(file: string, options: AnalyzeOptions): Promise<void> {
+  async execute(...args: unknown[]): Promise<void> {
+    const [file, options] = args as [string, AnalyzeOptions];
     // Loggerを初期化
     this.initLogger(options);
 
@@ -103,7 +106,7 @@ export class AnalyzeCommand extends BaseCommand {
       async () => {
         const parseResult = await this.csvProcessor.parseAuto(filePath);
         const records = parseResult.records;
-        return this.extractDomains(records);
+        return this.extractDomains(records as unknown[]);
       },
       `ドメインの読み込み完了`,
       'ファイルの読み込みに失敗しました'
@@ -136,13 +139,17 @@ export class AnalyzeCommand extends BaseCommand {
   /**
    * ドメインの抽出
    */
-  private extractDomains(records: any[]): string[] {
+  private extractDomains(records: unknown[]): string[] {
     const domains = new Set<string>();
 
     for (const record of records) {
       // 'domain', 'name', 'ドメイン名' などのカラムを探す
+      const recordObj = record as Record<string, unknown>;
       const domain =
-        record.domain || record.name || record['ドメイン名'] || record.Domain;
+        recordObj.domain ||
+        recordObj.name ||
+        recordObj['ドメイン名'] ||
+        recordObj.Domain;
       if (domain && typeof domain === 'string') {
         domains.add(domain.trim().toLowerCase());
       }
@@ -227,7 +234,7 @@ export class AnalyzeCommand extends BaseCommand {
         value: 'unknown',
         ttl: 3600,
         created: new Date(),
-        updated: new Date()
+        updated: new Date(),
       };
       const riskScore = this.riskCalculator.calculateRisk(primaryRecord);
       const factors = riskScore.recommendations;
@@ -261,8 +268,8 @@ export class AnalyzeCommand extends BaseCommand {
     type: string
   ): Promise<IDNSRecord[]> {
     try {
-      const result = await this.resolver.resolve(domain, type as any);
-      return this.convertToIDNSRecords(result, domain, type as any);
+      const result = await this.resolver.resolve(domain, type as DNSRecordType);
+      return this.convertToIDNSRecords(result, domain, type as DNSRecordType);
     } catch {
       return [];
     }
@@ -282,12 +289,12 @@ export class AnalyzeCommand extends BaseCommand {
   /**
    * リスクレベルの判定
    */
-  private getRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
-    if (score <= 20) return 'low';
-    if (score <= 50) return 'medium';
-    if (score <= 80) return 'high';
-    return 'critical';
-  }
+  // private getRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
+  //   if (score <= 20) return 'low';
+  //   if (score <= 50) return 'medium';
+  //   if (score <= 80) return 'high';
+  //   return 'critical';
+  // }
 
   /**
    * サマリーの生成
