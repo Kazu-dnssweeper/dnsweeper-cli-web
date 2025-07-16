@@ -1,0 +1,63 @@
+name: Claude API with Retry
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  call-claude:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: pip install requests tenacity
+      
+    - name: Call Claude with Retry
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        ISSUE_TITLE: ${{ github.event.issue.title }}
+        ISSUE_BODY: ${{ github.event.issue.body }}
+      run: |
+        python - <<'EOF'
+        import os
+        import json
+        import requests
+        from tenacity import retry, stop_after_attempt, wait_exponential
+        
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=4, max=10)
+        )
+        def call_claude():
+            response = requests.post(
+                'https://api.anthropic.com/v1/messages',
+                headers={
+                    'x-api-key': os.environ['ANTHROPIC_API_KEY'],
+                    'anthropic-version': '2023-06-01',
+                    'content-type': 'application/json'
+                },
+                json={
+                    'model': 'claude-3-5-sonnet-20241022',
+                    'max_tokens': 1024,
+                    'messages': [{
+                        'role': 'user',
+                        'content': f"Issue: {os.environ['ISSUE_TITLE']}\n\n{os.environ['ISSUE_BODY']}"
+                    }]
+                },
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()
+        
+        try:
+            result = call_claude()
+            print("Success:", json.dumps(result, indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+            exit(1)
+        EOF

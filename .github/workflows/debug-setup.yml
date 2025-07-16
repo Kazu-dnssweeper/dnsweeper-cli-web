@@ -1,0 +1,38 @@
+name: Debug Setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check Secrets
+      run: |
+        echo "Checking if secrets are set..."
+        if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+          echo "❌ ANTHROPIC_API_KEY is not set"
+        else
+          echo "✅ ANTHROPIC_API_KEY is set"
+          echo "First 10 chars: ${ANTHROPIC_API_KEY:0:10}..."
+        fi
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        
+    - name: Test API Connection
+      run: |
+        response=$(curl -s -o /dev/null -w "%{http_code}" \
+          -X POST https://api.anthropic.com/v1/messages \
+          -H "x-api-key: ${{ secrets.ANTHROPIC_API_KEY }}" \
+          -H "anthropic-version: 2023-06-01" \
+          -H "content-type: application/json" \
+          -d '{"model":"claude-3-5-sonnet-20241022","max_tokens":10,"messages":[{"role":"user","content":"Hi"}]}')
+        
+        echo "API Response Code: $response"
+        
+        if [ "$response" = "200" ]; then
+          echo "✅ API connection successful"
+        else
+          echo "❌ API connection failed with code: $response"
+        fi

@@ -1,2 +1,0 @@
-🔔 未プッシュのコミットがあります: 14個
-実行: git push origin master
