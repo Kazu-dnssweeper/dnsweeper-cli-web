@@ -139,6 +139,9 @@ export class MultiTenantDNSManager extends EventEmitter {
         },
         severity: 'info',
         category: 'data',
+        metadata: {},
+        ip: '',
+        userAgent: '',
       });
     });
 
@@ -159,10 +162,14 @@ export class MultiTenantDNSManager extends EventEmitter {
         },
         severity: 'warning',
         category: 'billing',
+        ip: '0.0.0.0',
+        userAgent: 'system',
         metadata: {
-          limit: data.limit,
-          current: data.current,
-          requested: data.requested,
+          context: {
+            limit: data.limit,
+            current: data.current,
+            requested: data.requested,
+          },
         },
       });
     });
@@ -412,7 +419,9 @@ export class MultiTenantDNSManager extends EventEmitter {
       },
       severity: 'info',
       category: 'system',
-      metadata: { isolation },
+      ip: '0.0.0.0',
+      userAgent: 'system',
+      metadata: { context: { isolation } },
     });
   }
 
@@ -499,7 +508,7 @@ export class MultiTenantDNSManager extends EventEmitter {
 
       this.logger.info('デモテナントを作成しました');
     } catch (error) {
-      this.logger.error('デモテナント作成エラー', { error: error as Error });
+      this.logger.error(`デモテナント作成エラー: ${error}`);
     }
   }
 
@@ -515,10 +524,10 @@ export class MultiTenantDNSManager extends EventEmitter {
    * システム統計の取得
    */
   getSystemStatistics(): {
-    tenants: ReturnType<typeof this.core.getStatistics>;
-    resources: ReturnType<typeof this.resourceManager.getStatistics>;
-    audit: ReturnType<typeof this.auditManager.getStatistics>;
-    billing: ReturnType<typeof this.billingManager.getStatistics>;
+    tenants: any;
+    resources: any;
+    audit: any;
+    billing: any;
   } {
     return {
       tenants: this.core.getStatistics(),

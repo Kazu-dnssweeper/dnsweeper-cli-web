@@ -174,7 +174,11 @@ export interface ThreatStatistics {
   totalThreats: number;
   threatsByType: Record<string, number>;
   threatsBySeverity: Record<string, number>;
-  recentThreats: SecurityThreat[];
+  recentThreats?: SecurityThreat[];
+  detectionEfficiency?: number;
+  falsePositiveRate?: number;
+  averageDetectionTime?: number;
+  topThreatDomains?: string[];
 }
 
 export type ThreatDetectorFunction = (

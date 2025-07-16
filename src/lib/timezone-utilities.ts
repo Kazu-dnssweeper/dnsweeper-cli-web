@@ -208,7 +208,8 @@ export class TimezoneUtilities {
    */
   private getTimezoneDisplayName(timezone: string): string {
     try {
-      const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+      // displayNamesは将来の実装で使用予定
+      // const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
       // タイムゾーン名から地域を抽出
       const parts = timezone.split('/');
       if (parts.length > 1) {
@@ -318,7 +319,7 @@ export class TimezoneUtilities {
     timezones: string[],
     businessHoursStart: number = 9, // 9 AM
     businessHoursEnd: number = 17, // 5 PM
-    durationMinutes: number = 60
+    _durationMinutes: number = 60
   ): Array<{
     utcTime: Date;
     timezoneDetails: Array<{

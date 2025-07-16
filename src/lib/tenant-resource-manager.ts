@@ -29,7 +29,7 @@ export class TenantResourceManager extends EventEmitter {
     tenant: Tenant
   ): Promise<TenantResource> {
     // リソース数制限のチェック（必要に応じて実装）
-    const existingResources = this.getResourcesByTenant(options.tenantId);
+    const existingResources = this.getResourcesByTenant(tenant.id);
     const resourcesByType = existingResources.filter(
       r => r.type === options.type
     );
@@ -46,25 +46,31 @@ export class TenantResourceManager extends EventEmitter {
 
     const resource: TenantResource = {
       id: resourceId,
-      tenantId: options.tenantId,
+      tenantId: tenant.id,
       type: options.type,
       name: options.name,
       configuration: options.configuration,
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date(),
-      version: '1.0.0',
-      lastModified: new Date(),
-      modifiedBy: 'system', // 実際の実装では認証されたユーザーID
+      version: 1,
+      createdBy: 'system', // 実際の実装では認証されたユーザーID
+      tags: [],
+      metadata: {
+        version: '1.0.0',
+        size: 0,
+        lastModified: new Date(),
+        checksum: '',
+      },
     };
 
-    const tenantResources = this.resources.get(options.tenantId) || [];
+    const tenantResources = this.resources.get(tenant.id) || [];
     tenantResources.push(resource);
-    this.resources.set(options.tenantId, tenantResources);
+    this.resources.set(tenant.id, tenantResources);
 
     this.logger.info('新しいリソースを作成しました', {
       resourceId,
-      tenantId: options.tenantId,
+      tenantId: tenant.id,
       type: options.type,
       name: options.name,
     });
@@ -89,8 +95,12 @@ export class TenantResourceManager extends EventEmitter {
       ...resource,
       ...updates,
       updatedAt: new Date(),
-      lastModified: new Date(),
-      version: this.incrementVersion(resource.version),
+      version: (resource.version || 0) + 1,
+      metadata: {
+        ...resource.metadata,
+        lastModified: new Date(),
+        version: this.incrementVersion(resource.metadata.version),
+      },
     };
 
     // リソース一覧を更新
@@ -196,7 +206,7 @@ export class TenantResourceManager extends EventEmitter {
     resourceId: string,
     configuration: Record<string, unknown>,
     modifiedBy: string,
-    changeReason?: string
+    _changeReason?: string
   ): Promise<TenantResource> {
     const resource = this.getResource(resourceId);
     if (!resource) {
@@ -205,8 +215,7 @@ export class TenantResourceManager extends EventEmitter {
 
     return this.updateResource(resourceId, {
       configuration,
-      modifiedBy,
-      changeReason,
+      createdBy: modifiedBy, // TenantResourceにはmodifiedByプロパティがないため
     });
   }
 
@@ -223,20 +232,48 @@ export class TenantResourceManager extends EventEmitter {
       priority?: number;
     }
   ): Promise<TenantResource> {
-    return this.createResource(
-      {
-        tenantId,
-        type: 'dns-record',
-        name: recordData.name,
-        configuration: {
-          recordType: recordData.type,
-          value: recordData.value,
-          ttl: recordData.ttl || 300,
-          priority: recordData.priority,
-        },
+    const resourceOptions: TenantResourceCreateOptions = {
+      type: 'dns-record',
+      name: recordData.name,
+      configuration: {
+        recordType: recordData.type,
+        value: recordData.value,
+        ttl: recordData.ttl || 300,
+        priority: recordData.priority,
       },
-      {} as Tenant
-    ); // 簡略化のため、実際の実装では適切なテナント情報を渡す
+      status: 'active',
+      metadata: {
+        version: '1.0.0',
+        size: 0,
+        lastModified: new Date(),
+        checksum: '',
+      },
+      createdBy: 'system',
+      tags: [],
+    };
+
+    // tenantIdを内部で設定
+    const resource: TenantResource = {
+      id: randomUUID(),
+      tenantId,
+      ...resourceOptions,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      version: 1,
+      metadata: {
+        version: '1.0.0',
+        size: 0,
+        lastModified: new Date(),
+        checksum: '',
+      },
+    };
+
+    const tenantResources = this.resources.get(tenantId) || [];
+    tenantResources.push(resource);
+    this.resources.set(tenantId, tenantResources);
+
+    this.emit('resource:created', resource);
+    return resource; // 簡略化のため、実際の実装では適切なテナント情報を渡す
   }
 
   /**
@@ -250,26 +287,53 @@ export class TenantResourceManager extends EventEmitter {
       contact?: string;
     }
   ): Promise<TenantResource> {
-    return this.createResource(
-      {
-        tenantId,
-        type: 'dns-zone',
-        name: zoneData.domain,
-        configuration: {
-          domain: zoneData.domain,
-          nameservers: zoneData.nameservers,
-          contact: zoneData.contact,
-          soaRecord: {
-            serial: Date.now(),
-            refresh: 3600,
-            retry: 1800,
-            expire: 604800,
-            minimum: 300,
-          },
+    const resourceOptions: TenantResourceCreateOptions = {
+      type: 'dns-zone',
+      name: zoneData.domain,
+      configuration: {
+        domain: zoneData.domain,
+        nameservers: zoneData.nameservers,
+        contact: zoneData.contact,
+        soaRecord: {
+          serial: Date.now(),
+          refresh: 3600,
+          retry: 1800,
+          expire: 604800,
+          minimum: 300,
         },
       },
-      {} as Tenant
-    );
+      status: 'active',
+      metadata: {
+        version: '1.0.0',
+        size: 0,
+        lastModified: new Date(),
+        checksum: '',
+      },
+      createdBy: 'system',
+      tags: [],
+    };
+
+    const resource: TenantResource = {
+      id: randomUUID(),
+      tenantId,
+      ...resourceOptions,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      version: 1,
+      metadata: {
+        version: '1.0.0',
+        size: 0,
+        lastModified: new Date(),
+        checksum: '',
+      },
+    };
+
+    const tenantResources = this.resources.get(tenantId) || [];
+    tenantResources.push(resource);
+    this.resources.set(tenantId, tenantResources);
+
+    this.emit('resource:created', resource);
+    return resource;
   }
 
   /**
@@ -285,22 +349,49 @@ export class TenantResourceManager extends EventEmitter {
   ): Promise<TenantResource> {
     const apiKey = this.generateAPIKey();
 
-    return this.createResource(
-      {
-        tenantId,
-        type: 'api-key',
-        name: keyData.name,
-        configuration: {
-          key: apiKey,
-          permissions: keyData.permissions,
-          expiresAt: keyData.expiresAt,
-          createdAt: new Date(),
-          lastUsed: null,
-          requestCount: 0,
-        },
+    const resourceOptions: TenantResourceCreateOptions = {
+      type: 'api-key',
+      name: keyData.name,
+      configuration: {
+        key: apiKey,
+        permissions: keyData.permissions,
+        expiresAt: keyData.expiresAt,
+        createdAt: new Date(),
+        lastUsed: null,
+        requestCount: 0,
       },
-      {} as Tenant
-    );
+      status: 'active',
+      metadata: {
+        version: '1.0.0',
+        size: 0,
+        lastModified: new Date(),
+        checksum: '',
+      },
+      createdBy: 'system',
+      tags: [],
+    };
+
+    const resource: TenantResource = {
+      id: randomUUID(),
+      tenantId,
+      ...resourceOptions,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      version: 1,
+      metadata: {
+        version: '1.0.0',
+        size: 0,
+        lastModified: new Date(),
+        checksum: '',
+      },
+    };
+
+    const tenantResources = this.resources.get(tenantId) || [];
+    tenantResources.push(resource);
+    this.resources.set(tenantId, tenantResources);
+
+    this.emit('resource:created', resource);
+    return resource;
   }
 
   private generateAPIKey(): string {
@@ -386,7 +477,7 @@ export class TenantResourceManager extends EventEmitter {
   /**
    * リソースアクセスの検証
    */
-  validateResourceAccess(resourceId: string, userId: string): boolean {
+  validateResourceAccess(resourceId: string, _userId: string): boolean {
     const resource = this.getResource(resourceId);
     if (!resource) {
       return false;

@@ -18,7 +18,6 @@ import type {
   DateTimeLocalizerOptions,
   TimezoneInfo,
   LocaleDateTimeFormat,
-  BusinessHours,
   RelativeTimeOptions,
   DateFormatOptions,
   TimeFormatOptions,

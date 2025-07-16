@@ -452,10 +452,12 @@ export class MultiTenantAuditManager extends EventEmitter {
 
     switch (log.severity) {
       case 'critical':
-        this.logger.error(`[CRITICAL AUDIT] ${log.action}`, logData);
+        this.logger.error(
+          `[CRITICAL AUDIT] ${log.action}: ${JSON.stringify(logData)}`
+        );
         break;
       case 'error':
-        this.logger.error(`[AUDIT] ${log.action}`, logData);
+        this.logger.error(`[AUDIT] ${log.action}: ${JSON.stringify(logData)}`);
         break;
       case 'warning':
         this.logger.warn(`[AUDIT] ${log.action}`, logData);

@@ -31,7 +31,7 @@ export class TenantUserManager extends EventEmitter {
     quota?: TenantQuota
   ): Promise<TenantUser> {
     // クォータチェック
-    if (quota && quota.current.users >= quota.limits.users) {
+    if (quota && quota.current.activeUsers >= quota.limits.users) {
       throw new Error('ユーザー数の上限に達しています');
     }
 

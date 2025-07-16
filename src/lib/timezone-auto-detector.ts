@@ -8,7 +8,6 @@ import { EventEmitter } from 'events';
 import { Logger } from './logger.js';
 import { TimezoneUtilities } from './timezone-utilities.js';
 
-import type { TimezoneInfo } from './timezone-types.js';
 
 export interface AutoDetectionResult {
   timezone: string;
@@ -45,10 +44,10 @@ export class TimezoneAutoDetector extends EventEmitter {
     this.logger.info('タイムゾーン自動検出を開始します');
 
     const detectionMethods = [
-      () => this.detectFromBrowser(),
-      () => this.detectFromSystem(),
-      () => this.detectFromGeolocation(),
-      () => this.detectFromIP(),
+      (): Promise<AutoDetectionResult | null> => this.detectFromBrowser(),
+      (): Promise<AutoDetectionResult | null> => this.detectFromSystem(),
+      (): Promise<AutoDetectionResult | null> => this.detectFromGeolocation(),
+      (): Promise<AutoDetectionResult | null> => this.detectFromIP(),
     ];
 
     let bestResult: AutoDetectionResult | null = null;

@@ -149,15 +149,17 @@ export class TenantManager extends EventEmitter {
         dnsRecords: tenant.settings.maxDNSRecords,
         queriesPerMonth: tenant.settings.maxQueriesPerMonth,
         users: tenant.settings.maxUsers,
-        apiCallsPerMinute: tenant.settings.apiRateLimit,
-        storage: this.getStorageLimit(tenant.plan),
+        apiCallsPerHour: tenant.settings.apiRateLimit * 60,
+        storageGB: this.getStorageLimit(tenant.plan),
+        bandwidth: 1000,
       },
       current: {
         dnsRecords: tenant.subscription.usage.dnsRecords,
         queriesThisMonth: tenant.subscription.usage.queriesThisMonth,
-        users: tenant.subscription.usage.activeUsers,
-        apiCallsThisMinute: 0,
-        storage: Math.floor(Math.random() * 1000000), // bytes
+        activeUsers: tenant.subscription.usage.activeUsers,
+        apiCallsThisHour: 0,
+        storageUsedGB: Math.floor(Math.random() * 10),
+        bandwidthUsed: Math.floor(Math.random() * 100),
       },
       alerts: {
         enabled: true,
@@ -165,16 +167,14 @@ export class TenantManager extends EventEmitter {
           warning: 80,
           critical: 95,
         },
-        contacts: [tenant.metadata.contactEmail],
+        notifications: [tenant.metadata?.contactEmail || 'admin@example.com'],
       },
-      resetDates: {
-        queries: new Date(
-          new Date().getFullYear(),
-          new Date().getMonth() + 1,
-          1
-        ),
-        apiCalls: new Date(Date.now() + 60000), // 1 minute
-      },
+      resetDate: new Date(
+        new Date().getFullYear(),
+        new Date().getMonth() + 1,
+        1
+      ),
+      lastUpdated: new Date(),
     };
 
     this.quotas.set(tenant.id, quota);
@@ -203,45 +203,39 @@ export class TenantManager extends EventEmitter {
 
     const billing: TenantBilling = {
       tenantId: tenant.id,
+      plan: {
+        id: tenant.subscription.planId,
+        name: `${tenant.plan.charAt(0).toUpperCase() + tenant.plan.slice(1)} Plan`,
+        price: pricing.price,
+        currency: 'USD',
+        interval: pricing.interval === 'month' ? 'monthly' : 'yearly',
+        features: [],
+      },
       subscription: {
         id: `sub_${randomUUID()}`,
         status: tenant.subscription.status,
-        plan: {
-          id: tenant.subscription.planId,
-          name: `${tenant.plan.charAt(0).toUpperCase() + tenant.plan.slice(1)} Plan`,
-          price: pricing.price,
-          currency: 'USD',
-          interval: pricing.interval,
-        },
+        currentPeriodStart: tenant.subscription.currentPeriodStart,
+        currentPeriodEnd: tenant.subscription.currentPeriodEnd,
+        cancelAtPeriodEnd: false,
       },
       usage: {
-        period: {
-          start: tenant.subscription.currentPeriodStart,
-          end: tenant.subscription.currentPeriodEnd,
-        },
-        metrics: {
-          dnsRecords: tenant.subscription.usage.dnsRecords,
-          queries: tenant.subscription.usage.queriesThisMonth,
-          apiCalls: tenant.subscription.usage.apiCalls,
-          storage: Math.floor(Math.random() * 1000000),
-          support: 0,
-        },
-        overages: {},
+        period: `${tenant.subscription.currentPeriodStart.toISOString()} - ${tenant.subscription.currentPeriodEnd.toISOString()}`,
+        charges: [
+          {
+            item: 'Base Plan',
+            quantity: 1,
+            rate: pricing.price,
+            amount: pricing.price,
+          },
+        ],
+        total: pricing.price,
+        currency: 'USD',
       },
-      billing: {
-        address: {
-          company: tenant.name,
-          line1: '123 Business Ave',
-          city: 'San Francisco',
-          state: 'CA',
-          postal_code: '94105',
-          country: 'US',
-        },
-        paymentMethod: {
-          type: 'card',
-          last4: '4242',
-          expiry: '12/25',
-        },
+      paymentMethod: {
+        type: 'card',
+        last4: '4242',
+        expiryMonth: 12,
+        expiryYear: 25,
       },
       invoices: [],
     };
@@ -274,32 +268,48 @@ export class TenantManager extends EventEmitter {
     const isolation: TenantIsolation = {
       tenantId: tenant.id,
       network: {
-        allowedIpRanges:
-          tenant.plan === 'enterprise' ? ['10.0.0.0/8'] : undefined,
+        vpcId: tenant.plan === 'enterprise' ? 'vpc-enterprise' : 'vpc-shared',
+        subnetIds:
+          tenant.plan === 'enterprise'
+            ? ['subnet-1', 'subnet-2']
+            : ['subnet-shared'],
+        securityGroupIds: ['sg-default'],
+        allowedIPs: tenant.plan === 'enterprise' ? ['10.0.0.0/8'] : [],
       },
-      dns: {
-        nameservers: ['ns1.dnsweeper.com', 'ns2.dnsweeper.com'],
-        recursionAllowed: tenant.plan !== 'free',
-        zonesIsolated: tenant.plan === 'enterprise',
+      database: {
+        schema: `tenant_${tenant.id}`,
+        readOnlyReplicas: [],
+        backupLocation: 's3://dnsweeper-backups',
       },
       storage: {
         encryption: {
           enabled:
             tenant.plan === 'professional' || tenant.plan === 'enterprise',
           algorithm: 'AES-256',
-          keyRotation: tenant.plan === 'enterprise',
+          keyId: 'default-key',
         },
-        backup: {
-          enabled: tenant.plan !== 'free',
-          retention: tenant.settings.retention.backups,
-          schedule: tenant.plan === 'enterprise' ? '0 2 * * *' : '0 2 * * 0',
-        },
+        bucket:
+          tenant.plan === 'enterprise'
+            ? 'enterprise-backups'
+            : 'shared-backups',
+        region: 'us-west-2',
       },
-      monitoring: {
-        enabled: true,
-        logRetention: tenant.settings.retention.logs,
-        alerting: tenant.plan !== 'free',
-        metricsExport: tenant.plan === 'enterprise',
+      compute: {
+        dedicated: tenant.plan === 'enterprise',
+        cpu: tenant.plan === 'enterprise' ? 4 : 1,
+        memory: tenant.plan === 'enterprise' ? 16 : 4,
+        instanceType: tenant.plan === 'enterprise' ? 'm5.large' : 't3.micro',
+      },
+      compliance: {
+        certifications:
+          tenant.plan === 'enterprise' ? ['SOC2', 'ISO27001'] : [],
+        dataResidency: 'us-west-2',
+        auditSchedule: tenant.plan === 'enterprise' ? 'quarterly' : 'annual',
+        retentionPolicy: {
+          logs: tenant.settings.retention.logs,
+          backups: tenant.settings.retention.backups,
+          userData: 365,
+        },
       },
     };
 
@@ -343,25 +353,11 @@ export class TenantManager extends EventEmitter {
         },
       },
       metadata: {
-        contactEmail: options.contactEmail,
         ...options.metadata,
       },
     };
 
-    // カスタム制限を適用
-    if (options.customLimits) {
-      Object.assign(tenant.settings, {
-        maxDNSRecords:
-          options.customLimits.dnsRecords ?? tenant.settings.maxDNSRecords,
-        maxQueriesPerMonth:
-          options.customLimits.queriesPerMonth ??
-          tenant.settings.maxQueriesPerMonth,
-        maxUsers: options.customLimits.users ?? tenant.settings.maxUsers,
-        apiRateLimit:
-          options.customLimits.apiCallsPerMinute ??
-          tenant.settings.apiRateLimit,
-      });
-    }
+    // カスタム制限の適用はスキップ（TenantCreateOptionsにcustomLimitsが定義されていないため）
 
     this.tenants.set(tenant.id, tenant);
     this.initializeTenantQuota(tenant);

@@ -627,16 +627,8 @@ export class DNSThreatRules extends EventEmitter {
           'dns_hijacking',
           'cache_poisoning',
         ],
-        confidence: {
-          minimum: 0.7,
-          malware: 0.8,
-          phishing: 0.9,
-          typosquatting: 0.6,
-          dga: 0.7,
-          fastflux: 0.8,
-          dns_hijacking: 0.9,
-          cache_poisoning: 0.9,
-        },
+        confidenceThreshold: 0.7,
+        realTimeMonitoring: false,
       },
       monitoring: {
         enabled: true,
@@ -653,6 +645,22 @@ export class DNSThreatRules extends EventEmitter {
         autoQuarantine: true,
         notificationEnabled: true,
         logLevel: 'info',
+      },
+      reputationChecking: {
+        enabledSources: ['virustotal', 'urlvoid'],
+        cacheTimeout: 3600,
+        parallelChecks: 5,
+      },
+      alerting: {
+        enabledChannels: ['console', 'log'],
+        severityThreshold: 'medium',
+        rateLimiting: true,
+        cooldownPeriod: 300,
+      },
+      mitigation: {
+        autoBlocking: false,
+        quarantineEnabled: true,
+        alertingEnabled: true,
       },
     };
   }

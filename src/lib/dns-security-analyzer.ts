@@ -86,11 +86,10 @@ export class DNSSecurityAnalyzer extends EventEmitter {
         rateLimiting: true,
         cooldownPeriod: 300,
       },
-      responseActions: {
-        autoQuarantine: true,
-        autoBlock: false,
-        notifications: true,
-        logActions: true,
+      mitigation: {
+        autoBlocking: false,
+        quarantineEnabled: true,
+        alertingEnabled: true,
       },
       ...config,
     };
@@ -395,7 +394,6 @@ export class DNSSecurityAnalyzer extends EventEmitter {
           preventionMeasures: [],
         },
         references: [],
-        metadata: { entropyScore: analysis.entropyScore },
       });
     }
 
@@ -429,7 +427,6 @@ export class DNSSecurityAnalyzer extends EventEmitter {
           preventionMeasures: [],
         },
         references: [],
-        metadata: { randomnessScore: analysis.randomnessScore || 0 },
       });
     }
 
@@ -461,7 +458,6 @@ export class DNSSecurityAnalyzer extends EventEmitter {
           preventionMeasures: [],
         },
         references: [],
-        metadata: { homographScore: analysis.homographScore },
       });
     }
 
@@ -646,7 +642,7 @@ export class DNSSecurityAnalyzer extends EventEmitter {
       ruleStatistics: any;
     };
   } {
-    const dbSize = this.statistics.getDatabaseSize();
+    const dbSize = 0; // データベースサイズの取得は未実装
     const ruleStats = this.ruleEngine.getRuleStatistics();
     const threatStats = this.getThreatStatistics();
 

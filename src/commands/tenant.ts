@@ -1,5 +1,5 @@
 import { Logger } from '@lib/logger.js';
-import MultiTenantDNSManager from '@lib/multi-tenant-dns-manager.js';
+import { MultiTenantDNSManager } from '@lib/multi-tenant-dns-manager.js';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { table } from 'table';
@@ -66,33 +66,37 @@ tenantCommand
       }
 
       if (options.stats) {
-        const systemStats = manager.getSystemStats();
+        const systemStats = manager.getSystemStatistics();
+        const tenantStats = systemStats.tenants;
+        const resourceStats = systemStats.resources;
 
         console.log(chalk.bold('\n📊 システム統計'));
         console.log(chalk.gray('─'.repeat(50)));
-        console.log(`総テナント数: ${chalk.yellow(systemStats.totalTenants)}`);
+        console.log(`総テナント数: ${chalk.yellow(tenantStats.totalTenants)}`);
         console.log(
-          `アクティブテナント数: ${chalk.yellow(systemStats.activeTenants)}`
+          `アクティブテナント数: ${chalk.yellow(tenantStats.activeTenants)}`
         );
-        console.log(`総ユーザー数: ${chalk.yellow(systemStats.totalUsers)}`);
+        console.log(`総ユーザー数: ${chalk.yellow(tenantStats.totalUsers)}`);
         console.log(
-          `総リソース数: ${chalk.yellow(systemStats.totalResources)}`
+          `総リソース数: ${chalk.yellow(resourceStats.totalResources || 0)}`
         );
-        console.log(`総クエリ数: ${chalk.yellow(systemStats.totalQueries)}`);
+        console.log(
+          `総クエリ数: ${chalk.yellow(resourceStats.totalQueries || 0)}`
+        );
 
         console.log(chalk.bold('\n📈 プラン別分布'));
         console.log(chalk.gray('─'.repeat(50)));
-        Object.entries(systemStats.planDistribution).forEach(
+        Object.entries(tenantStats.tenantsByPlan || {}).forEach(
           ([plan, count]) => {
             console.log(`${plan}: ${chalk.yellow(count)}個`);
           }
         );
 
-        console.log(chalk.bold('\n🌍 地域別分布'));
+        console.log(chalk.bold('\n👤 ロール別ユーザー分布'));
         console.log(chalk.gray('─'.repeat(50)));
-        Object.entries(systemStats.regionDistribution).forEach(
-          ([region, count]) => {
-            console.log(`${region}: ${chalk.yellow(count)}個`);
+        Object.entries(tenantStats.usersByRole || {}).forEach(
+          ([role, count]) => {
+            console.log(`${role}: ${chalk.yellow(count)}個`);
           }
         );
 
@@ -331,48 +335,46 @@ tenantCommand
       console.log(`地域: ${chalk.yellow(tenant.metadata.region || 'N/A')}`);
 
       if (options.quota) {
-        const quota = manager.getTenantQuota(tenantId);
+        const quota = manager.getQuota(tenantId);
         if (quota) {
           console.log(chalk.bold('\n📊 クォータ情報'));
           console.log(chalk.gray('─'.repeat(50)));
           console.log(
-            `DNSレコード: ${chalk.yellow(quota.usage.dnsRecords)}/${chalk.yellow(quota.limits.dnsRecords)}`
+            `DNSレコード: ${chalk.yellow(quota.current.dnsRecords)}/${chalk.yellow(quota.limits.dnsRecords)}`
           );
           console.log(
-            `月間クエリ: ${chalk.yellow(quota.usage.queriesThisMonth)}/${chalk.yellow(quota.limits.queriesPerMonth)}`
+            `月間クエリ: ${chalk.yellow(quota.current.queriesThisMonth)}/${chalk.yellow(quota.limits.queriesPerMonth)}`
           );
           console.log(
-            `アクティブユーザー: ${chalk.yellow(quota.usage.activeUsers)}/${chalk.yellow(quota.limits.users)}`
+            `アクティブユーザー: ${chalk.yellow(quota.current.activeUsers)}/${chalk.yellow(quota.limits.users)}`
           );
           console.log(
-            `時間毎API呼び出し: ${chalk.yellow(quota.usage.apiCallsThisHour)}/${chalk.yellow(quota.limits.apiCallsPerHour)}`
+            `時間毎API呼び出し: ${chalk.yellow(quota.current.apiCallsThisHour)}/${chalk.yellow(quota.limits.apiCallsPerHour)}`
           );
           console.log(
-            `ストレージ使用量: ${chalk.yellow(quota.usage.storageUsedGB.toFixed(2))}GB/${chalk.yellow(quota.limits.storageGB)}GB`
+            `ストレージ使用量: ${chalk.yellow(quota.current.storageUsedGB.toFixed(2))}GB/${chalk.yellow(quota.limits.storageGB)}GB`
           );
         }
       }
 
       if (options.billing) {
-        const billing = manager.getTenantBilling(tenantId);
+        const billing = manager.getBilling(tenantId);
         if (billing) {
           console.log(chalk.bold('\n💳 請求情報'));
           console.log(chalk.gray('─'.repeat(50)));
-          console.log(`プラン: ${chalk.yellow(billing.subscription.planId)}`);
+          console.log(`プラン: ${chalk.yellow(billing.plan.name)}`);
           console.log(
             `ステータス: ${chalk.yellow(billing.subscription.status)}`
           );
           console.log(
-            `料金: ${chalk.yellow(billing.subscription.amount)} ${chalk.yellow(billing.subscription.currency)}`
+            `料金: ${chalk.yellow(billing.plan.price)} ${chalk.yellow(billing.plan.currency)}`
+          );
+          console.log(`請求サイクル: ${chalk.yellow(billing.plan.interval)}`);
+          console.log(
+            `次回請求日: ${chalk.yellow(billing.subscription.currentPeriodEnd.toLocaleDateString('ja-JP'))}`
           );
           console.log(
-            `請求サイクル: ${chalk.yellow(billing.subscription.billingCycle)}`
-          );
-          console.log(
-            `次回請求日: ${chalk.yellow(billing.subscription.nextBillingDate.toLocaleDateString('ja-JP'))}`
-          );
-          console.log(
-            `支払い方法: ${chalk.yellow(billing.paymentMethod.type)} (**** ${chalk.yellow(billing.paymentMethod.lastFour)})`
+            `支払い方法: ${chalk.yellow(billing.paymentMethod.type)} (**** ${chalk.yellow(billing.paymentMethod.last4 || 'N/A')})`
           );
         }
       }
@@ -423,17 +425,17 @@ tenantCommand
           console.log(chalk.yellow('監査ログが見つかりません'));
         } else {
           auditLogs.forEach(log => {
-            const riskColor =
-              log.risk === 'high'
+            const severityColor =
+              log.severity === 'critical'
                 ? chalk.red
-                : log.risk === 'medium'
-                  ? chalk.yellow
-                  : chalk.green;
+                : log.severity === 'error'
+                  ? chalk.red
+                  : log.severity === 'warning'
+                    ? chalk.yellow
+                    : chalk.green;
             console.log(
-              `${chalk.blue(log.timestamp.toLocaleString('ja-JP'))} - ${chalk.yellow(log.action)} - ${riskColor(log.risk)} - ${
-                log.result === 'success'
-                  ? chalk.green('成功')
-                  : chalk.red('失敗')
+              `${chalk.blue(log.timestamp.toLocaleString('ja-JP'))} - ${chalk.yellow(log.action)} - ${severityColor(log.severity)} - ${
+                true ? chalk.green('成功') : chalk.red('失敗')
               }`
             );
           });
@@ -441,16 +443,20 @@ tenantCommand
       }
 
       if (options.stats) {
-        const stats = manager.getTenantStats(tenantId);
+        const systemStats = manager.getSystemStatistics();
+        const stats = {
+          totalTenants: systemStats.tenants.totalTenants,
+          activeTenants: systemStats.tenants.activeTenants,
+          totalUsers: systemStats.tenants.totalUsers,
+          activeUsers: systemStats.tenants.activeUsers,
+        };
         console.log(chalk.bold('\n📈 統計情報'));
         console.log(chalk.gray('─'.repeat(50)));
-        console.log(`総ユーザー数: ${chalk.yellow(stats.overview.totalUsers)}`);
+        console.log(`総ユーザー数: ${chalk.yellow(stats.totalUsers)}`);
+        console.log(`アクティブユーザー数: ${chalk.yellow(stats.activeUsers)}`);
+        console.log(`総テナント数: ${chalk.yellow(stats.totalTenants)}`);
         console.log(
-          `総リソース数: ${chalk.yellow(stats.overview.totalResources)}`
-        );
-        console.log(`総クエリ数: ${chalk.yellow(stats.overview.totalQueries)}`);
-        console.log(
-          `ストレージ使用量: ${chalk.yellow(stats.overview.totalStorage.toFixed(2))}GB`
+          `アクティブテナント数: ${chalk.yellow(stats.activeTenants)}`
         );
         console.log(
           `アクティブ接続数: ${chalk.yellow(manager.getActiveConnections(tenantId))}`
@@ -652,6 +658,7 @@ tenantCommand
         logger.info(`ユーザーを追加中: ${options.email}`);
 
         const userData = {
+          tenantId: tenantId,
           email: options.email,
           role: options.role,
           permissions: getPermissionsForRole(options.role),
@@ -671,7 +678,7 @@ tenantCommand
           },
         };
 
-        const user = await manager.createUser(tenantId, userData);
+        const user = await manager.createUser(userData);
 
         console.log(chalk.bold('\n✅ ユーザー追加完了'));
         console.log(chalk.gray('─'.repeat(50)));
@@ -777,23 +784,23 @@ tenantCommand
             'IPアドレス',
           ],
           ...auditLogs.map(log => {
-            const riskColor =
-              log.risk === 'high'
+            const severityColor =
+              log.severity === 'critical'
                 ? chalk.red
-                : log.risk === 'medium'
-                  ? chalk.yellow
-                  : chalk.green;
+                : log.severity === 'error'
+                  ? chalk.red
+                  : log.severity === 'warning'
+                    ? chalk.yellow
+                    : chalk.green;
 
             return [
               log.timestamp.toLocaleString('ja-JP'),
               log.action,
               `${log.resource.type}:${log.resource.name}`,
               log.userId,
-              log.result === 'success'
-                ? chalk.green('成功')
-                : chalk.red('失敗'),
-              riskColor(log.risk),
-              log.ipAddress,
+              chalk.green('成功'),
+              severityColor(log.severity),
+              log.ip,
             ];
           }),
         ];

@@ -371,11 +371,9 @@ export class MultiTenantBillingManager extends EventEmitter {
     } catch (error) {
       invoice.status = 'failed';
 
-      this.logger.error('支払い処理に失敗しました', {
-        tenantId,
-        invoiceId,
-        error: error as Error,
-      });
+      this.logger.error(
+        `支払い処理に失敗しました: テナント=${tenantId}, 請求書=${invoiceId}, エラー=${error}`
+      );
 
       this.emit('payment-failed', { tenantId, invoiceId, error });
       return false;

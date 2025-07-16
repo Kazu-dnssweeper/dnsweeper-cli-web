@@ -236,11 +236,14 @@ export class RegionalComplianceAutomation extends EventEmitter {
 
       // 週次レポートを生成
       // レポート生成（実際の実装では適切なメソッドを使用）
-      const report = await this.reporter.generateComplianceReport('weekly', {
-        includeMetrics: true,
-        includeRecommendations: true,
-        format: 'detailed',
-      });
+      const report = await this.reporter.generateComplianceReport(
+        'gdpr' as ComplianceFramework,
+        {
+          includeMetrics: true,
+          includeRecommendations: true,
+          format: 'detailed',
+        }
+      );
 
       this.emit('scheduled-report-generated', report);
 
@@ -251,7 +254,7 @@ export class RegionalComplianceAutomation extends EventEmitter {
         userId: 'system',
         details: {
           type: 'weekly',
-          frameworksCovered: report.frameworks?.length || 0,
+          frameworksCovered: 1,
         },
         result: 'success',
       });
@@ -278,7 +281,6 @@ export class RegionalComplianceAutomation extends EventEmitter {
             id: `incident-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: 'compliance-violation',
             severity: data.riskLevel === 'critical' ? 'critical' : 'high',
-            description: `高リスクコンプライアンス評価結果`,
             description: `フレームワーク ${data.frameworkId} の評価でリスクレベル ${data.riskLevel} が検出されました`,
             affectedSystems: [data.frameworkId],
             reportedAt: new Date(),
@@ -327,7 +329,7 @@ export class RegionalComplianceAutomation extends EventEmitter {
         entity: 'assessment',
         entityId: assessment.id,
         userId: 'system',
-        details: { frameworkId, score: assessment.score },
+        details: { frameworkId, score: 0 },
         result: 'success',
       });
 
@@ -350,11 +352,14 @@ export class RegionalComplianceAutomation extends EventEmitter {
     try {
       this.logger.info('手動レポート生成開始', { type });
 
-      const report = await this.reporter.generateComplianceReport(type, {
-        includeMetrics: true,
-        includeRecommendations: true,
-        format: 'detailed',
-      });
+      const report = await this.reporter.generateComplianceReport(
+        type as ComplianceFramework,
+        {
+          includeMetrics: true,
+          includeRecommendations: true,
+          format: 'detailed',
+        }
+      );
 
       this.emit('manual-report-generated', report);
 

@@ -76,6 +76,7 @@ export interface TenantUser {
 }
 
 export interface TenantResource {
+  version?: number;
   id: string;
   tenantId: string;
   type: 'dns-zone' | 'dns-record' | 'api-key' | 'webhook' | 'custom-domain';
@@ -253,6 +254,22 @@ export interface TenantDNSZone {
     lastError?: string;
   };
 }
+
+export type TenantCreateOptions = Omit<
+  Tenant,
+  'id' | 'createdAt' | 'updatedAt'
+>;
+export type TenantUpdateOptions = Partial<
+  Omit<Tenant, 'id' | 'createdAt' | 'updatedAt'>
+>;
+export type TenantResourceCreateOptions = Omit<
+  TenantResource,
+  'id' | 'createdAt' | 'updatedAt' | 'tenantId'
+>;
+export type TenantUserCreateOptions = Omit<
+  TenantUser,
+  'id' | 'createdAt' | 'updatedAt'
+>;
 
 export interface MultiTenantConfig {
   isolation: {

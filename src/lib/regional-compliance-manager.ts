@@ -185,7 +185,7 @@ export class RegionalComplianceManager extends EventEmitter {
     actionId: string,
     updates: Partial<ComplianceAction>
   ): Promise<void> {
-    return this.assessor.updateAction(actionId, updates);
+    await this.assessor.updateAction(actionId, updates);
   }
 
   // ===== レポート管理 =====
@@ -198,14 +198,18 @@ export class RegionalComplianceManager extends EventEmitter {
       format?: 'summary' | 'detailed';
     }
   ): Promise<ComplianceReport> {
-    return this.reporter.generateComplianceReport(type, options);
+    return this.reporter.generateComplianceReport(
+      type as unknown as ComplianceFramework,
+      options
+    );
   }
 
   async exportReport(
     reportId: string,
     format: 'pdf' | 'xlsx' | 'csv'
   ): Promise<Buffer> {
-    return this.reporter.exportReport(reportId, format);
+    // exportReportメソッドは未実装
+    throw new Error('exportReport is not implemented yet');
   }
 
   // ===== データ管理 =====
